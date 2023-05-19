@@ -77,15 +77,37 @@ class ANIMapping : public ANIMartRIX {
       if(ledMap[n][zind] < zmax) zmax = ledMap[n][zind];
     }
 
-    for (int n = 0; n < NUM_LEDS; n++) {
-        float dx = ledMap[n][0] - ((xmax - xmin)/2.0 + xmin);
-        float dy = ledMap[n][1] - ((ymax - ymin)/2.0 + ymin);
-        float dz = ledMap[n][2] - ((zmax - zmin)/2.0 + zmin);
+    float cx = (xmax - xmin)/2.0 + xmin;
+    float cy = (ymax - ymin)/2.0 + ymin;
+    float cz = (zmax - zmin)/2.0 + zmin;
+    
+    Serial.print("x center: ");Serial.println(cx);
+    Serial.print("y center: ");Serial.println(cy);
+    Serial.print("z center: ");Serial.println(cz); Serial.println();
 
+    float maxD = 0.0;
+    for (int n = 0; n < NUM_LEDS; n++) {
+        float dx = ledMap[n][xind] - cx;
+        float dy = ledMap[n][yind] - cy;
+        float dz = ledMap[n][zind] - cz;
+        
         distance[n][0] = sqrt(pow(dx, 2) + pow(dy, 2) + pow(dz, 2));
         polar_theta[n][0] = atan2f(dy,dx); //todo these extra indecies are wasted
         spherical_phi[n] = acosf(dz / distance[n][0]);
+
+        if (maxD < distance[n][0]) maxD = distance[n][0];
+        Serial.print("x: ");Serial.println(dx);
+        Serial.print("y: ");Serial.println(dy);
+        Serial.print("z: ");Serial.println(dz); 
+
+        Serial.print("d: ");Serial.println(distance[n][0]);
+        Serial.print("t: ");Serial.println(polar_theta[n][0]);
+        Serial.print("p: ");Serial.println(spherical_phi[n]); Serial.println();
+        
+        
     }
+    Serial.print("max mapped distance: "); Serial.println(maxD);
+    Serial.print("reccomended radias filter: "); Serial.println(maxD*1.3);
   }
 
 

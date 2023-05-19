@@ -99,7 +99,7 @@ float ledMap[NUM_LEDS][3] = {
 //******************************************************************************************************************
 
 CRGB leds[NUM_LEDS];               // framebuffer
-ANIMapping art( leds, 1.0);  //led buffer, global scale
+ANIMapping art( leds, 0.50);  //led buffer, global scale
 
 
 
@@ -169,6 +169,7 @@ void Chasing_Spirals(){art.Chasing_Spirals();}
 void Rotating_Blob(){art.Rotating_Blob();}
 
 PatternAndNameList gPatterns = {
+  /*
   {Module_Experiment10,"Module_Experiment10"},
   {Module_Experiment9,"Module_Experiment9"},
   {Module_Experiment8,"Module_Experiment8"},
@@ -181,12 +182,14 @@ PatternAndNameList gPatterns = {
   {Module_Experiment1,"Module_Experiment1"},
   {Parametric_Water,"Parametric_Water"},
   {Water,"Water"},
+  */
   {Complex_Kaleido_6,"Complex_Kaleido_6"},
   {Complex_Kaleido_5,"Complex_Kaleido_5"},
   {Complex_Kaleido_4,"Complex_Kaleido_4"},
   {Complex_Kaleido_3, "Complex_Kaleido_3"},
   {Complex_Kaleido_2,"Complex_Kaleido_2"},
   {Complex_Kaleido, "Complex_Kaleido"},
+  /*
   {SM10,"SM10"},
   {SM9,"SM9"},
   {SM8,"SM8"},
@@ -213,14 +216,16 @@ PatternAndNameList gPatterns = {
   {Yves,"Yves"},
   {Scaledemo1,"Scaledemo1"},
   {Lava1,"Lava1"},
+  */
   {Caleido3,"Caleido3"},
   {Caleido2,"Caleido2"},
-  {Caleido1,"Caleido1"},
+  {Caleido1,"Caleido1"}, 
+  /*
   {Distance_Experiment,"Distance_Experiment"},
   {Center_Field,"Center_Field"},
   {Waves,"Waves"},
   {Chasing_Spirals,"Chasing_Spirals"},
-  {Rotating_Blob,"Rotating_Blob"},
+  {Rotating_Blob,"Rotating_Blob"},*/
 };
 
 
