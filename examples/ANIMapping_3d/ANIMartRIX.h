@@ -107,11 +107,12 @@ CRGB* buffer;
 bool  serpentine;
 
 // TODO set sizes
-float polar_theta[99][99];        // look-up table for polar angles
-float distance[99][99];           // look-up table for polar distances
+float polar_theta[99][1];        // look-up table for polar angles
+float spherical_phi[99];
+float distance[99][1];           // look-up table for polar distances TODO
 
 unsigned long a, b, c;                  // for time measurements
-
+float global_scale = 1.0;
 
 
 
@@ -130,6 +131,11 @@ void init(int w, int h, struct CRGB *data, bool serpentine) {
   this->serpentine = serpentine;
   render_polar_lookup_table((num_x / 2) - 0.5, (num_y / 2) - 0.5);          // precalculate all polar coordinates 
                                                                            // polar origin is set to matrix centre
+}
+
+void setGlobalScale(float setTo){
+  if (setTo <=0) setTo = 0.0000001;
+  global_scale = setTo;
 }
 
 // Dynamic darkening methods:
@@ -276,8 +282,38 @@ void run_default_oscillators(){
 // Calculate the noise value at this point based on the 5 dimensional manipulation of 
 // the underlaying coordinates.
 
+
+#ifdef USE_3D_MAP
+
+  float render_value(render_parameters &animation) {
+    //EVERY_N_SECONDS(1){Serial.println("derrived class render");}
+
+    // convert **SPHERICAL** coordinates back to cartesian ones
+    //this is really the only difference from base class
+    float newx = (animation.offset_x + animation.center_x - (animation.dist * sinf(animation.anglephi) * cosf(animation.angle))) * animation.scale_x * global_scale;
+    float newy = (animation.offset_y + animation.center_y - (animation.dist * sinf(animation.anglephi) * sinf(animation.angle))) * animation.scale_y * global_scale;
+    float newz = (animation.offset_z + animation.center_z - (animation.dist * cosf(animation.anglephi))) * animation.scale_z * global_scale;
+
+    // render noisevalue at this new cartesian point
+    //uint16_t raw_noise_field_value =inoise16(newx, newy, newz);
+    float raw_noise_field_value = pnoise(newx, newy, newz);
+
+    // A) enhance histogram (improve contrast) by setting the black and white point (low & high_limit)
+    // B) scale the result to a 0-255 range (assuming you want 8 bit color depth per rgb chanel)
+    // Here happens the contrast boosting & the brightness mapping
+
+    if (raw_noise_field_value < animation.low_limit)  raw_noise_field_value =  animation.low_limit;
+    if (raw_noise_field_value > animation.high_limit) raw_noise_field_value = animation.high_limit;
+
+    float scaled_noise_value = map_float(raw_noise_field_value, animation.low_limit, animation.high_limit, 0, 255);
+
+    return scaled_noise_value;
+  }
+
+#else
+
 float render_value(render_parameters &animation) {
-  EVERY_N_SECONDS(1){Serial.println("base class render value")}
+  //EVERY_N_SECONDS(1){Serial.println("base class render value");}
 
   // convert polar coordinates back to cartesian ones
 
@@ -300,7 +336,7 @@ float render_value(render_parameters &animation) {
 
   return scaled_noise_value;
 }
-
+#endif
 
 // given a static polar origin we can precalculate 
 // the polar coordinates
@@ -3910,4 +3946,3 @@ void Module_Experiment10() {
 
 
 }; 
-
