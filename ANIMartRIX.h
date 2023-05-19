@@ -19,7 +19,7 @@ compressors... and much more.
 
 VO.42 beta version
  
-This code is licenced under a Creative Commons Attribution 
+This code is licensed under a Creative Commons Attribution 
 License CC BY-NC 3.0
 
 */
@@ -36,7 +36,8 @@ struct render_parameters {
   // TODO float center_y = (num_y / 2) - 0.5;
   float center_x = (999 / 2) - 0.5;   // center of the matrix
   float center_y = (999 / 2) - 0.5;
-  float dist, angle;                
+  float center_z = 0;
+  float dist, angle, anglephi;                
   float scale_x = 0.1;                  // smaller values = zoom in
   float scale_y = 0.1;
   float scale_z = 0.1;       
@@ -276,6 +277,7 @@ void run_default_oscillators(){
 // the underlaying coordinates.
 
 float render_value(render_parameters &animation) {
+  EVERY_N_SECONDS(1){Serial.println("base class render value")}
 
   // convert polar coordinates back to cartesian ones
 
