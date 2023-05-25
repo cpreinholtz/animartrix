@@ -89,16 +89,16 @@ class ANIMapping : public ANIMartRIX <1,LedArraySize> {  //derived from the matr
         
         ANIMartRIX<1,LedArraySize>::distance[0][n] = sqrt(pow(dx, 2) + pow(dy, 2) + pow(dz, 2));
         ANIMartRIX<1,LedArraySize>::polar_theta[0][n] = atan2f(dy,dx); //todo these extra indecies are wasted
-        ANIMartRIX<1,LedArraySize>::spherical_phi[0] = acosf(dz / ANIMartRIX<1,LedArraySize>::distance[n][0]);
+        ANIMartRIX<1,LedArraySize>::spherical_phi[0][n] = acosf(dz / ANIMartRIX<1,LedArraySize>::distance[0][n]);
 
-        if (maxD < ANIMartRIX<1,LedArraySize>::distance[n][0]) maxD = ANIMartRIX<1,LedArraySize>::distance[0][n];
+        if (maxD < ANIMartRIX<1,LedArraySize>::distance[0][n]) maxD = ANIMartRIX<1,LedArraySize>::distance[0][n];
         Serial.print("x: ");Serial.println(dx);
         Serial.print("y: ");Serial.println(dy);
         Serial.print("z: ");Serial.println(dz); 
 
         Serial.print("d: ");Serial.println(ANIMartRIX<1,LedArraySize>::distance[0][n]); // note this index must match what you gave the base class template,  I'm using Y
         Serial.print("t: ");Serial.println(ANIMartRIX<1,LedArraySize>::polar_theta[0][n]);
-        Serial.print("p: ");Serial.println(ANIMartRIX<1,LedArraySize>::spherical_phi[n]); Serial.println();
+        Serial.print("p: ");Serial.println(ANIMartRIX<1,LedArraySize>::spherical_phi[0][n]); Serial.println();
         
         
     }

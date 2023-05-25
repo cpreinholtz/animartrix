@@ -108,7 +108,7 @@ bool  serpentine;
 
 // TODO set sizes
 float polar_theta[XArraySize][YArraySize];        // look-up table for polar angles
-float spherical_phi[XArraySize];
+float spherical_phi[XArraySize][YArraySize];
 float distance[XArraySize][YArraySize];           // look-up table for polar distances TODO
 
 unsigned long a, b, c;                  // for time measurements
@@ -127,6 +127,10 @@ ANIMartRIX(struct CRGB *data, bool serpentine) {
 void init(struct CRGB *data, bool serpentine) {
   this->num_x  = XArraySize;
   this->num_y = YArraySize;
+  Serial.println("num_x");
+  Serial.println(this->num_x);
+  Serial.println("num_y");
+  Serial.println(this->num_y);
   this->buffer = data;
   this->serpentine = serpentine;
   render_polar_lookup_table((num_x / 2) - 0.5, (num_y / 2) - 0.5);          // precalculate all polar coordinates 
@@ -351,7 +355,7 @@ void render_polar_lookup_table(float cx, float cy) {
 
       distance[xx][yy]    = hypotf(dx, dy);
       polar_theta[xx][yy] = atan2f(dy, dx); 
-      spherical_phi[xx] = 0;
+      spherical_phi[xx][yy] = 0;
     }
   }
 }
@@ -474,9 +478,9 @@ void Rotating_Blob() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-  for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
-  
+  for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
+      
       // describe and render animation layers
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
@@ -484,6 +488,7 @@ void Rotating_Blob() {
       animation.offset_y   = 0;
       animation.offset_z   = 100;
       animation.angle      = polar_theta[x][y] +  move.radial[0];
+      
       animation.dist       = distance[x][y];
       animation.z          = move.linear[0];
       animation.low_limit  = -1;
@@ -537,9 +542,8 @@ void Chasing_Spirals() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
-  
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       // describe and render animation layers
       animation.angle      = 3 * polar_theta[x][y] +  move.radial[0] - distance[x][y]/3;
       animation.dist       = distance[x][y];
@@ -595,9 +599,9 @@ void Rings() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
-  
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
+     
       // describe and render animation layers
       animation.angle      = 5;
       animation.scale_x    = 0.2;
@@ -651,8 +655,8 @@ void Waves() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) {animation.anglephi   = spherical_phi[x][y]; //todo, move this later
   
       // describe and render animation layers
       animation.angle      = polar_theta[x][y];
@@ -700,8 +704,8 @@ void Center_Field() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) {animation.anglephi   = spherical_phi[x][y]; //todo, move this later
   
       // describe and render animation layers
       animation.angle      = polar_theta[x][y];
@@ -758,8 +762,8 @@ void Distance_Experiment() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) {animation.anglephi   = spherical_phi[x][y]; //todo, move this later
   
       // describe and render animation layers
       animation.dist       = powf(distance[x][y], 0.5);
@@ -818,8 +822,8 @@ void Caleido1() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) {animation.anglephi   = spherical_phi[x][y]; //todo, move this later
   
       // describe and render animation layers
       animation.dist       = distance[x][y] * (2 + move.directional[0]) / 3;
@@ -883,8 +887,8 @@ void Caleido2() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) {animation.anglephi   = spherical_phi[x][y]; //todo, move this later
   
       // describe and render animation layers
       animation.dist       = distance[x][y] * (2 + move.directional[0]) / 3;
@@ -949,8 +953,8 @@ void Caleido3() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) {animation.anglephi   = spherical_phi[x][y]; //todo, move this later
   
       // describe and render animation layers
       animation.dist       = distance[x][y] * (2 + move.directional[0]) / 3;
@@ -1025,8 +1029,8 @@ void Lava1() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) {animation.anglephi   = spherical_phi[x][y]; //todo, move this later
   
       // describe and render animation layers
       animation.dist       = distance[x][y] * 0.8;
@@ -1090,8 +1094,8 @@ void Scaledemo1() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) {animation.anglephi   = spherical_phi[x][y]; //todo, move this later
   
       // describe and render animation layers
       animation.dist       = 0.3*distance[x][y] * 0.8;
@@ -1154,8 +1158,8 @@ void Yves() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) {animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y] ;
       animation.angle      = polar_theta[x][y] + 2*PI + move.noise_angle[5];
@@ -1230,8 +1234,8 @@ void Spiralus() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) {animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y] ;
       animation.angle      = 2*polar_theta[x][y] + move.noise_angle[5] + move.directional[3] * move.noise_angle[6]* animation.dist/10;
@@ -1293,8 +1297,8 @@ void Spiralus2() {
   
   calculate_oscillators(timings);     // get linear movers and oscillators going
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) {animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y] ;
       animation.angle      = 5*polar_theta[x][y] + move.noise_angle[5] + move.directional[3] * move.noise_angle[6]* animation.dist/10;
@@ -1341,8 +1345,8 @@ void Hot_Blob() { // nice one
 
   run_default_oscillators();
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y] ;
       animation.angle      = polar_theta[x][y];
@@ -1396,8 +1400,8 @@ void Zoom() { // nice one
   timings.master_speed = 0.003;
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = (distance[x][y] * distance[x][y])/2;
       animation.angle      = polar_theta[x][y];
@@ -1440,8 +1444,8 @@ void Slow_Fade() { // nice one
   timings.master_speed = 0.00005;
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = sqrtf(distance[x][y]) * 0.7 * (move.directional[0] + 1.5);
       animation.angle      = polar_theta[x][y] - move.radial[0] + distance[x][y] / 5;
@@ -1502,8 +1506,8 @@ void Polar_Waves() { // nice one
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = (distance[x][y]);
       animation.angle      = polar_theta[x][y] - animation.dist * 0.1 + move.radial[0];
@@ -1556,8 +1560,8 @@ void RGB_Blobs() { // nice one
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y];
       animation.angle      = polar_theta[x][y] + move.radial[0] + move.noise_angle[0]+ move.noise_angle[3];
@@ -1612,8 +1616,8 @@ void RGB_Blobs2() { // nice one
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y];
       animation.angle      = polar_theta[x][y] + move.radial[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
@@ -1665,8 +1669,8 @@ void RGB_Blobs3() { // nice one
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y] + move.noise_angle[4];
       animation.angle      = polar_theta[x][y] + move.radial[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
@@ -1720,8 +1724,8 @@ void RGB_Blobs4() { // nice one
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y] + move.noise_angle[4];
       animation.angle      = polar_theta[x][y] + move.radial[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
@@ -1775,8 +1779,8 @@ void RGB_Blobs5() { // nice one
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y] + move.noise_angle[4];
       animation.angle      = polar_theta[x][y] + move.radial[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
@@ -1829,8 +1833,8 @@ void Big_Caleido() { // nice one
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y];
       animation.angle      = 5 * polar_theta[x][y] + 5*move.noise_angle[0] + animation.dist * 0.1;
@@ -1996,8 +2000,8 @@ void SM2() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y] * (move.directional[0]);
       animation.angle      = polar_theta[x][y] + move.radial[0];
@@ -2062,8 +2066,8 @@ void SM3() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y];
       animation.angle      = polar_theta[x][y];
@@ -2155,8 +2159,8 @@ void SM4() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y];
       animation.angle      = polar_theta[x][y];
@@ -2212,8 +2216,8 @@ void SM5() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = distance[x][y] * (move.directional[0]);
       animation.angle      = polar_theta[x][y] + move.radial[0];
@@ -2307,8 +2311,8 @@ void SM6() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       float s = 0.7; // zoom factor
       
@@ -2408,8 +2412,8 @@ void SM8() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       //float s = 0.7; // zoom factor
       
@@ -2486,8 +2490,8 @@ void SM9() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       animation.dist       = distance[x][y];
       animation.angle      = polar_theta[x][y];
@@ -2567,8 +2571,8 @@ void SM10() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       float scale = 0.6;
       
@@ -2654,8 +2658,8 @@ void Complex_Kaleido() {
 
   //float size = 1.5;
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       animation.dist       = distance[x][y];
       animation.angle      = 5 * polar_theta[x][y] + 10 * move.radial[0] + animation.dist /2;
@@ -2743,8 +2747,8 @@ void Complex_Kaleido_2() {
 
   float size = 0.5;
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       animation.dist       = distance[x][y];
       animation.angle      = 5 * polar_theta[x][y] + 10 * move.radial[0] + animation.dist /2;
@@ -2836,8 +2840,8 @@ void Complex_Kaleido_3() {
 
   float q = 2;
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       animation.dist       = distance[x][y];
       animation.angle      = 5 * polar_theta[x][y] + 10 * move.radial[0] + animation.dist / (((move.directional[0] + 3)*2)) + move.noise_angle[0]*q;
@@ -2932,8 +2936,8 @@ void Complex_Kaleido_4() {
 
   float q = 1;
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       float s = 1 +  move.directional[6]*0.3;
 
@@ -3039,8 +3043,8 @@ void Complex_Kaleido_5() {
 
   //float q = 1;
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       float s = 1 +  move.directional[6]*0.8;
 
@@ -3088,8 +3092,8 @@ void Complex_Kaleido_6() {
 
   
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       animation.dist       = distance[x][y];
       animation.angle      = 16 * polar_theta[x][y] + 16*move.radial[0];
@@ -3146,8 +3150,8 @@ void Water() {
   calculate_oscillators(timings); 
 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       animation.dist       = distance[x][y] + 4*sinf(move.directional[5]*PI+(float)x/2) + 4 * cosf(move.directional[6]*PI+float(y)/2);
       animation.angle      = 1 * polar_theta[x][y];
@@ -3234,8 +3238,8 @@ void Parametric_Water() {
   calculate_oscillators(timings); 
 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       float s = 4;
       float f = 10 + 2* move.directional[0];
@@ -3324,8 +3328,8 @@ void Module_Experiment1() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       animation.dist       = distance[x][y] + 20 * move.directional[0];
       animation.angle      = move.noise_angle[0] + move.noise_angle[1] + polar_theta[x][y];
@@ -3362,8 +3366,8 @@ void Module_Experiment2() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       animation.dist       = distance[x][y] - ( 16 + move.directional[0] * 16);
       animation.angle      = move.noise_angle[0] + move.noise_angle[1] + polar_theta[x][y];
@@ -3402,8 +3406,8 @@ void Module_Experiment3() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       animation.dist       = distance[x][y] - (12 + move.directional[3]*4);
       animation.angle      = move.noise_angle[0] + move.noise_angle[1] + polar_theta[x][y];
@@ -3437,8 +3441,8 @@ void Zoom2() { // nice one
   timings.master_speed = 0.003;
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
       
       animation.dist       = (distance[x][y] * distance[x][y])/2;
       animation.angle      = polar_theta[x][y];
@@ -3484,8 +3488,8 @@ void Module_Experiment4() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       float s = 0.8;
 
@@ -3560,8 +3564,8 @@ void Module_Experiment5() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       float s = 1.5;
 
@@ -3606,8 +3610,8 @@ void Module_Experiment6() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       float s = 0.8;
 
@@ -3670,8 +3674,8 @@ void Module_Experiment7() {
   
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       float s = 0.7;
 
@@ -3746,8 +3750,8 @@ void Module_Experiment8() {
 
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       float s = 0.4; // scale
       float r = 1.5; // scroll speed
@@ -3829,8 +3833,8 @@ void Module_Experiment9() {
 
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       animation.dist       = distance[x][y];
       animation.angle      = polar_theta[x][y] + move.radial[1];
@@ -3882,8 +3886,8 @@ void Module_Experiment10() {
 
   calculate_oscillators(timings); 
 
-    for (int x = 0; x < num_x; x++) {animation.anglephi   = spherical_phi[x]; //todo, move this later
-    for (int y = 0; y < num_y; y++) {
+    for (int x = 0; x < num_x; x++) {
+    for (int y = 0; y < num_y; y++) { animation.anglephi   = spherical_phi[x][y]; //todo, move this later
 
       float s = 0.4; // scale
       float r = 1.5; // scroll speed
