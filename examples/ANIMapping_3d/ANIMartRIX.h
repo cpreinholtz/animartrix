@@ -93,6 +93,7 @@ static const byte pNoise[] = {   151,160,137,91,90, 15,131, 13,201,95,96,
 
 
 
+template<std::size_t XArraySize, std::size_t YArraySize>
 class ANIMartRIX {
 
 public:
@@ -102,14 +103,13 @@ int num_y; // how many rows?
 
 #define radial_filter_radius 12.0;      // 23.0 on 32x32, use 11 for 16x16, for mapping, try like 130% of your max radias
 
-//#define NUM_LEDS ((num_x) * (num_y))
 CRGB* buffer; 
 bool  serpentine;
 
 // TODO set sizes
-float polar_theta[99][1];        // look-up table for polar angles
-float spherical_phi[99];
-float distance[99][1];           // look-up table for polar distances TODO
+float polar_theta[XArraySize][YArraySize];        // look-up table for polar angles
+float spherical_phi[XArraySize];
+float distance[XArraySize][YArraySize];           // look-up table for polar distances TODO
 
 unsigned long a, b, c;                  // for time measurements
 float global_scale = 1.0;
@@ -120,13 +120,13 @@ float show1, show2, show3, show4, show5, show6, show7, show8, show9, show0;
 
 ANIMartRIX() {}
 
-ANIMartRIX(int w, int h, struct CRGB *data, bool serpentine) {
-  this->init(w, h, data, serpentine);
+ANIMartRIX(struct CRGB *data, bool serpentine) {
+  this->init(data, serpentine);
 }
 
-void init(int w, int h, struct CRGB *data, bool serpentine) {
-  this->num_x  = w;
-  this->num_y = h;
+void init(struct CRGB *data, bool serpentine) {
+  this->num_x  = XArraySize;
+  this->num_y = YArraySize;
   this->buffer = data;
   this->serpentine = serpentine;
   render_polar_lookup_table((num_x / 2) - 0.5, (num_y / 2) - 0.5);          // precalculate all polar coordinates 

@@ -99,7 +99,7 @@ float ledMap[NUM_LEDS][3] = {
 //******************************************************************************************************************
 
 CRGB leds[NUM_LEDS];               // framebuffer
-ANIMapping art( leds, 0.50);  //led buffer, global scale
+ANIMapping<NUM_LEDS> art( leds, 0.50);  //led buffer, global scale
 
 
 
@@ -169,30 +169,30 @@ void Chasing_Spirals(){art.Chasing_Spirals();}
 void Rotating_Blob(){art.Rotating_Blob();}
 
 PatternAndNameList gPatterns = {
-  /*
+  
   {Module_Experiment10,"Module_Experiment10"},
-  {Module_Experiment9,"Module_Experiment9"},
+  {Module_Experiment9,"Module_Experiment9"}, // FAV swipes!
   {Module_Experiment8,"Module_Experiment8"},
   {Module_Experiment7,"Module_Experiment7"},
   {Module_Experiment6,"Module_Experiment6"},
   {Module_Experiment5,"Module_Experiment5"},
   {Module_Experiment4,"Module_Experiment4"},
-  {Module_Experiment3,"Module_Experiment3"},
-  {Module_Experiment2,"Module_Experiment2"},
+  {Module_Experiment3,"Module_Experiment3"},//FAV yellow blob in red
+  {Module_Experiment2,"Module_Experiment2"},//FAV
   {Module_Experiment1,"Module_Experiment1"},
   {Parametric_Water,"Parametric_Water"},
   {Water,"Water"},
-  */
-  {Complex_Kaleido_6,"Complex_Kaleido_6"},
+  
+  {Complex_Kaleido_6,"Complex_Kaleido_6"}, ///great at 30 secs!
   {Complex_Kaleido_5,"Complex_Kaleido_5"},
-  {Complex_Kaleido_4,"Complex_Kaleido_4"},
+  {Complex_Kaleido_4,"Complex_Kaleido_4"},//good
   {Complex_Kaleido_3, "Complex_Kaleido_3"},
   {Complex_Kaleido_2,"Complex_Kaleido_2"},
   {Complex_Kaleido, "Complex_Kaleido"},
-  /*
+  
   {SM10,"SM10"},
   {SM9,"SM9"},
-  {SM8,"SM8"},
+  {SM8,"SM8"},//fun strobe
   // {SM7,"SM7"},
   {SM6,"SM6"},
   {SM5,"SM5"},
@@ -214,18 +214,18 @@ PatternAndNameList gPatterns = {
   {Spiralus2,"Spiralus2"},
   {Spiralus,"Spiralus"},
   {Yves,"Yves"},
-  {Scaledemo1,"Scaledemo1"},
-  {Lava1,"Lava1"},
-  */
+  {Scaledemo1,"Scaledemo1"},///active and fun
+  {Lava1,"Lava1"},//broken
+  
   {Caleido3,"Caleido3"},
   {Caleido2,"Caleido2"},
   {Caleido1,"Caleido1"}, 
-  /*
+  
   {Distance_Experiment,"Distance_Experiment"},
   {Center_Field,"Center_Field"},
-  {Waves,"Waves"},
+  {Waves,"Waves"},//broken
   {Chasing_Spirals,"Chasing_Spirals"},
-  {Rotating_Blob,"Rotating_Blob"},*/
+  {Rotating_Blob,"Rotating_Blob"}
 };
 
 
@@ -271,6 +271,6 @@ void loop() {
   showCurrentPattern();
 
 
-  EVERY_N_SECONDS(10)  incrementPattern();
-  //EVERY_N_MILLIS(500) art.report_performance();   // check serial monitor for report 
+  EVERY_N_SECONDS(30)  incrementPattern();
+  EVERY_N_MILLIS(500) art.report_performance();   // check serial monitor for report 
 } 
