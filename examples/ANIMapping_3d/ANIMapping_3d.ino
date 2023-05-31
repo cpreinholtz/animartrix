@@ -116,6 +116,9 @@ typedef PatternAndName PatternAndNameList[];
 
 int currentPattern = 0;
 
+void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
+
+
 void Module_Experiment10(){art.Module_Experiment10();}
 void Module_Experiment9(){art.Module_Experiment9();}
 void Module_Experiment8(){art.Module_Experiment8();}
@@ -169,7 +172,7 @@ void Chasing_Spirals(){art.Chasing_Spirals();}
 void Rotating_Blob(){art.Rotating_Blob();}
 
 PatternAndNameList gPatterns = {
-  
+  {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},
   {Module_Experiment10,"Module_Experiment10"},
   {Module_Experiment9,"Module_Experiment9"}, // FAV swipes!
   {Module_Experiment8,"Module_Experiment8"},
@@ -271,6 +274,6 @@ void loop() {
   showCurrentPattern();
 
 
-  EVERY_N_SECONDS(30)  incrementPattern();
+  //EVERY_N_SECONDS(30)  incrementPattern();
   EVERY_N_MILLIS(500) art.report_performance();   // check serial monitor for report 
 } 

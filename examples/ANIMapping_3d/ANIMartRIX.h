@@ -26,6 +26,8 @@ License CC BY-NC 3.0
 
 //#include <SmartMatrix.h>
 #include <FastLED.h>
+// from AeroKeiths repo ColorUtilsHsi
+#include <ColorUtilsHsi.h>
 
 #define num_oscillators 10
 
@@ -67,12 +69,7 @@ struct modulators {
 
 modulators move;                 // all oscillator based movers and shifters at one place
 
-struct rgb {
-
-  float red, green, blue;
-};
-
-rgb pixel;
+rgbF pixel;
 
 static const byte pNoise[] = {   151,160,137,91,90, 15,131, 13,201,95,96,
 53,194,233, 7,225,140,36,103,30,69,142, 8,99,37,240,21,10,23,190, 6,
@@ -289,7 +286,7 @@ void run_default_oscillators(){
 
 #ifdef USE_3D_MAP
 
-  float render_value(render_parameters &animation) {
+  float render_value(render_parameters &animation, float scaleHigh = 255.0) {
     //EVERY_N_SECONDS(1){Serial.println("derrived class render");}
 
     // convert **SPHERICAL** coordinates back to cartesian ones
@@ -309,7 +306,7 @@ void run_default_oscillators(){
     if (raw_noise_field_value < animation.low_limit)  raw_noise_field_value =  animation.low_limit;
     if (raw_noise_field_value > animation.high_limit) raw_noise_field_value = animation.high_limit;
 
-    float scaled_noise_value = map_float(raw_noise_field_value, animation.low_limit, animation.high_limit, 0, 255);
+    float scaled_noise_value = map_float(raw_noise_field_value, animation.low_limit, animation.high_limit, 0, scaleHigh);
 
     return scaled_noise_value;
   }
@@ -382,7 +379,7 @@ float map_float(float x, float in_min, float in_max, float out_min, float out_ma
 void write_pixel_to_framebuffer(int x, int y, rgb &pixel) {
 
       // assign the final color of this one pixel
-      CRGB finalcolor = CRGB(pixel.red, pixel.green, pixel.blue);
+      CRGB finalcolor = CRGB(pixel.r, pixel.g, pixel.b);
      
       // write the rendered pixel into the framebutter
       leds[xy(x, y)] = finalcolor;
@@ -394,17 +391,17 @@ void write_pixel_to_framebuffer(int x, int y, rgb &pixel) {
 // This enables to play freely with random equations for the colormapping
 // without causing flicker by accidentally missing the valid target range.
 
-rgb rgb_sanity_check(rgb &pixel) {
+rgbF rgb_sanity_check(rgbF &pixel) {
 
       // rescue data if possible, return absolute value
-      //if (pixel.red < 0)     pixel.red = fabsf(pixel.red);
-      //if (pixel.green < 0) pixel.green = fabsf(pixel.green);
-      //if (pixel.blue < 0)   pixel.blue = fabsf(pixel.blue);
+      //if (pixel.r < 0)     pixel.r = fabsf(pixel.r);
+      //if (pixel.g < 0) pixel.g = fabsf(pixel.g);
+      //if (pixel.b < 0)   pixel.b = fabsf(pixel.b);
       
       // discard everything above the valid 8 bit colordepth 0-255 range
-      if (pixel.red   > 255)   pixel.red = 255;
-      if (pixel.green > 255) pixel.green = 255;
-      if (pixel.blue  > 255)  pixel.blue = 255;
+      if (pixel.r   > 255)   pixel.r = 255;
+      if (pixel.g > 255) pixel.g = 255;
+      if (pixel.b  > 255)  pixel.b = 255;
 
       return pixel;
 }
@@ -428,8 +425,8 @@ void get_ready() {  // wait until new buffer is ready, measure time
   // b = micros(); 
 }
 
-CRGB setPixelColor(rgb pixel) {
-  return CRGB(pixel.red, pixel.green, pixel.blue);
+CRGB setPixelColor(rgbF pixel) {
+  return CRGB(pixel.r, pixel.g, pixel.b);
 }
 
 // Show the current framerate, rendered pixels per second,
@@ -511,9 +508,9 @@ void Rotating_Blob() {
       float show4          = render_value(animation);
 
       // colormapping
-      pixel.red   = (show2+show4)/2;
-      pixel.green = show3 / 6;
-      pixel.blue  = 0;
+      pixel.r   = (show2+show4)/2;
+      pixel.g = show3 / 6;
+      pixel.b  = 0;
 
       pixel = rgb_sanity_check(pixel);
 
@@ -570,9 +567,9 @@ void Chasing_Spirals() {
       float radius = radial_filter_radius;
       float radial_filter = (radius - distance[x][y]) / radius;
 
-      pixel.red   = 3*show1 * radial_filter;
-      pixel.green = show2 * radial_filter / 2;
-      pixel.blue  = show3 * radial_filter / 4;
+      pixel.r   = 3*show1 * radial_filter;
+      pixel.g = show2 * radial_filter / 2;
+      pixel.b  = show3 * radial_filter / 4;
 
       pixel = rgb_sanity_check(pixel);
 
@@ -627,9 +624,9 @@ void Rings() {
       float show3          = render_value(animation);
 
       // colormapping
-      pixel.red   = show1;
-      pixel.green = show2 / 4;
-      pixel.blue  = show3 / 4;
+      pixel.r   = show1;
+      pixel.g = show2 / 4;
+      pixel.b  = show3 / 4;
 
       pixel = rgb_sanity_check(pixel);
 
@@ -676,9 +673,9 @@ void Waves() {
 
   
       // colormapping
-      pixel.red   = show1;
-      pixel.green = 0;
-      pixel.blue  = show2;
+      pixel.r   = show1;
+      pixel.g = 0;
+      pixel.b  = show2;
 
       pixel = rgb_sanity_check(pixel);
 
@@ -732,9 +729,9 @@ void Center_Field() {
 
   
       // colormapping
-      pixel.red   = show1;
-      pixel.green = show2;
-      pixel.blue  = 0;
+      pixel.r   = show1;
+      pixel.g = show2;
+      pixel.b  = 0;
 
       pixel = rgb_sanity_check(pixel);
 
@@ -789,9 +786,9 @@ void Distance_Experiment() {
       float show2          = render_value(animation);
       
       // colormapping
-      pixel.red   = show1+show2;
-      pixel.green = show2;
-      pixel.blue  = 0;
+      pixel.r   = show1+show2;
+      pixel.g = show2;
+      pixel.b  = 0;
 
       pixel = rgb_sanity_check(pixel);
 
@@ -856,9 +853,9 @@ void Caleido1() {
       float show4          = render_value(animation);
       
       // colormapping
-      pixel.red   = show1;
-      pixel.green = show3 * distance[x][y] / 10;
-      pixel.blue  = (show2 + show4) / 2;
+      pixel.r   = show1;
+      pixel.g = show3 * distance[x][y] / 10;
+      pixel.b  = (show2 + show4) / 2;
 
       pixel = rgb_sanity_check(pixel);
 
@@ -921,9 +918,9 @@ void Caleido2() {
       float show4          = render_value(animation);
       
       // colormapping
-      pixel.red   = show1;
-      pixel.green = show3 * distance[x][y] / 10;
-      pixel.blue  = (show2 + show4) / 2;
+      pixel.r   = show1;
+      pixel.g = show3 * distance[x][y] / 10;
+      pixel.b  = (show2 + show4) / 2;
 
 
       pixel = rgb_sanity_check(pixel);
@@ -992,13 +989,13 @@ void Caleido3() {
       // colormapping
       float radius = radial_filter_radius;  // radial mask
 
-      pixel.red   = show1 * (y+1) / num_y;
-      pixel.green = show3 * distance[x][y] / 10;
-      pixel.blue  = (show2 + show4) / 2;
+      pixel.r   = show1 * (y+1) / num_y;
+      pixel.g = show3 * distance[x][y] / 10;
+      pixel.b  = (show2 + show4) / 2;
       if (distance[x][y] > radius) {
-        pixel.red = 0;
-        pixel.green = 0;
-        pixel.blue = 0;
+        pixel.r = 0;
+        pixel.g = 0;
+        pixel.b = 0;
       }
 
       pixel = rgb_sanity_check(pixel);
@@ -1063,8 +1060,8 @@ void Lava1() {
       // colormapping
       float linear = (y)/(num_y-1.f);  // radial mask
 
-      pixel.red = linear*show2;
-      pixel.green = 0.1*linear*(show2-show3);
+      pixel.r = linear*show2;
+      pixel.g = 0.1*linear*(show2-show3);
       
       pixel = rgb_sanity_check(pixel);
 
@@ -1113,14 +1110,14 @@ void Scaledemo1() {
       float show2          = render_value(animation);
 
       float dist = 1;//(10-distance[x][y])/ 10;
-      pixel.red = show1*dist;
-      pixel.green = (show1-show2)*dist*0.3;
-      pixel.blue = (show2-show1)*dist;
+      pixel.r = show1*dist;
+      pixel.g = (show1-show2)*dist*0.3;
+      pixel.b = (show2-show1)*dist;
 
       if (distance[x][y] > 16) {
-         pixel.red = 0;
-         pixel.green = 0;
-         pixel.blue = 0;
+         pixel.r = 0;
+         pixel.g = 0;
+         pixel.b = 0;
 
       }
       
@@ -1198,9 +1195,9 @@ void Yves() {
       float show4          = render_value(animation);
       
      
-      pixel.red   = show3;
-      pixel.green = show3*show4/255;
-      pixel.blue  = 0;
+      pixel.r   = show3;
+      pixel.g = show3*show4/255;
+      pixel.b  = 0;
       
       pixel = rgb_sanity_check(pixel);
       buffer[num_x * y + x] = setPixelColor(pixel);
@@ -1261,9 +1258,9 @@ void Spiralus() {
       
       float f =  1;
      
-      pixel.red   = f*(show1+show2);
-      pixel.green = f*(show1-show2);
-      pixel.blue  = f*(show3-show1);
+      pixel.r   = f*(show1+show2);
+      pixel.g = f*(show1-show2);
+      pixel.b  = f*(show3-show1);
       
       pixel = rgb_sanity_check(pixel);
       buffer[xy(x, y)] = setPixelColor(pixel);
@@ -1326,9 +1323,9 @@ void Spiralus2() {
       
       float f =  1;//(24-distance[x][y])/24;
      
-      pixel.red   = f*(show1+show2);
-      pixel.green = f*(show1-show2);
-      pixel.blue  = f*(show3-show1);
+      pixel.r   = f*(show1+show2);
+      pixel.g = f*(show1-show2);
+      pixel.b  = f*(show3-show1);
       
       pixel = rgb_sanity_check(pixel);
       buffer[num_x * y + x] = setPixelColor(pixel);
@@ -1380,8 +1377,8 @@ void Hot_Blob() { // nice one
 
       float linear = (y+1)/(num_y-1.f);
       
-      pixel.red   = radial  * show2;
-      pixel.green   = linear * radial* 0.3* (show2-show4);
+      pixel.r   = radial  * show2;
+      pixel.g   = linear * radial* 0.3* (show2-show4);
       
       pixel = rgb_sanity_check(pixel);
       buffer[xy(x, y)] = setPixelColor(pixel);
@@ -1420,8 +1417,8 @@ void Zoom() { // nice one
   
       float linear = 1;//(y+1)/(num_y-1.f);
       
-      pixel.red   = show1*linear;
-      pixel.green   = 0;
+      pixel.r   = show1*linear;
+      pixel.g   = 0;
       
       
       pixel = rgb_sanity_check(pixel);
@@ -1477,9 +1474,9 @@ void Slow_Fade() { // nice one
 
     
       
-      pixel.red    = radial * show1;
-      pixel.green  = radial * (show1 - show2) / 6;
-      pixel.blue   = radial * (show1 - show3) / 5;
+      pixel.r    = radial * show1;
+      pixel.g  = radial * (show1 - show2) / 6;
+      pixel.b   = radial * (show1 - show3) / 5;
       
       
       pixel = rgb_sanity_check(pixel);
@@ -1531,9 +1528,9 @@ void Polar_Waves() { // nice one
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[x][y])/distance[x][y];
 
-      pixel.red    = radial * show1;
-      pixel.green  = radial * show2;
-      pixel.blue   = radial * show3;
+      pixel.r    = radial * show1;
+      pixel.g  = radial * show2;
+      pixel.b   = radial * show3;
       
       
       pixel = rgb_sanity_check(pixel);
@@ -1586,9 +1583,9 @@ void RGB_Blobs() { // nice one
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[x][y])/distance[x][y];
 
-      pixel.red    = radial * show1;
-      pixel.green  = radial * show2;
-      pixel.blue   = radial * show3;
+      pixel.r    = radial * show1;
+      pixel.g  = radial * show2;
+      pixel.b   = radial * show3;
      
       
       
@@ -1641,9 +1638,9 @@ void RGB_Blobs2() { // nice one
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[x][y])/distance[x][y];
 
-      pixel.red    = radial * (show1-show3);
-      pixel.green  = radial * (show2-show1);
-      pixel.blue   = radial * (show3-show2);
+      pixel.r    = radial * (show1-show3);
+      pixel.g  = radial * (show2-show1);
+      pixel.b   = radial * (show3-show2);
      
       pixel = rgb_sanity_check(pixel);
       buffer[xy(x, y)] = setPixelColor(pixel);
@@ -1694,9 +1691,9 @@ void RGB_Blobs3() { // nice one
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[x][y])/distance[x][y];
 
-      pixel.red    = radial * (show1+show3)*0.5 * animation.dist/5;
-      pixel.green  = radial * (show2+show1)*0.5 * y/15;
-      pixel.blue   = radial * (show3+show2)*0.5 * x/15;
+      pixel.r    = radial * (show1+show3)*0.5 * animation.dist/5;
+      pixel.g  = radial * (show2+show1)*0.5 * y/15;
+      pixel.b   = radial * (show3+show2)*0.5 * x/15;
      
       pixel = rgb_sanity_check(pixel);
       buffer[num_x * y + x] = setPixelColor(pixel);
@@ -1749,9 +1746,9 @@ void RGB_Blobs4() { // nice one
       float radius = 23;   // radius of a radial brightness filter
       float radial = (radius-distance[x][y])/distance[x][y];
 
-      pixel.red    = radial * (show1+show3)*0.5 * animation.dist/5;
-      pixel.green  = radial * (show2+show1)*0.5 * y/15;
-      pixel.blue   = radial * (show3+show2)*0.5 * x/15;
+      pixel.r    = radial * (show1+show3)*0.5 * animation.dist/5;
+      pixel.g  = radial * (show2+show1)*0.5 * y/15;
+      pixel.b   = radial * (show3+show2)*0.5 * x/15;
      
       pixel = rgb_sanity_check(pixel);
       buffer[num_x * y + x] = setPixelColor(pixel);
@@ -1804,9 +1801,9 @@ void RGB_Blobs5() { // nice one
       float radius = 23;   // radius of a radial brightness filter
       float radial = (radius-distance[x][y])/distance[x][y];
 
-      pixel.red    = radial * (show1+show3)*0.5 * animation.dist/5;
-      pixel.green  = radial * (show2+show1)*0.5 * y/15;
-      pixel.blue   = radial * (show3+show2)*0.5 * x/15;
+      pixel.r    = radial * (show1+show3)*0.5 * animation.dist/5;
+      pixel.g  = radial * (show2+show1)*0.5 * y/15;
+      pixel.b   = radial * (show3+show2)*0.5 * x/15;
      
       pixel = rgb_sanity_check(pixel);
    
@@ -1883,9 +1880,9 @@ void Big_Caleido() { // nice one
       float show5          = render_value(animation);
 
       
-      pixel.red    = show1-show4;
-      pixel.green  = show2-show5;
-      pixel.blue   = show3-show2+show1;
+      pixel.r    = show1-show4;
+      pixel.g  = show2-show5;
+      pixel.b   = show3-show2+show1;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -1967,12 +1964,12 @@ void SM1() { // nice one
 
      
 
-      pixel.red    = show1+show2;
-      pixel.green  = show3+show4;
-      pixel.blue   = show5;
+      pixel.r    = show1+show2;
+      pixel.g  = show3+show4;
+      pixel.b   = show5;
      
       pixel = rgb_sanity_check(pixel);
-      //leds[xy(x, y)] = CRGB(pixel.red, pixel.green, pixel.blue);
+      //leds[xy(x, y)] = CRGB(pixel.r, pixel.g, pixel.b);
       buffer[xy(x, y)] = setPixelColor(pixel);
 
       buffer[xy(31-x, y)] = setPixelColor(pixel);
@@ -2035,9 +2032,9 @@ void SM2() {
      
      
 
-      pixel.red    = show1;
-      pixel.green  = show2;
-      pixel.blue   = show3;
+      pixel.r    = show1;
+      pixel.g  = show2;
+      pixel.b   = show3;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -2129,9 +2126,9 @@ void SM3() {
       animation.high_limit = 1;
       show5          = render_value(animation);
 
-      pixel.red    = show4;
-      pixel.green  = show3;
-      pixel.blue   = show5;
+      pixel.r    = show4;
+      pixel.g  = show3;
+      pixel.b   = show5;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -2186,9 +2183,9 @@ void SM4() {
       animation.high_limit = 1;
       show2          = render_value(animation);
 
-      pixel.red    = add(show2, show1);
-      pixel.green  = 0;
-      pixel.blue   = colordodge(show2, show1);
+      pixel.r    = add(show2, show1);
+      pixel.g  = 0;
+      pixel.b   = colordodge(show2, show1);
      
       pixel = rgb_sanity_check(pixel);
       
@@ -2282,9 +2279,9 @@ void SM5() {
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[x][y])/distance[x][y];
      
-      pixel.red    = radial * add(show1,show4);
-      pixel.green  = radial * colordodge(show2,show5);
-      pixel.blue   = radial * screen(show3,show6);
+      pixel.r    = radial * add(show1,show4);
+      pixel.g  = radial * colordodge(show2,show5);
+      pixel.b   = radial * screen(show3,show6);
      
       pixel = rgb_sanity_check(pixel);
       
@@ -2383,9 +2380,9 @@ void SM6() {
       show8 = colordodge(show2, show5);
       show9 = screen(show3, show6);
      
-      pixel.red    = radial * (show7 + show8);
-      pixel.green  = 0;
-      pixel.blue   = radial * show9;
+      pixel.r    = radial * (show7 + show8);
+      pixel.g  = 0;
+      pixel.b   = radial * show9;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -2461,9 +2458,9 @@ void SM8() {
       show6 = screen(show4, show5);
       //show9 = screen(show3, show6);
      
-      pixel.red    = show3;
-      pixel.green  = 0;
-      pixel.blue   = show6;
+      pixel.r    = show3;
+      pixel.g  = 0;
+      pixel.b   = show6;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -2543,9 +2540,9 @@ void SM9() {
       float linear1 = y / 32.f;
       float linear2 = (32-y) / 32.f;
 
-      pixel.red    = show5 * linear1;
-      pixel.green  = 0;
-      pixel.blue   = show6 * linear2;
+      pixel.r    = show5 * linear1;
+      pixel.g  = 0;
+      pixel.b   = show6 * linear2;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -2626,9 +2623,9 @@ void SM10() {
       //float linear1 = y / 32.f;
       //float linear2 = (32-y) / 32.f;
 
-      pixel.red    = (show5+show6)/2;
-      pixel.green  = (show5-50)+(show6/16);
-      pixel.blue   = 0;//show6;
+      pixel.r    = (show5+show6)/2;
+      pixel.g  = (show5-50)+(show6/16);
+      pixel.b   = 0;//show6;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -2715,9 +2712,9 @@ void Complex_Kaleido() {
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[x][y])/distance[x][y];
 
-      pixel.red    = radial*(show1+show2);
-      pixel.green  = 0.3*radial*show6;//(radial*(show1))*0.3f;
-      pixel.blue   = radial*show5;
+      pixel.r    = radial*(show1+show2);
+      pixel.g  = 0.3*radial*show6;//(radial*(show1))*0.3f;
+      pixel.b   = radial*show5;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -2804,9 +2801,9 @@ void Complex_Kaleido_2() {
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[x][y])/distance[x][y];
 
-      pixel.red    = radial*(show1+show2);
-      pixel.green  = 0.3*radial*show6;//(radial*(show1))*0.3f;
-      pixel.blue   = radial*show5;
+      pixel.r    = radial*(show1+show2);
+      pixel.g  = 0.3*radial*show6;//(radial*(show1))*0.3f;
+      pixel.b   = radial*show5;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -2902,10 +2899,10 @@ void Complex_Kaleido_3() {
       show7 = multiply(show1, show2) * linear1*2;
       show8 = subtract(show7, show5);
 
-      //pixel.red    = radial*(show1+show2);
-      pixel.green  = 0.2*show8;//(radial*(show1))*0.3f;
-      pixel.blue   = show5 * radial;
-      pixel.red    = (1*show1 + 1*show2) - show7/2;
+      //pixel.r    = radial*(show1+show2);
+      pixel.g  = 0.2*show8;//(radial*(show1))*0.3f;
+      pixel.b   = show5 * radial;
+      pixel.r    = (1*show1 + 1*show2) - show7/2;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -3008,11 +3005,11 @@ void Complex_Kaleido_4() {
 
       show6 = colordodge(show1, show2);
 
-      pixel.red    = show5 * radial;
-      pixel.blue   = (64-show5-show3) * radial;
-      pixel.green  = 0.5*(show6);
-      //pixel.blue   = show5 * radial;
-      //pixel.red    = (1*show1 + 1*show2) - show7/2;
+      pixel.r    = show5 * radial;
+      pixel.b   = (64-show5-show3) * radial;
+      pixel.g  = 0.5*(show6);
+      //pixel.b   = show5 * radial;
+      //pixel.r    = (1*show1 + 1*show2) - show7/2;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -3063,7 +3060,7 @@ void Complex_Kaleido_5() {
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[x][y])/distance[x][y];
      
-      pixel.red    = show1 * radial;
+      pixel.r    = show1 * radial;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -3121,8 +3118,8 @@ void Complex_Kaleido_6() {
       //float radius = radial_filter_radius;   // radius of a radial brightness filter
       //float radial = (radius-distance[x][y])/distance[x][y];
      
-      pixel.red    = show1;
-      pixel.blue   = show2;
+      pixel.r    = show1;
+      pixel.b   = show2;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -3203,12 +3200,12 @@ void Water() {
       //float radius = radial_filter_radius;   // radius of a radial brightness filter
       //float radial = (radius-distance[x][y])/distance[x][y];
      
-      //pixel.red    = show2;
+      //pixel.r    = show2;
       
-      pixel.blue    = (0.7*show2+0.6*show3+0.5*show4);
-      pixel.red     = pixel.blue-40;
-      //pixel.red     = radial*show3;
-      //pixel.green     = 0.9*radial*show4;
+      pixel.b    = (0.7*show2+0.6*show3+0.5*show4);
+      pixel.r     = pixel.b-40;
+      //pixel.r     = radial*show3;
+      //pixel.g     = 0.9*radial*show4;
       
      
      
@@ -3297,11 +3294,11 @@ void Parametric_Water() {
       float radius = 40;   // radius of a radial brightness filter
       float radial = (radius-distance[x][y])/radius;
      
-      //pixel.red    = show6;
-      //pixel.blue = show7;
+      //pixel.r    = show6;
+      //pixel.b = show7;
       
-      pixel.blue    = (0.3*show6+0.7*show7)*radial;
-      pixel.red     = pixel.blue-40;
+      pixel.b    = (0.3*show6+0.7*show7)*radial;
+      pixel.r     = pixel.b-40;
       
       
      
@@ -3342,7 +3339,7 @@ void Module_Experiment1() {
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      pixel.blue    = show1;
+      pixel.b    = show1;
       
       pixel = rgb_sanity_check(pixel);
       
@@ -3380,9 +3377,9 @@ void Module_Experiment2() {
       animation.low_limit  = 0;
       show1                = render_value(animation);
       
-      pixel.red    = show1;
-      pixel.green  = show1 - 80;
-      pixel.blue   = show1 - 150;
+      pixel.r    = show1;
+      pixel.g  = show1 - 80;
+      pixel.b   = show1 - 150;
       
       pixel = rgb_sanity_check(pixel);
       
@@ -3420,9 +3417,9 @@ void Module_Experiment3() {
       animation.low_limit  = 0;
       show1                = render_value(animation);
       
-      pixel.red    = show1;
-      pixel.green  = show1 - 80;
-      pixel.blue   = show1 - 150;
+      pixel.r    = show1;
+      pixel.g  = show1 - 80;
+      pixel.b   = show1 - 150;
       
       pixel = rgb_sanity_check(pixel);
       
@@ -3461,8 +3458,8 @@ void Zoom2() { // nice one
   
       //float linear = 1;//(y+1)/(num_y-1.f);
       
-      pixel.red   = show1;
-      pixel.blue   = 40-show1;
+      pixel.r   = show1;
+      pixel.b   = 40-show1;
       
       
       pixel = rgb_sanity_check(pixel);
@@ -3534,12 +3531,12 @@ void Module_Experiment4() {
       float b = show3-show1-show2;
       */      
       
-      pixel.red    = show1-show2-show3;
-      pixel.blue   = show2-show1-show3;
-      pixel.green  = show3-show1-show2;
-      //pixel.green  = b;
-      //pixel.green  = show1 - 80;
-      //pixel.blue   = show1 - 150;
+      pixel.r    = show1-show2-show3;
+      pixel.b   = show2-show1-show3;
+      pixel.g  = show3-show1-show2;
+      //pixel.g  = b;
+      //pixel.g  = show1 - 80;
+      //pixel.b   = show1 - 150;
       
       pixel = rgb_sanity_check(pixel);
       
@@ -3582,7 +3579,7 @@ void Module_Experiment5() {
 
       
       
-      pixel.red    = show1;
+      pixel.r    = show1;
       
       
       pixel = rgb_sanity_check(pixel);
@@ -3639,14 +3636,14 @@ void Module_Experiment6() {
 
       
       /*
-      pixel.red    = show1;
-      pixel.green  = show1 * 0.3;
-      pixel.blue   = show2-show1;
+      pixel.r    = show1;
+      pixel.g  = show1 * 0.3;
+      pixel.b   = show2-show1;
       */
 
-      pixel.red    = (show1 + show2);
-      pixel.green  = ((show1 + show2)*0.6)-30;
-      pixel.blue   = 0;
+      pixel.r    = (show1 + show2);
+      pixel.g  = ((show1 + show2)*0.6)-30;
+      pixel.b   = 0;
       
       
       pixel = rgb_sanity_check(pixel);
@@ -3703,14 +3700,14 @@ void Module_Experiment7() {
 
       
       /*
-      pixel.red    = show1;
-      pixel.green  = show1 * 0.3;
-      pixel.blue   = show2-show1;
+      pixel.r    = show1;
+      pixel.g  = show1 * 0.3;
+      pixel.b   = show2-show1;
       */
       
-      pixel.red    = (show1 + show2);
-      pixel.green  = ((show1 + show2)*0.6)-50;
-      pixel.blue   = 0;
+      pixel.r    = (show1 + show2);
+      pixel.g  = ((show1 + show2)*0.6)-50;
+      pixel.b   = 0;
       
       
       
@@ -3795,14 +3792,14 @@ void Module_Experiment8() {
 
       
       /*
-      pixel.red    = show1;
-      pixel.green  = show1 * 0.3;
-      pixel.blue   = show2-show1;
+      pixel.r    = show1;
+      pixel.g  = show1 * 0.3;
+      pixel.b   = show2-show1;
       */
       
-      pixel.red    = rad * ((show1 + show2) + show3);
-      pixel.green  = (((show2 + show3)*0.8)-90)*rad;
-      pixel.blue   = show4 * 0.2;
+      pixel.r    = rad * ((show1 + show2) + show3);
+      pixel.g  = (((show2 + show3)*0.8)-90)*rad;
+      pixel.b   = show4 * 0.2;
       
       
       
@@ -3848,7 +3845,7 @@ void Module_Experiment9() {
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      pixel.red    = 10*show1;
+      pixel.r    = 10*show1;
     
       pixel = rgb_sanity_check(pixel);
       
@@ -3931,9 +3928,9 @@ void Module_Experiment10() {
 
       
       /*
-      pixel.red    = show1;
-      pixel.green  = show1 * 0.3;
-      pixel.blue   = show2-show1;
+      pixel.r    = show1;
+      pixel.g  = show1 * 0.3;
+      pixel.b   = show2-show1;
       */
       
        CHSV(rad * ((show1 + show2) + show3), 255, 255);
