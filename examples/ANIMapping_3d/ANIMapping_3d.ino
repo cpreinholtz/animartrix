@@ -116,6 +116,8 @@ typedef PatternAndName PatternAndNameList[];
 
 int currentPattern = 0;
 
+void demoBpm(){art.demoBpm();}
+void Module_Experiment11_Hsi(){art.Module_Experiment11_Hsi();}
 void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
 
@@ -172,6 +174,8 @@ void Chasing_Spirals(){art.Chasing_Spirals();}
 void Rotating_Blob(){art.Rotating_Blob();}
 
 PatternAndNameList gPatterns = {
+  {demoBpm, "demoBpm"},
+  {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},
   {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},
   {Module_Experiment10,"Module_Experiment10"},
   {Module_Experiment9,"Module_Experiment9"}, // FAV swipes!

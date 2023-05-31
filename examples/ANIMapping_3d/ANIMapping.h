@@ -26,9 +26,6 @@ License CC BY-NC 3.0
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
-#define HSI_SCALE 1.0
-#define RGB_SCALE_FACTORS {255.0, 255.0, 255.0}
-
 
 //#define USE_3D_MAP true  //this turns off some unneeded polar things if you are using a 3d map TODO...
 
@@ -39,7 +36,7 @@ class ANIMapping : public ANIMartRIX <1,LedArraySize> {  //derived from the matr
 
   public:
 
-  hsiF pixel_hsi;
+
   
   
   //template <std::size_t LedArraySize>
@@ -125,83 +122,5 @@ class ANIMapping : public ANIMartRIX <1,LedArraySize> {  //derived from the matr
     Serial.print(fps); Serial.print(" fps @ ");
     Serial.print(LedArraySize); Serial.println(" LEDs ... ");
   }
-
-
-
-
-
-
-
-  /////////////////////////////////////////////////////////////////////////////////
-  hsiF hsi_sanity_check(hsiF &pixel) {
-
-      // rescue data if possible, return absolute value
-      //if (pixel.red < 0)     pixel.red = fabsf(pixel.red);
-      //if (pixel.green < 0) pixel.green = fabsf(pixel.green);
-      //if (pixel.blue < 0)   pixel.blue = fabsf(pixel.blue);
-      
-      if (pixel.h   > 1.0)   pixel.h = 1.0;
-      if (pixel.s > 1.0) pixel.s = 1.0;
-      if (pixel.i  > 1.0)  pixel.i = 1.0;
-
-      return pixel;
-  }
-
-  /////////////////////////////////////////////////////////////////////////////////
-
-  void Module_Experiment9_Hsi() { 
-
-    ANIMartRIX<1,LedArraySize>::get_ready();
-
-    
-
-    timings.master_speed = 0.03;    // master speed 0.031
-
-    float w = 0.3;
-
-    timings.ratio[0] = 0.1;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.011;
-    timings.ratio[2] = 0.013;
-    timings.ratio[3] = 0.33*w;
-    timings.ratio[4] = 0.36*w;            // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[5] = 0.38*w; 
-    timings.ratio[6] = 0.0003;  
-
-    ANIMartRIX<1,LedArraySize>::calculate_oscillators(timings); 
-
-    for (int y = 0; y < (int) LedArraySize; y++) { animation.anglephi   = ANIMartRIX<1,LedArraySize>::spherical_phi[0][y]; //todo, move this later
-
-      animation.dist       = ANIMartRIX<1,LedArraySize>::distance[0][y];
-      animation.angle      = ANIMartRIX<1,LedArraySize>::polar_theta[0][y] + move.radial[1];
-      animation.z          = 5;
-      animation.scale_x    = 0.001;
-      animation.scale_y    = 0.1;
-      animation.scale_z    = 0.1;
-      animation.offset_y   = -10*move.linear[0];
-      animation.offset_x   = 20;
-      animation.offset_z   = 10;
-      animation.low_limit  = 0;
-      ANIMartRIX<1,LedArraySize>::show1                = ANIMartRIX<1,LedArraySize>::render_value(animation, 2.0);
-
-      pixel_hsi.h    = ANIMartRIX<1,LedArraySize>::show1;
-      pixel_hsi.s = 1.0;
-      pixel_hsi.i = 0.3;
-
-    
-      pixel_hsi = hsi_sanity_check(pixel_hsi);
-
-      pixel = Hsi2Rgb(pixel_hsi, DEFAULT_GAMMA, RGB_SCALE_FACTORS);
-      pixel = ANIMartRIX<1,LedArraySize>::rgb_sanity_check(pixel);
-
-
-      
-      ANIMartRIX<1,LedArraySize>::buffer[ANIMartRIX<1,LedArraySize>::xy(0, y)] = ANIMartRIX<1,LedArraySize>::setPixelColor(pixel);
-    }
-    
-  }
-
-
-
-
 
 }; 
