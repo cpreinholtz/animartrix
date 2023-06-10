@@ -398,7 +398,7 @@ void setup() {
 
 
 bool verbose = false;
-bool play = true;
+bool play = false;
 bool skipOne = false;
 bool backOne = false;
 bool doRandom = true;

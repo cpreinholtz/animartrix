@@ -685,7 +685,7 @@ public:
   void Chasing_Spirals_Hsi() {
 
     get_ready(); 
-    Plane3d myPlane;
+    static Plane3d myPlane;
 
     timings.master_speed = 0.01;    // speed ratios for the oscillators
     timings.ratio[0] = 0.5;         // higher values = faster transitions
@@ -695,6 +695,8 @@ public:
     timings.offset[1] = 10;
     timings.offset[2] = 20;
     timings.offset[3] = 30;
+
+    myPlane.yaw(.01);
     
     calculate_oscillators(timings);     // get linear movers and oscillators going
 
@@ -702,12 +704,12 @@ public:
       for (int n = 0; n < NUM_LEDS; n++) {
         animation.anglephi   = spherical_phi[n]; //todo, move this later
         // describe and render animation layers
-        animation.angle      = 2 * polar_theta[n] +  move.radial[0] ;//- distance[n]/3;
+        animation.angle      = polar_theta[n];//4 * polar_theta[n] +  move.radial[0] ;//- distance[n]/3;
         animation.dist       = distance[n];
         animation.scale_z    = 0.1;  
         animation.scale_y    = 0.1;
         animation.scale_x    = 0.1;
-        animation.offset_x   = 0;//move.linear[0];
+        animation.offset_x   = move.linear[0];
         animation.offset_y   = 0;
         animation.offset_z   = 0;
         animation.z          = 0;
@@ -729,7 +731,7 @@ public:
 
 
 
-        pixel_hsi.i = 3.0/255.0 *show1 * radial_filter;
+        pixel_hsi.i = 6.0/255.0 *show1 * radial_filter;
         pixel_hsi.s = 1;
 
         float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
