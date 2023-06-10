@@ -20,7 +20,7 @@ License CC BY-NC 3.0
 #define NUM_LEDS  50                       // how many LED total,  must be defined before ANIMapping
 
 #include <FastLED.h>
-#include "ANIMapping.h" //TODO make <> when you copy files back to the right directory
+#include "ANIMartRIX.h" //TODO make <> when you copy files back to the right directory
 
 
 //******************************************************************************************************************
@@ -99,7 +99,7 @@ float ledMap[NUM_LEDS][3] = {
 //******************************************************************************************************************
 
 CRGB leds[NUM_LEDS];               // framebuffer
-ANIMapping<NUM_LEDS> art( leds, 0.50);  //led buffer, global scale
+ANIMartRIX art(leds);  //led buffer, global scale
 
 
 
@@ -116,6 +116,7 @@ typedef PatternAndName PatternAndNameList[];
 
 int currentPattern = 0;
 
+void Chasing_Spirals_Hsi(){art.Chasing_Spirals_Hsi();}
 void demoBpm(){art.demoBpm();}
 void Module_Experiment11_Hsi(){art.Module_Experiment11_Hsi();}
 void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
@@ -172,11 +173,16 @@ void Center_Field(){art.Center_Field();}
 void Waves(){art.Waves();}
 void Chasing_Spirals(){art.Chasing_Spirals();}
 void Rotating_Blob(){art.Rotating_Blob();}
+void Rings(){art.Rings();}
 
 PatternAndNameList gPatterns = {
+  {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
   {demoBpm, "demoBpm"},
   {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},
   {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},
+
+
+  {Rings, "Rings"},
   {Module_Experiment10,"Module_Experiment10"},
   {Module_Experiment9,"Module_Experiment9"}, // FAV swipes!
   {Module_Experiment8,"Module_Experiment8"},
@@ -237,15 +243,132 @@ PatternAndNameList gPatterns = {
 
 
 
+/*
+PatternAndNameList gChillPatterns = {
+  {Module_Experiment8,"Module_Experiment8"},// pretty much just reds and pinks and orange
+  {Module_Experiment7,"Module_Experiment7"}, //boring but chill, too black sometimes
+  {Module_Experiment6,"Module_Experiment6"},//bit better, only yellow and red, slow
+  {Parametric_Water,"Parametric_Water"},// could tone down radius / blue to save power?
+  {Complex_Kaleido_2,"Complex_Kaleido_2"},
+  {Complex_Kaleido_1,"Complex_Kaleido_1"},
+  {SM10,"SM10"},
+  {SM6,"SM6"},
+  SM5
+  Slow_Fade
+  Zoom2
+  Zoom
+  Hot_Blob
+  Spiralus2
+  Spiralus
+  Scaledemo1
+  Rotating_Blob
+
+};
+
+PatternAndNameList gHypePatterns = {
+  {Complex_Kaleido_3,"Complex_Kaleido_3"},
+  {SM8,"SM8"},//fun strobe
+  SM1, beautiful swirls
+  RGB_Blobs
+  Caleido3, maybe make a bit faster? morwe color?, see ledMap Y
+  Caleido2, speed up?
+  Caleido1, speed up?
+  Rings
+};
+
+
+low power?
+rotating blob?
+
+
+
+//TODO
+modes: all, low power, chill
+features: darkwad check, fade patterns into one another, switch input
+bugfixes: why the flash?
+
+
+..remove or tweak
+PatternAndNameList gNeedsWorkPatterns = {
+  {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"}, try making the plane dynamic and re-adding other layers and movmnet
+  {demoBpm, "demoBpm"}, //has potential, try incoorperating bpm into other patterns
+  {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"}, //might get too black, really sweet though
+  Module_Experiment9 blue and green not touched, different color every time, also dont really need since we have hsi versions
+  Module_Experiment5 red only, fix g b 
+  Module_Experiment4 boring colors, only rgb with no mixing
+  water, no green fix that
+  Complex_Kaleido_5 red only, fix
+  RGB_Blobs5, not dynamic enough fix radius?
+  RGB_Blobs4 radius?
+  RGB_Blobs3 green blue broken?
+  RGB_Blobs2, still boring...
+  Polar_Waves has potential but seems off
+  zoom no blue???
+  zoom2 no green???
+  hot blob missing blue
+  Yves, what is it even doing???  seems to get more dynamic with time?
+  Lava1 no blue, really boring???
+  Distance_Experiment, boring
+  waves, was too slow with master timing 0.01
+  Scaledemo1, what happened this was a fav?
+};
+
+
+good enough.. maybe play with or just leave alone
+  Module_Experiment10
+  Module_Experiment3 really like this one, again colors could be cooler
+  Module_Experiment2 this one even better! love the fades and speed
+  SM10
+  SM9, seems too blue, not quite right
+  SM8 fun strobe, could use better colors
+  SM3 better colors... has potentiall to be nice chill
+  SM2, too black
+  Big_Caleido, angle mult, too black
+  RGB_Blobs1, pretty good, try playing with color
+  Spiralus2 maybe change angle mult
+  Chasing_Spirals pretty good...
+
+
+perfect dont touch
+  Module_Experiment9_Hsi
+  {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"}, //might get too black, really sweet though
+  Module_Experiment1 pretty cool but blue only, fix r g
+  Parametric_Water
+  Water
+  Complex_Kaleido_6, maybe just change the angle multiplier to less than 16
+  Complex_Kaleido_4
+  Complex_Kaleido_3
+  Complex_Kaleido_2
+  Complex_Kaleido_1
+  SM4
+  SM1 awesome swirl
+  Slow_Fade, maybe too black
+  Spiralus
+  Caleido3
+
+
+
+
+
+*/
 
 int gPatternCount = ARRAY_SIZE(gPatterns);
 
-void incrementPattern(){
-  currentPattern = currentPattern + 1;
+void incrementPattern(int inc = 1){
+  currentPattern = currentPattern + inc;
   if (currentPattern >= gPatternCount) currentPattern = 0;
+  if (currentPattern < 0) currentPattern = gPatternCount-1;
 
   Serial.print("Incrementing pattern to: "); Serial.print(currentPattern); Serial.print(" "); Serial.println(gPatterns[currentPattern].name);
 }
+
+void randomPattern(){
+  currentPattern = random(gPatternCount);
+  if (currentPattern >= gPatternCount) currentPattern = 0;
+  Serial.print("Setting pattern to: "); Serial.print(currentPattern); Serial.print(" "); Serial.println(gPatterns[currentPattern].name);
+}
+
+
 void showCurrentPattern(){
   gPatterns[currentPattern].pattern();
   FastLED.show();
@@ -263,6 +386,7 @@ void setup() {
   FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA] 
   FastLED.setBrightness(128);
   Serial.begin(115200);                 // check serial monitor for current fps count
+  art.setGlobalScale(0.5);
  
  // fill_rainbow(leds, NUM_LED, 0);
   //fill_solid(leds, NUM_LED, CRGB::Green);
@@ -272,12 +396,71 @@ void setup() {
 
 //*******************************************************************************************************************
 
+
+bool verbose = false;
+bool play = true;
+bool skipOne = false;
+bool backOne = false;
+bool doRandom = true;
+
 void loop() {
 
 
   showCurrentPattern();
 
+  if (play){
+      if (doRandom) {EVERY_N_SECONDS(30) randomPattern();}
+      else {EVERY_N_SECONDS(30) incrementPattern();}
+  }
 
-  //EVERY_N_SECONDS(30)  incrementPattern();
-  EVERY_N_MILLIS(500) art.report_performance();   // check serial monitor for report 
+  if (skipOne){
+    incrementPattern();
+    skipOne=false;
+  }
+  if (backOne){
+    incrementPattern(-1);
+    backOne=false;
+  }
+
+  if(verbose){
+    EVERY_N_MILLIS(500) art.report_performance();   // check serial monitor for report 
+  }
+
+  // testing interface
+  if (Serial.available() > 0) {
+    // read the incoming byte:
+    int incomingByte = Serial.read();
+
+    if (incomingByte == 'v'){
+      verbose = not verbose;
+    } else if(incomingByte == 'p'){
+      play = not play;
+    } else if (incomingByte == 's'){
+      skipOne = true;
+    } else if (incomingByte == 'b'){
+      backOne = true;
+    } else if (incomingByte == 'r'){
+      doRandom = not doRandom;
+      if (doRandom && play==false) play = true;
+    }
+
+    
+    // say what you got:
+    Serial.print("I received: ");
+    Serial.println(incomingByte, DEC);    
+
+    Serial.print("verbose: ");
+    Serial.println(verbose);
+    Serial.print("play: ");
+    Serial.println(play);
+    Serial.print("skipOne: ");
+    Serial.println(skipOne);
+    Serial.print("doRandom: ");
+    Serial.println(doRandom);
+    
+
+
+
+  }
+
 } 
