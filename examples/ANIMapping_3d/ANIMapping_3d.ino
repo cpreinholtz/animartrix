@@ -116,10 +116,6 @@ typedef PatternAndName PatternAndNameList[];
 
 int currentPattern = 0;
 
-void Chasing_Spirals_Hsi(){art.Chasing_Spirals_Hsi();}
-void demoBpm(){art.demoBpm();}
-void Module_Experiment11_Hsi(){art.Module_Experiment11_Hsi();}
-void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
 
 void Module_Experiment10(){art.Module_Experiment10();}
@@ -175,7 +171,17 @@ void Chasing_Spirals(){art.Chasing_Spirals();}
 void Rotating_Blob(){art.Rotating_Blob();}
 void Rings(){art.Rings();}
 
+
+void PlaneRotation1(){art.PlaneRotation1();}
+void GrowingSpheres(){art.GrowingSpheres();}
+void Chasing_Spirals_Hsi(){art.Chasing_Spirals_Hsi();}
+void demoBpm(){art.demoBpm();}
+void Module_Experiment11_Hsi(){art.Module_Experiment11_Hsi();}
+void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
+
 PatternAndNameList gPatterns = {
+  {GrowingSpheres, "GrowingSpheres"},
+  {PlaneRotation1, "PlaneRotation1"},
   {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
   {demoBpm, "demoBpm"},
   {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},
@@ -435,7 +441,7 @@ void loop() {
       verbose = not verbose;
     } else if(incomingByte == 'p'){
       play = not play;
-    } else if (incomingByte == 's'){
+    } else if (incomingByte == 's' or incomingByte == 'n'){
       skipOne = true;
     } else if (incomingByte == 'b'){
       backOne = true;

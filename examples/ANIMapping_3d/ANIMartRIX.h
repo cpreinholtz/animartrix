@@ -31,6 +31,7 @@ License CC BY-NC 3.0
 // from AeroKeiths repo ColorUtilsHsi
 #include <ColorUtilsHsi.h>
 #include <plane3d.h>
+#include <sphere3d.h>
 #define HSI_SCALE 1.0
 #define RGB_SCALE_FACTORS {255.0, 255.0, 255.0}
 
@@ -696,11 +697,15 @@ public:
     timings.offset[2] = 20;
     timings.offset[3] = 30;
 
-    myPlane.yaw(.01);
+
     
     calculate_oscillators(timings);     // get linear movers and oscillators going
 
-      
+
+
+    myPlane.yaw(.001 * move.noise_angle[0]);
+    myPlane.setRefpoint(center_x+spread_x*move.directional[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.directional[2]/2.0, center_z);
+    
       for (int n = 0; n < NUM_LEDS; n++) {
         animation.anglephi   = spherical_phi[n]; //todo, move this later
         // describe and render animation layers
@@ -731,11 +736,12 @@ public:
 
 
 
-        pixel_hsi.i = 6.0/255.0 *show1 * radial_filter;
+        pixel_hsi.i = 0.5;//6.0/255.0 *show1 * radial_filter;
         pixel_hsi.s = 1;
 
         float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
-        pixel_hsi.h = map_float(d, -maxD, maxD, 0, 1);
+        d=fmodf(d,maxD);
+        pixel_hsi.h = map_float(d, -maxD/2, maxD/2, 0, 1);
 
         pixel_hsi = hsi_sanity_check(pixel_hsi);
 
@@ -753,6 +759,179 @@ public:
         buffer[n] = setPixelColor(pixel);
       }
    
+  }
+
+
+
+
+  void PlaneRotation1() { ///REALLLY cool sparklesssss
+
+    get_ready(); 
+    static Plane3d myPlane;
+
+    timings.master_speed = 0.01;    // speed ratios for the oscillators
+    timings.ratio[0] = 0.5;         // higher values = faster transitions
+    timings.ratio[1] = 0.13;
+    timings.ratio[2] = 0.16;
+    
+    timings.offset[1] = 10;
+    timings.offset[2] = 20;
+    timings.offset[3] = 30;
+
+
+    
+    calculate_oscillators(timings);     // get linear movers and oscillators going
+
+
+
+    myPlane.yaw(.001 * move.noise_angle[0]);
+    myPlane.setRefpoint(center_x+spread_x*move.directional[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.directional[2]/2.0, center_z);
+    
+      for (int n = 0; n < NUM_LEDS; n++) {
+        animation.anglephi   = spherical_phi[n]; //todo, move this later
+        // describe and render animation layers
+        animation.angle      = polar_theta[n];//4 * polar_theta[n] +  move.radial[0] ;//- distance[n]/3;
+        animation.dist       = distance[n];
+        animation.scale_z    = 0.1;  
+        animation.scale_y    = 0.1;
+        animation.scale_x    = 0.1;
+        animation.offset_x   = move.linear[0];
+        animation.offset_y   = 0;
+        animation.offset_z   = 0;
+        animation.z          = 0;
+        float show1          = render_value(animation);
+
+        animation.angle      = 3 * polar_theta[n] +  move.radial[1] - distance[n]/3;
+        animation.dist       = distance[n];
+        animation.offset_x   = move.linear[1];
+        //float show2          = render_value(animation);
+
+        animation.angle      = 3 * polar_theta[n] +  move.radial[2] - distance[n]/3;
+        animation.dist       = distance[n];
+        animation.offset_x   = move.linear[2];
+        //float show3          = render_value(animation);
+
+        // colormapping
+        float radius = radial_filter_radius;
+        float radial_filter = (radius - distance[n]) / radius;
+
+
+
+        pixel_hsi.i = 0.5;//6.0/255.0 *show1 * radial_filter;
+        pixel_hsi.s = 1;
+
+        float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
+        d=fmodf(d,maxD/2);
+        pixel_hsi.h = map_float(d, -maxD/2, maxD/2, 0, 1);
+
+        pixel_hsi = hsi_sanity_check(pixel_hsi);
+
+        pixel = Hsi2Rgb(pixel_hsi, DEFAULT_GAMMA, RGB_SCALE_FACTORS);
+        
+        //pixel.r   = 3*show1 * radial_filter;
+        //pixel.g=0;
+        //pixel.b=0;
+
+        //pixel.g = show2 * radial_filter / 2;
+        //pixel.b  = show3 * radial_filter / 4;
+
+
+        pixel = rgb_sanity_check(pixel);
+        buffer[n] = setPixelColor(pixel);
+      }
+   
+  }
+
+
+
+
+  void GrowingSpheres() { ///REALLLY cool sparklesssss
+
+    get_ready(); 
+    const int num_spheres = 4;
+    static Sphere3d spheres[num_spheres]; // 4 spheres
+    static bool firstTime=true;
+    static int pairity=0;
+    const float h[num_spheres] = {.7,.3,.9,.5};
+    const float resetRadias = maxD*2.5;
+
+    timings.master_speed = 0.01;    // speed ratios for the oscillators
+    timings.ratio[0] = 0.5;         // higher values = faster transitions
+    timings.ratio[1] = 0.13;
+    timings.ratio[2] = 0.16;
+    
+    timings.offset[1] = 10;
+    timings.offset[2] = 20;
+    timings.offset[3] = 30;
+    calculate_oscillators(timings);     // get linear movers and oscillators going
+
+
+    //if first time set centers and init radiases in ascending order
+    if (firstTime){
+      for (int s = 0; s < num_spheres; s++) {
+        spheres[s].setRefpoint(center_x,center_y,center_z);
+        spheres[s].setRadias(s*resetRadias/((float)num_spheres)); //this could break with too many spheres  if maxd*1.5 = 4, 0 1 2 3
+      }
+      firstTime = false; //only so this once
+
+    }
+
+    //grow all equally
+    for (int s = 0; s < num_spheres; s++) {
+      spheres[s].grow(.01);    
+      if (spheres[s].mRadias > resetRadias) {
+        spheres[s].setRefpoint(center_x + spread_x*move.directional[1], center_y + spread_y*move.directional[2], center_z + spread_z*move.directional[0]);
+        spheres[s].setRadias(0.0);
+      }
+    }
+
+    //check last, reorder list
+
+
+    EVERY_N_MILLISECONDS(1000){
+      Serial.println("spheres[s].mRadias;");
+      for (int s = 0; s <num_spheres; s++) {
+        Serial.print(spheres[s].mRadias);
+        Serial.print("\t");
+      }
+      Serial.println("");
+    }
+
+    //fadeToBlackBy( buffer, NUM_LEDS, 1);
+    /////////
+    //now loop through all leds
+    for (int n = 0; n < NUM_LEDS; n++) {
+      int mind = 0;
+      float minD = -1000;
+      for (int s = 0; s <num_spheres; s++) {
+        float d = spheres[s].distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
+        //must be outside, but closest
+        if (d >= 0 and (d<minD or minD<0)){
+          minD = d;
+          mind=s;
+        } else if (d < 0 and minD<0 and d>minD){
+          mind=s;
+          minD=d;
+        }
+      }
+      pixel_hsi.h = h[mind];
+      
+
+      pixel_hsi.i = 0.5;//6.0/255.0 *show1 * radial_filter;
+      pixel_hsi.s = 1;
+
+      pixel_hsi = hsi_sanity_check(pixel_hsi);
+
+      pixel = Hsi2Rgb(pixel_hsi, DEFAULT_GAMMA, RGB_SCALE_FACTORS);
+      
+      pixel = rgb_sanity_check(pixel);
+      //if (minD < .2) 
+      buffer[n] = setPixelColor(pixel);
+      //else buffer[n] += setPixelColor(pixel);
+      
+      
+      //buffer[n] = setPixelColor(pixel);
+    }
   }
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////
