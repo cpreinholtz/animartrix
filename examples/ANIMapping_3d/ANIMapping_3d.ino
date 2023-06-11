@@ -180,6 +180,8 @@ void Module_Experiment11_Hsi(){art.Module_Experiment11_Hsi();}
 void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
 PatternAndNameList gPatterns = {
+
+  {Complex_Kaleido_5,"Complex_Kaleido_5"},
   {GrowingSpheres, "GrowingSpheres"},
   {PlaneRotation1, "PlaneRotation1"},
   {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
@@ -203,7 +205,6 @@ PatternAndNameList gPatterns = {
   {Water,"Water"},
   
   {Complex_Kaleido_6,"Complex_Kaleido_6"}, ///great at 30 secs!
-  {Complex_Kaleido_5,"Complex_Kaleido_5"},
   {Complex_Kaleido_4,"Complex_Kaleido_4"},//good
   {Complex_Kaleido_3, "Complex_Kaleido_3"},
   {Complex_Kaleido_2,"Complex_Kaleido_2"},
@@ -290,7 +291,13 @@ rotating blob?
 
 //TODO
 modes: all, low power, chill
-features: darkwad check, fade patterns into one another, switch input
+features: 
+  darkwad check, 
+  fade patterns into one another, 
+  switch input, 
+  color picker?, play with palettes, 
+  music reactive, 
+  IMU reactive
 bugfixes: why the flash?
 
 
@@ -405,8 +412,6 @@ void setup() {
 
 bool verbose = false;
 bool play = false;
-bool skipOne = false;
-bool backOne = false;
 bool doRandom = true;
 
 void loop() {
@@ -419,14 +424,6 @@ void loop() {
       else {EVERY_N_SECONDS(30) incrementPattern();}
   }
 
-  if (skipOne){
-    incrementPattern();
-    skipOne=false;
-  }
-  if (backOne){
-    incrementPattern(-1);
-    backOne=false;
-  }
 
   if(verbose){
     EVERY_N_MILLIS(500) art.report_performance();   // check serial monitor for report 
@@ -440,17 +437,19 @@ void loop() {
     if (incomingByte == 'v'){
       verbose = not verbose;
     } else if(incomingByte == 'p'){
-      play = not play;
+      play = not play;    
+    } else if(incomingByte == 'c'){
+      incrementPalette();
     } else if (incomingByte == 's' or incomingByte == 'n'){
-      skipOne = true;
+      incrementPattern();
     } else if (incomingByte == 'b'){
-      backOne = true;
+      incrementPattern(-1);
     } else if (incomingByte == 'r'){
       doRandom = not doRandom;
       if (doRandom && play==false) play = true;
     }
 
-    
+    if(verbose){
     // say what you got:
     Serial.print("I received: ");
     Serial.println(incomingByte, DEC);    
@@ -459,10 +458,9 @@ void loop() {
     Serial.println(verbose);
     Serial.print("play: ");
     Serial.println(play);
-    Serial.print("skipOne: ");
-    Serial.println(skipOne);
     Serial.print("doRandom: ");
     Serial.println(doRandom);
+    }
     
 
 

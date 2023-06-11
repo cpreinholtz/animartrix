@@ -28,6 +28,7 @@ License CC BY-NC 3.0
 
 //#include <SmartMatrix.h>
 #include <FastLED.h>
+#include "custom_palettes.h"
 // from AeroKeiths repo ColorUtilsHsi
 #include <ColorUtilsHsi.h>
 #include <plane3d.h>
@@ -447,6 +448,18 @@ public:
 
         return pixel;
   }
+
+  float color_sanity_check(float &color) {
+        // discard everything above the valid 8 bit colordepth 0-255 range
+        if (color   > 255)   color = 255;
+        return color;
+  }
+
+  uint8_t float_to_uint8_t(float color){
+    color = color_sanity_check(color);
+    return ((uint8_t) color);
+  }
+
 
   hsiF hsi_sanity_check(hsiF &pixel) {
 
@@ -3500,11 +3513,12 @@ public:
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/distance[n];
      
-      pixel.r    = show1 * radial;
-     
-      pixel = rgb_sanity_check(pixel);
-      
-      buffer[n] = setPixelColor(pixel);
+     uint8_t color = float_to_uint8_t(show1 * radial);
+     uint8_t brightness = 200;
+     TBlendType    currentBlending = LINEARBLEND;
+
+
+      buffer[n] = ColorFromPalette( gPalettes[currentPalette].palette, color, brightness, currentBlending);
     }
   }
 
