@@ -851,9 +851,8 @@ public:
     const int num_spheres = 4;
     static Sphere3d spheres[num_spheres]; // 4 spheres
     static bool firstTime=true;
-    static int pairity=0;
-    const float h[num_spheres] = {.7,.3,.9,.5};
-    const float resetRadias = maxD*2.5;
+    const float h[num_spheres] = {.7,.04,.9,.5};
+    const float resetRadias = maxD*1.1;//maxD*2.5;
 
     timings.master_speed = 0.01;    // speed ratios for the oscillators
     timings.ratio[0] = 0.5;         // higher values = faster transitions
@@ -880,7 +879,7 @@ public:
     for (int s = 0; s < num_spheres; s++) {
       spheres[s].grow(.01);    
       if (spheres[s].mRadias > resetRadias) {
-        spheres[s].setRefpoint(center_x + spread_x*move.directional[1], center_y + spread_y*move.directional[2], center_z + spread_z*move.directional[0]);
+        //spheres[s].setRefpoint(center_x + spread_x*move.directional[1], center_y + spread_y*move.directional[2], center_z + spread_z*move.directional[0]);
         spheres[s].setRadias(0.0);
       }
     }
