@@ -997,17 +997,17 @@ public:
         animation.angle      = polar_theta[n] - move.saw[1] + show1/512.0;
         animation.dist       = distance[n] * show1/255.0;
         animation.low_limit  = 0;
-        animation.offset_z          = move.ramp[1];
+        animation.offset_z   = move.ramp[1];
         float show2          = render_value(animation);
 
         animation.angle      = polar_theta[n] - move.saw[2] + show1/512.0;
         animation.dist       = distance[n] * show1/220.0;
-        animation.offset_z          = move.ramp[2];
+        animation.offset_z   = move.ramp[2];
         float show3          = render_value(animation);
 
         animation.angle      = polar_theta[n] - move.saw[3] + show1/512.0;
         animation.dist       = distance[n] * show1/200.0;
-        animation.offset_z          = move.ramp[3];
+        animation.offset_z   = move.ramp[3];
         float show4          = render_value(animation);
 
         // colormapping
@@ -1055,7 +1055,7 @@ public:
         animation.offset_x   = move.ramp[0];
         animation.offset_y   = 0;
         animation.offset_z   = 0;
-        animation.offset_z          = 0;
+        animation.offset_z   = 0;
         float show1          = render_value(animation);
 
         animation.angle      = 3 * polar_theta[n] +  move.saw[1] - distance[n]/3;
@@ -1156,7 +1156,7 @@ public:
       animation.dist       = 5*sqrtf(distance[n]);
       animation.offset_y   = move.ramp[0];
       animation.offset_x   = 0;
-      animation.offset_z          = 0;
+      animation.offset_z   = 0;
       float show1          = render_value(animation);
 
       animation.angle      = polar_theta[n];
@@ -1166,7 +1166,7 @@ public:
       animation.dist       = 4*sqrtf(distance[n]);
       animation.offset_y   = move.ramp[0];
       animation.offset_x   = 0;
-      animation.offset_z          = 0;
+      animation.offset_z   = 0;
       float show2          = render_value(animation);
 
      
@@ -1218,7 +1218,7 @@ public:
       animation.offset_y   = move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      animation.offset_z          = 0;
+      animation.offset_z   = 0;
       float show1          = render_value(animation);
 
       animation.dist       = powf(distance[n], 0.6);
@@ -1229,7 +1229,7 @@ public:
       animation.offset_y   = move.ramp[1];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      animation.offset_z          = 0;
+      animation.offset_z   = 0;
       float show2          = render_value(animation);
       
       // colormapping
@@ -1278,25 +1278,25 @@ public:
       animation.offset_y   = 2 * move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      animation.offset_z          = move.ramp[0];
+      animation.offset_z   = move.ramp[0];
       float show1          = render_value(animation);
 
       animation.dist       = distance[n] * (2 + move.sine[1]) / 3;
       animation.angle      = 4 * polar_theta[n] + 3 * move.noise_angle[1] + move.saw[4];
       animation.offset_x   = 2 * move.ramp[1];
-      animation.offset_z          = move.ramp[1];
+      animation.offset_z   = move.ramp[1];
       float show2          = render_value(animation);
 
       animation.dist       = distance[n] * (2 + move.sine[2]) / 3;
       animation.angle      = 5 * polar_theta[n] + 3 * move.noise_angle[2] + move.saw[4];
       animation.offset_y   = 2 * move.ramp[2];
-      animation.offset_z          = move.ramp[2];
+      animation.offset_z   = move.ramp[2];
       float show3          = render_value(animation);
 
       animation.dist       = distance[n] * (2 + move.sine[3]) / 3;
       animation.angle      = 4 * polar_theta[n] + 3 * move.noise_angle[3] + move.saw[4];
       animation.offset_x   = 2 * move.ramp[3];
-      animation.offset_z          = move.ramp[3];
+      animation.offset_z   = move.ramp[3];
       float show4          = render_value(animation);
       
       // colormapping
@@ -1343,25 +1343,25 @@ public:
       animation.offset_y   = 2 * move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      animation.offset_z          = 0;//move.ramp[0]; TODO
+      animation.offset_z   = 0;//move.ramp[0]; TODO
       float show1          = render_value(animation);
 
       animation.dist       = distance[n] * (2 + move.sine[1]) / 3;
       animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[1] + move.saw[4];
       animation.offset_x   = 2 * move.ramp[1];
-      animation.offset_z          = move.ramp[1];
+      animation.offset_z   = move.ramp[1];
       float show2          = render_value(animation);
 
       animation.dist       = distance[n] * (2 + move.sine[2]) / 3;
       animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[2] + move.saw[4];
       animation.offset_y   = 2 * move.ramp[2];
-      animation.offset_z          = move.ramp[2];
+      animation.offset_z   = move.ramp[2];
       float show3          = render_value(animation);
 
       animation.dist       = distance[n] * (2 + move.sine[3]) / 3;
       animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[3] + move.saw[4];
       animation.offset_x   = 2 * move.ramp[3];
-      animation.offset_z          = move.ramp[3];
+      animation.offset_z   = move.ramp[3];
       float show4          = render_value(animation);
       
       // colormapping
@@ -1409,28 +1409,28 @@ public:
       animation.offset_y   = 2 * move.ramp[0];
       animation.offset_x   = 2 * move.ramp[1];
       animation.offset_z   = 0;
-      animation.offset_z          = move.ramp[0];
+      animation.offset_z   = move.ramp[0];
       float show1          = render_value(animation);
 
       animation.dist       = distance[n] * (2 + move.sine[1]) / 3;
       animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[1] + move.saw[4];
       animation.offset_x   = 2 * move.ramp[1];
       animation.offset_y   = show1 / 20.0;
-      animation.offset_z          = move.ramp[1];
+      animation.offset_z   = move.ramp[1];
       float show2          = render_value(animation);
 
       animation.dist       = distance[n] * (2 + move.sine[2]) / 3;
       animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[2] + move.saw[4];
       animation.offset_y   = 2 * move.ramp[2];
       animation.offset_x   = show2 / 20.0;
-      animation.offset_z          = move.ramp[2];
+      animation.offset_z   = move.ramp[2];
       float show3          = render_value(animation);
 
       animation.dist       = distance[n] * (2 + move.sine[3]) / 3;
       animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[3] + move.saw[4];
       animation.offset_x   = 2 * move.ramp[3];
       animation.offset_y   = show3 / 20.0;
-      animation.offset_z          = move.ramp[3];
+      animation.offset_z   = move.ramp[3];
       float show4          = render_value(animation);
       
       // colormapping
@@ -1479,7 +1479,7 @@ public:
       animation.offset_y   = -move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      animation.offset_z          = 30;
+      animation.offset_z   = 30;
       float show1          = render_value(animation);
 
       animation.offset_y   = -move.ramp[1];
@@ -1521,7 +1521,7 @@ public:
     timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.00003;    // speed ratios for the oscillators
     timings.ratio[0] = .5;         // higher values = faster transitions
     timings.ratio[1] = .1;
-    timings.ratio[2] = 1;
+    timings.ratio[2] = 1/8;
     timings.offset[0] = 0;
     timings.offset[1] = 100;
     timings.offset[2] = 200;
@@ -1537,11 +1537,10 @@ public:
       animation.angle      = 3*polar_theta[n] + move.saw[2];
       animation.scale_x    = 0.1 + (move.noise_angle[0])/10;
       animation.scale_y    = 0.1 + (move.noise_angle[1])/10;// + (move.sine[1] + 2)/100;
-      animation.scale_z    = 0.01;
+      animation.scale_z    = 0.1 + (move.noise_angle[0]+move.noise_angle[1])/10;
       animation.offset_y   = 0;
       animation.offset_x   = 0;
-      animation.offset_z   = 100*move.ramp[0];
-      animation.offset_z          = 30;
+      animation.offset_z   = 10*move.ramp[0];
       float show1          = render_value(animation);
 
       animation.angle      = 3;
@@ -1595,7 +1594,6 @@ public:
       animation.offset_y   = -move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      animation.offset_z          = 0;
       float show1          = render_value(animation);
 
       animation.dist       = distance[n];
@@ -1606,7 +1604,6 @@ public:
       animation.offset_y   = -move.ramp[1];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      animation.offset_z          = 0;
       float show2          = render_value(animation);
 
       animation.angle      = polar_theta[n] + show1/100 + move.noise_angle[3] + move.noise_angle[4];
@@ -1669,19 +1666,18 @@ public:
       animation.scale_z    = 0.02;
       animation.offset_y   = -move.ramp[0];
       animation.offset_x   = 0;
-      animation.offset_z   = 0;
-      animation.offset_z          = move.ramp[1];
+      animation.offset_z   = move.ramp[1];
       float show1          = render_value(animation);
 
       animation.angle      = 2*polar_theta[n] + move.noise_angle[7] + move.sine[5] * move.noise_angle[8]* animation.dist/10;
       animation.offset_y   = -move.ramp[1];
-      animation.offset_z          = move.ramp[2];
+      animation.offset_z   = move.ramp[2];
             
       float show2          = render_value(animation);
 
       animation.angle      = 2*polar_theta[n] + move.noise_angle[6] + move.sine[6] * move.noise_angle[7]* animation.dist/10;
       animation.offset_y   = move.ramp[2];
-      animation.offset_z          = move.ramp[0];
+      animation.offset_z   = move.ramp[0];
       float show3          = render_value(animation);
       
       float f =  1;
@@ -1732,19 +1728,18 @@ public:
       animation.scale_z    = 0.02;
       animation.offset_y   = -move.ramp[0];
       animation.offset_x   = 0;
-      animation.offset_z   = 0;
-      animation.offset_z          = move.ramp[1];
+      animation.offset_z   = move.ramp[1];
       float show1          = render_value(animation);
 
       animation.angle      = 6*polar_theta[n] + move.noise_angle[7] + move.sine[5] * move.noise_angle[8]* animation.dist/10;
       animation.offset_y   = -move.ramp[1];
-      animation.offset_z          = move.ramp[2];
+      animation.offset_z   = move.ramp[2];
             
       float show2          = render_value(animation);
 
       animation.angle      = 6*polar_theta[n] + move.noise_angle[6] + move.sine[6] * move.noise_angle[7]* animation.dist/10;
       animation.offset_y   = move.ramp[2];
-      animation.offset_z          = move.ramp[0];
+      animation.offset_z   = move.ramp[0];
       animation.dist       = distance[n] *0.8;
       float show3          = render_value(animation);
       
@@ -1781,8 +1776,6 @@ public:
       animation.offset_y   = -move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      
-      animation.offset_z          = 0;
       animation.low_limit  = -1;
       float show1          = render_value(animation);
 
@@ -1796,7 +1789,7 @@ public:
 
       animation.offset_x   = show3/20;
       animation.offset_y   = -move.ramp[0]/2 + show1/70;
-      animation.offset_z          = 100;
+      animation.offset_z   = 100;
       float show4          = render_value(animation);
 
       float radius = radial_filter_radius;   // radius of a radial brightness filter
@@ -1837,7 +1830,6 @@ public:
       animation.offset_x   = 0;
       animation.offset_z   = 0;
       
-      animation.offset_z          = 0;
       animation.low_limit  = 0;
       float show1          = render_value(animation);
 
@@ -1880,7 +1872,6 @@ public:
       animation.offset_x   = 0;
       animation.offset_z   = 0.1*move.ramp[0];
       
-      animation.offset_z          = 0;
       animation.low_limit  = 0;
       float show1          = render_value(animation);
 
@@ -1919,9 +1910,8 @@ public:
       
       animation.offset_y   = -50 * move.ramp[0];
       animation.offset_x   = 0;
-      animation.offset_z   = 0;
       
-      animation.offset_z          = move.ramp[0];
+      animation.offset_z   = move.ramp[0];
       animation.low_limit  = -0.1;
       animation.high_limit = 1;
       float show1          = render_value(animation);
@@ -1973,19 +1963,19 @@ public:
       
       animation.dist       = (distance[n]);
       animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[0];
-      animation.offset_z          = (animation.dist * 1.5)-10 * move.ramp[0];
+      animation.offset_z   = (animation.dist * 1.5)-10 * move.ramp[0];
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
       animation.offset_x   = move.ramp[0];
       
       float show1          = render_value(animation);
       animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[1];
-      animation.offset_z          = (animation.dist * 1.5)-10 * move.ramp[1];
+      animation.offset_z   = (animation.dist * 1.5)-10 * move.ramp[1];
       animation.offset_x   = move.ramp[1];
 
       float show2          = render_value(animation);
       animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[2];
-      animation.offset_z          = (animation.dist * 1.5)-10 * move.ramp[2];
+      animation.offset_z   = (animation.dist * 1.5)-10 * move.ramp[2];
       animation.offset_x   = move.ramp[2];
 
       float show3          = render_value(animation);
@@ -2025,10 +2015,9 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n] + move.saw[0] + move.noise_angle[0]+ move.noise_angle[3];
-      animation.offset_z          = (sqrtf(animation.dist));// - 10 * move.ramp[0];
+      animation.offset_z   = (sqrtf(animation.dist));// - 10 * move.ramp[0];
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
-      animation.offset_z   = 10;
       animation.offset_x   = 10*move.ramp[0];
       float show1          = render_value(animation);
 
@@ -2081,10 +2070,9 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n] + move.saw[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
-      animation.offset_z          = (sqrtf(animation.dist));// - 10 * move.ramp[0];
+      animation.offset_z   = (sqrtf(animation.dist));// - 10 * move.ramp[0];
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
-      animation.offset_z   = 10;
       animation.offset_x   = 10*move.ramp[0];
       float show1          = render_value(animation);
 
@@ -2133,10 +2121,9 @@ public:
       
       animation.dist       = distance[n] + move.noise_angle[4];
       animation.angle      = polar_theta[n] + move.saw[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
-      animation.offset_z          = (sqrtf(animation.dist));// - 10 * move.ramp[0];
+      animation.offset_z   = (sqrtf(animation.dist));// - 10 * move.ramp[0];
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
-      animation.offset_z   = 10;
       animation.offset_x   = 10*move.ramp[0];
       float show1          = render_value(animation);
 
@@ -2187,10 +2174,9 @@ public:
       
       animation.dist       = distance[n] + move.noise_angle[4];
       animation.angle      = polar_theta[n] + move.saw[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
-      animation.offset_z          = 3+sqrtf(animation.dist);
+      animation.offset_z   = 3+sqrtf(animation.dist);
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
-      animation.offset_z   = 10;
       animation.offset_x   = 50 * move.ramp[0];
       float show1          = render_value(animation);
 
@@ -2241,11 +2227,10 @@ public:
       
       animation.dist       = distance[n] + move.noise_angle[4];
       animation.angle      = polar_theta[n] + move.saw[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
-      animation.offset_z          = 3+sqrtf(animation.dist);
+      animation.offset_z   = 3+sqrtf(animation.dist);
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
       animation.scale_z    = 0.05;
-      animation.offset_z   = 10;
       animation.offset_x   = 50 * move.ramp[0];
       float show1          = render_value(animation);
 
@@ -2296,7 +2281,6 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = 5 * polar_theta[n] + 5*move.noise_angle[0] + animation.dist * 0.1;
-      animation.offset_z          = 5;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
       animation.scale_z    = 0.05;
@@ -2306,14 +2290,12 @@ public:
       float show1          = render_value(animation);
 
       animation.angle      =6 * polar_theta[n] + 5*move.noise_angle[1] + animation.dist * 0.15;
-      animation.offset_z          = 5;
       animation.offset_z   = 50 * move.ramp[1];
       animation.offset_x   = 50 * move.noise_angle[1];
       animation.offset_y   = 50 * move.noise_angle[2];
       float show2          = render_value(animation);
 
       animation.angle      = 5;
-      animation.offset_z          = 5;
       animation.scale_x    = 0.10;
       animation.scale_y    = 0.10;
       animation.scale_z    = 0.10;
@@ -2323,14 +2305,12 @@ public:
       float show3          = render_value(animation);
 
       animation.angle      = 15;
-      animation.offset_z          = 15;
       animation.offset_z   = 10 * move.ramp[3];
       animation.offset_x   = 10 * move.noise_angle[3];
       animation.offset_y   = 10 * move.noise_angle[4];
       float show4          = render_value(animation);
 
       animation.angle      = 2;
-      animation.offset_z          = 15;
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
       animation.scale_z    = 0.15;
@@ -2372,7 +2352,6 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n] + 5*move.noise_angle[0];
-      animation.offset_z          = 5;
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
       animation.offset_z   = 50 * move.ramp[0];
@@ -2382,7 +2361,6 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n] + 4*move.noise_angle[1];
-      animation.offset_z          = 15;
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
       animation.offset_z   = 50 * move.ramp[1];
@@ -2392,7 +2370,6 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n] + 5*move.noise_angle[2];
-      animation.offset_z          = 25;
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
       animation.offset_z   = 50 * move.ramp[2];
@@ -2402,7 +2379,6 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n] + 5*move.noise_angle[3];
-      animation.offset_z          = 35;
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
       animation.offset_z   = 50 * move.ramp[3];
@@ -2412,7 +2388,6 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n] + 5*move.noise_angle[4];
-      animation.offset_z          = 45;
       animation.scale_x    = 0.2;
       animation.scale_y    = 0.2;
       animation.offset_z   = 50 * move.ramp[4];
@@ -2455,7 +2430,6 @@ public:
         
         animation.dist       = distance[n] * (move.sine[0]);
         animation.angle      = polar_theta[n] + move.saw[0];
-        animation.offset_z          = 5;
         animation.scale_x    = 0.09;
         animation.scale_y    = 0.09;
         animation.offset_z   = 5 * move.ramp[0];
@@ -2465,7 +2439,6 @@ public:
 
         animation.dist       = distance[n]* move.sine[1];
         animation.angle      = polar_theta[n] + move.saw[1];
-        animation.offset_z          = 50;
         animation.scale_x    = 0.07;
         animation.scale_y    = 0.07;
         animation.offset_z   = 5 * move.ramp[1];
@@ -2475,7 +2448,6 @@ public:
         
         animation.dist       = distance[n]* move.sine[2];
         animation.angle      = polar_theta[n] + move.saw[2];
-        animation.offset_z          = 500;
         animation.scale_x    = 0.05;
         animation.scale_y    = 0.05;
         animation.offset_z   = 5 * move.ramp[2];
@@ -2519,7 +2491,6 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
@@ -2531,7 +2502,6 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 500;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
@@ -2543,7 +2513,6 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 50;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
@@ -2555,7 +2524,6 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 50;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
@@ -2567,7 +2535,6 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 50;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
@@ -2611,7 +2578,7 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
@@ -2623,7 +2590,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
@@ -2668,7 +2635,7 @@ public:
       
       animation.dist       = distance[n] * (move.sine[0]);
       animation.angle      = polar_theta[n] + move.saw[0];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 5 * move.ramp[0];
@@ -2678,7 +2645,7 @@ public:
 
       animation.dist       = distance[n]* move.sine[1];
       animation.angle      = polar_theta[n] + move.saw[1];
-      animation.offset_z          = 50;
+      animation.offset_z   = 50;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
       animation.offset_z   = 5 * move.ramp[1];
@@ -2688,7 +2655,7 @@ public:
       
       animation.dist       = distance[n]* move.sine[2];
       animation.angle      = polar_theta[n] + move.saw[2];
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
       animation.offset_z   = 5 * move.ramp[2];
@@ -2698,7 +2665,7 @@ public:
 
       animation.dist       = distance[n] * (move.sine[3]);
       animation.angle      = polar_theta[n] + move.saw[3];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 5 * move.ramp[3];
@@ -2708,7 +2675,7 @@ public:
 
       animation.dist       = distance[n]* move.sine[4];
       animation.angle      = polar_theta[n] + move.saw[4];
-      animation.offset_z          = 50;
+      animation.offset_z   = 50;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
       animation.offset_z   = 5 * move.ramp[4];
@@ -2718,7 +2685,7 @@ public:
       
       animation.dist       = distance[n]* move.sine[5];
       animation.angle      = polar_theta[n] + move.saw[5];
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
       animation.offset_z   = 5 * move.ramp[5];
@@ -2765,7 +2732,7 @@ public:
       
       animation.dist       = distance[n] * (move.sine[0]) * s;
       animation.angle      = polar_theta[n] + move.saw[0];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 5 * move.ramp[0];
@@ -2775,7 +2742,7 @@ public:
 
       animation.dist       = distance[n]* move.sine[1] * s;
       animation.angle      = polar_theta[n] + move.saw[1];
-      animation.offset_z          = 50;
+      animation.offset_z   = 50;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
       animation.offset_z   = 5 * move.ramp[1];
@@ -2785,7 +2752,7 @@ public:
       
       animation.dist       = distance[n]* move.sine[2] * s;
       animation.angle      = polar_theta[n] + move.saw[2];
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
       animation.offset_z   = 5 * move.ramp[2];
@@ -2795,7 +2762,7 @@ public:
 
       animation.dist       = distance[n] * (move.sine[3]) * s;
       animation.angle      = polar_theta[n] + move.saw[3];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 5 * move.ramp[3];
@@ -2805,7 +2772,7 @@ public:
 
       animation.dist       = distance[n]* move.sine[4] * s;
       animation.angle      = polar_theta[n] + move.saw[4];
-      animation.offset_z          = 50;
+      animation.offset_z   = 50;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
       animation.offset_z   = 5 * move.ramp[4];
@@ -2815,7 +2782,7 @@ public:
       
       animation.dist       = distance[n]* move.sine[5] * s;
       animation.angle      = polar_theta[n] + move.saw[5];
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
       animation.offset_z   = 5 * move.ramp[5];
@@ -2861,7 +2828,7 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = 2;
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
       animation.offset_z   = 0;
@@ -2872,13 +2839,13 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = 2;
-      animation.offset_z          = 150;
+      animation.offset_z   = 150;
       animation.offset_x   = -5 * move.ramp[0];     
       float show2          = render_value(animation);
 
       animation.dist       = distance[n];
       animation.angle      = 1;
-      animation.offset_z          = 550;
+      animation.offset_z   = 550;
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
       animation.offset_x   = 0;
@@ -2887,7 +2854,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = 1;
-      animation.offset_z          = 1250;
+      animation.offset_z   = 1250;
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
       animation.offset_x   = 0;
@@ -2937,7 +2904,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_y   = -30 * move.ramp[0];
@@ -2948,7 +2915,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 50;
+      animation.offset_z   = 50;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_y   = -30 * move.ramp[1];
@@ -2959,7 +2926,7 @@ public:
 
       animation.dist       = distance[n];// + show1/64;
       animation.angle      = polar_theta[n] + 2 + (show1 / 255) * PI;
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_y   = -10 * move.ramp[0];
@@ -2970,7 +2937,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n] + 2 +(show2 / 255) * PI;;
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_y   = -20 * move.ramp[0];
@@ -3023,7 +2990,7 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.09 * scale;
       animation.scale_y    = 0.09 * scale;
       animation.offset_y   = -30 * move.ramp[0];
@@ -3034,7 +3001,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 50;
+      animation.offset_z   = 50;
       animation.scale_x    = 0.09 * scale;
       animation.scale_y    = 0.09 * scale;
       animation.offset_y   = -30 * move.ramp[1];
@@ -3045,7 +3012,7 @@ public:
 
       animation.dist       = distance[n];// + show1/64;
       animation.angle      = polar_theta[n] + 2 + (show1 / 255) * PI;
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.09 * scale;
       animation.scale_y    = 0.09 * scale;
       animation.offset_y   = -10 * move.ramp[0];
@@ -3056,7 +3023,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n] + 2 +(show2 / 255) * PI;;
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.09 * scale;
       animation.scale_y    = 0.09 * scale;
       animation.offset_y   = -20 * move.ramp[0];
@@ -3106,7 +3073,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = 5 * polar_theta[n] + 10 * move.saw[0] + animation.dist /2;
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
       animation.offset_z   = 0;
@@ -3117,7 +3084,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = -5 * polar_theta[n] + 12 * move.saw[1] + animation.dist /2;
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
       animation.offset_z   = 0;
@@ -3128,7 +3095,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = -5 * polar_theta[n] + 12 * move.saw[2] + animation.dist /2;
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
       animation.offset_z   = 0;
@@ -3140,7 +3107,7 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = 5 * polar_theta[n] + 12 * move.saw[3] + animation.dist /2;
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
@@ -3194,7 +3161,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = 5 * polar_theta[n] + 10 * move.saw[0] + animation.dist /2;
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.07 * size;
       animation.scale_y    = 0.07 * size;
       animation.offset_z   = 0;
@@ -3205,7 +3172,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = -5 * polar_theta[n] + 12 * move.saw[1] + animation.dist /2;
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.07 * size;
       animation.scale_y    = 0.07 * size;
       animation.offset_z   = 0;
@@ -3216,7 +3183,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = -5 * polar_theta[n] + 12 * move.saw[2] + animation.dist /2;
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.05 * size;
       animation.scale_y    = 0.05 * size;
       animation.offset_z   = 0;
@@ -3228,7 +3195,7 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = 5 * polar_theta[n] + 12 * move.saw[3] + animation.dist /2;
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.09 * size;
       animation.scale_y    = 0.09 * size;
       animation.offset_z   = 0;
@@ -3284,7 +3251,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = 5 * polar_theta[n] + 10 * move.saw[0] + animation.dist / (((move.sine[0] + 3)*2)) + move.noise_angle[0]*q;
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.08 * size * (move.sine[0]+1.5);
       animation.scale_y    = 0.07 * size;
       animation.offset_z   = -10 * move.ramp[0];
@@ -3295,7 +3262,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = -5 * polar_theta[n] + 10 * move.saw[1] + animation.dist / (((move.sine[1] + 3)*2))+ move.noise_angle[1]*q;
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.07 * size * (move.sine[1]+1.1);
       animation.scale_y    = 0.07 * size * (move.sine[2]+1.3);;
       animation.offset_z   = -12 * move.ramp[1];;
@@ -3306,7 +3273,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = -5 * polar_theta[n] + 12 * move.saw[2] + animation.dist /(((move.sine[3] + 3)*2))+ move.noise_angle[2]*q;
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.05 * size * (move.sine[3]+1.5);;
       animation.scale_y    = 0.05 * size * (move.sine[4]+1.5);;
       animation.offset_z   = -12 * move.ramp[3];
@@ -3318,7 +3285,7 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = 5 * polar_theta[n] + 12 * move.saw[3] + animation.dist /(((move.sine[5] + 3)*2))+ move.noise_angle[3]*q;
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.09 * size * (move.sine[5]+1.5);;;
       animation.scale_y    = 0.09 * size * (move.sine[6]+1.5);;;
       animation.offset_z   = 0;
@@ -3381,7 +3348,7 @@ public:
 
       animation.dist       = distance[n] * s;
       animation.angle      = 5 * polar_theta[n] + 1 * move.saw[0] - animation.dist / (3+move.sine[0]*0.5);
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.08 * size + (move.sine[0]*0.01);
       animation.scale_y    = 0.07 * size + (move.sine[1]*0.01);
       animation.offset_z   = -10 * move.ramp[0];
@@ -3392,7 +3359,7 @@ public:
 
       animation.dist       = distance[n] * s;
       animation.angle      = 5 * polar_theta[n] + 1 * move.saw[1] + animation.dist / (3+move.sine[1]*0.5);
-      animation.offset_z          = 50;
+      animation.offset_z   = 50;
       animation.scale_x    = 0.08 * size + (move.sine[1]*0.01);
       animation.scale_y    = 0.07 * size + (move.sine[2]*0.01);
       animation.offset_z   = -10 * move.ramp[1];
@@ -3403,7 +3370,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = 1;
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.2 * size ;
       animation.scale_y    = 0.2 * size ;
       animation.offset_z   = 0;//-12 * move.ramp[3];
@@ -3415,7 +3382,7 @@ public:
       
       animation.dist       = distance[n];
       animation.angle      = 5 * polar_theta[n] + 12 * move.saw[3] + animation.dist /(((move.sine[5] + 3)*2))+ move.noise_angle[3]*q;
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.09 * size * (move.sine[5]+1.5);;;
       animation.scale_y    = 0.09 * size * (move.sine[6]+1.5);;;
       animation.offset_z   = 0;
@@ -3481,7 +3448,7 @@ public:
 
       animation.dist       = distance[n] * s;
       animation.angle      = move.saw[6] + 2 * move.sine[5] * polar_theta[n]  - animation.dist / 3;
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.08 * size ;
       animation.scale_y    = 0.07 * size ;
       animation.offset_z   = -10 * move.ramp[0];
@@ -3526,7 +3493,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = 16 * polar_theta[n] + 16*move.saw[0];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.06 ;
       animation.scale_y    = 0.06 ;
       animation.offset_z   = -10 * move.ramp[0];
@@ -3537,7 +3504,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = 4 * polar_theta[n] + 16*move.saw[1];
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.06 ;
       animation.scale_y    = 0.06 ;
       animation.offset_z   = -10 * move.ramp[1];
@@ -3584,7 +3551,7 @@ public:
 
       animation.dist       = distance[n] + 4*sinf(move.sine[5]*PI+(float)ledMap[n][xind]/2) + 4 * cosf(move.sine[6]*PI+float(ledMap[n][yind])/2);
       animation.angle      = 1 * polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.06 ;
       animation.scale_y    = 0.06 ;
       animation.offset_z   = -10 * move.ramp[0];
@@ -3595,7 +3562,7 @@ public:
 
       animation.dist       = (10+move.sine[0]) * sinf(-move.saw[5]+move.saw[0]+(distance[n] / (3)));
       animation.angle      = 1 * polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
@@ -3606,7 +3573,7 @@ public:
 
       animation.dist       = (10+move.sine[1]) * sinf(-move.saw[5]+move.saw[1]+(distance[n] / (3)));
       animation.angle      = 1 * polar_theta[n];
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
@@ -3617,7 +3584,7 @@ public:
 
       animation.dist       = (10+move.sine[2]) * sinf(-move.saw[5]+move.saw[2]+(distance[n] / (3)));
       animation.angle      = 1 * polar_theta[n];
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
@@ -3675,7 +3642,7 @@ public:
 
       animation.dist       = (f+move.sine[0]) * sinf(-move.saw[5]+move.saw[0]+(distance[n] / (s)));
       animation.angle      = 1 * polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
@@ -3686,7 +3653,7 @@ public:
 
       animation.dist       = (f+move.sine[1]) * sinf(-move.saw[5]+move.saw[1]+(distance[n] / (s)));
       animation.angle      = 1 * polar_theta[n];
-      animation.offset_z          = 500;
+      animation.offset_z   = 500;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
@@ -3697,7 +3664,7 @@ public:
 
       animation.dist       = (f+move.sine[2]) * sinf(-move.saw[5]+move.saw[2]+(distance[n] / (s)));
       animation.angle      = 1 * polar_theta[n];
-      animation.offset_z          = 5000;
+      animation.offset_z   = 5000;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
@@ -3708,7 +3675,7 @@ public:
 
       animation.dist       = (f+move.sine[3]) * sinf(-move.saw[5]+move.saw[3]+(distance[n] / (s)));
       animation.angle      = 1 * polar_theta[n];
-      animation.offset_z          = 2000;
+      animation.offset_z   = 2000;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
@@ -3762,7 +3729,7 @@ public:
 
       animation.dist       = distance[n] + 20 * move.sine[0];
       animation.angle      = move.noise_angle[0] + move.noise_angle[1] + polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
@@ -3797,7 +3764,7 @@ public:
 
       animation.dist       = distance[n] - ( 16 + move.sine[0] * 16);
       animation.angle      = move.noise_angle[0] + move.noise_angle[1] + polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
@@ -3837,7 +3804,7 @@ public:
 
       animation.dist       = distance[n] - (12 + move.sine[3]*4);
       animation.angle      = move.noise_angle[0] + move.noise_angle[1] + polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
@@ -3881,7 +3848,7 @@ public:
 
       animation.dist       = (distance[n] * distance[n])*0.7;
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.004 * s;
       animation.scale_y    = 0.003 * s;
       animation.offset_z   = 0.1*move.ramp[2] ;
@@ -3892,7 +3859,7 @@ public:
 
       animation.dist       = (distance[n] * distance[n])*0.8;
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 50;
+      animation.offset_z   = 50;
       animation.scale_x    = 0.004 * s;
       animation.scale_y    = 0.003 * s;
       animation.offset_z   = 0.1*move.ramp[3] ;
@@ -3903,7 +3870,7 @@ public:
 
       animation.dist       = (distance[n] * distance[n])*0.9;
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 5000;
+      animation.offset_z   = 5000;
       animation.scale_x    = 0.004 * s;
       animation.scale_y    = 0.003 * s;
       animation.offset_z   = 0.1*move.ramp[4] ;
@@ -3954,7 +3921,7 @@ public:
 
       animation.dist       = distance[n] + sinf(0.5*distance[n]-move.saw[3]);
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
       animation.offset_z   = 0.1*move.ramp[0] ;
@@ -3995,7 +3962,7 @@ public:
 
       animation.dist       = distance[n] + sinf(0.25*distance[n]-move.saw[3]);
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
       animation.offset_z   = 0.1*move.ramp[0] ;
@@ -4006,7 +3973,7 @@ public:
 
       animation.dist       = distance[n] + sinf(0.24*distance[n]-move.saw[4]);
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 10;
+      animation.offset_z   = 10;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
       animation.offset_z   = 0.1*move.ramp[1] ;
@@ -4059,7 +4026,7 @@ public:
 
       animation.dist       = 2+distance[n] + 2*sinf(0.25*distance[n]-move.saw[3]);
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
       animation.offset_z   = 10*move.ramp[0] ;
@@ -4070,7 +4037,7 @@ public:
 
       animation.dist       = 2+distance[n] + 2*sinf(0.24*distance[n]-move.saw[4]);
       animation.angle      = polar_theta[n];
-      animation.offset_z          = 10;
+      animation.offset_z   = 10;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
       animation.offset_z   = 0.1*move.ramp[1] ;
@@ -4136,7 +4103,7 @@ public:
 
       animation.dist       = 3+distance[n] + 3*sinf(0.25*distance[n]-move.saw[3]);
       animation.angle      = polar_theta[n] + move.noise_angle[0] + move.noise_angle[6];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
       animation.offset_z   = 10*move.ramp[0] ;
@@ -4147,7 +4114,7 @@ public:
 
       animation.dist       = 4+distance[n] + 4*sinf(0.24*distance[n]-move.saw[4]);
       animation.angle      = polar_theta[n] + move.noise_angle[1] + move.noise_angle[6];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
       animation.offset_z   = 0.1*move.ramp[1] ;
@@ -4158,7 +4125,7 @@ public:
 
       animation.dist       = 5+distance[n] + 5*sinf(0.23*distance[n]-move.saw[5]);
       animation.angle      = polar_theta[n] + move.noise_angle[2] + move.noise_angle[6];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
       animation.offset_z   = 0.1*move.ramp[2] ;
@@ -4215,7 +4182,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n] + move.saw[1];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.001;
       animation.scale_y    = 0.1;
       animation.scale_z    = 0.1;
@@ -4256,7 +4223,7 @@ public:
 
       animation.dist       = distance[n];
       animation.angle      = polar_theta[n] + move.saw[1];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.001;
       animation.scale_y    = 0.1;
       animation.scale_z    = 0.1;
@@ -4311,7 +4278,7 @@ public:
 
       animation.dist       = 3+distance[n] + 3*sinf(0.25*distance[n]-move.saw[3]);
       animation.angle      = polar_theta[n] + move.noise_angle[0] + move.noise_angle[6];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
       animation.offset_z   = 10*move.ramp[0] ;
@@ -4322,7 +4289,7 @@ public:
 
       animation.dist       = 4+distance[n] + 4*sinf(0.24*distance[n]-move.saw[4]);
       animation.angle      = polar_theta[n] + move.noise_angle[1] + move.noise_angle[6];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
       animation.offset_z   = 0.1*move.ramp[1] ;
@@ -4333,7 +4300,7 @@ public:
 
       animation.dist       = 5+distance[n] + 5*sinf(0.23*distance[n]-move.saw[5]);
       animation.angle      = polar_theta[n] + move.noise_angle[2] + move.noise_angle[6];
-      animation.offset_z          = 5;
+      animation.offset_z   = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
       animation.offset_z   = 0.1*move.ramp[2] ;

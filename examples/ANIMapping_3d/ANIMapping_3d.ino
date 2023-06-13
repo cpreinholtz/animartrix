@@ -338,9 +338,11 @@ bugfixes:
   why the flash?
   remove fastled.delay bc it breaks hue shift by showing w/o shift?
   only effects bpm demo I think
-  forgot scalez...
+  forgot scale_z...
   figure out offsetz vs just z
   zoom and zoom2 flicker with hue shift i think its the noise hot blob same
+  Scaledemo1 still weird
+
 
 
 ..remove or tweak
