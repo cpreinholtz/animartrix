@@ -487,6 +487,7 @@ public:
     // b = micros(); 
   }
 
+
   CRGB setPixelColor(rgbF pixel) {
     return CRGB(pixel.r, pixel.g, pixel.b);
   }
@@ -3476,7 +3477,7 @@ public:
 
     
 
-    timings.master_speed = 0.01;    // master speed 
+    timings.master_speed = 0.03;    // master speed 
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -3499,7 +3500,7 @@ public:
       float s = 1 +  move.directional[6]*0.8;
 
       animation.dist       = distance[n] * s;
-      animation.angle      = 10*move.radial[6] + 50 * move.directional[5] * polar_theta[n]  - animation.dist / 3;
+      animation.angle      = move.radial[6] + 2 * move.directional[5] * polar_theta[n]  - animation.dist / 3;
       animation.z          = 5;
       animation.scale_x    = 0.08 * size ;
       animation.scale_y    = 0.07 * size ;
@@ -3512,13 +3513,14 @@ public:
      
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/distance[n];
+      //12-10/10,  12-1/10,  brighter in center
      
      uint8_t color = float_to_uint8_t(show1 * radial);
      uint8_t brightness = 200;
      TBlendType    currentBlending = LINEARBLEND;
 
 
-      buffer[n] = ColorFromPalette( gPalettes[currentPalette].palette, color, brightness, currentBlending);
+      buffer[n] = ColorFromPalette( currentPalette, color, brightness, currentBlending);
     }
   }
 

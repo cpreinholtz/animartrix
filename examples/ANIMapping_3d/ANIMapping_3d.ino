@@ -100,6 +100,17 @@ float ledMap[NUM_LEDS][3] = {
 
 CRGB leds[NUM_LEDS];               // framebuffer
 ANIMartRIX art(leds);  //led buffer, global scale
+uint8_t gHueShift = 0;
+
+void applyHueShift(){
+  if (gHueShift >0){
+    for (int i =0; i < NUM_LEDS; i++){
+      CHSV hsv = rgb2hsv_approximate(leds[i]);
+      hsv.h = hsv.h + gHueShift;
+      hsv2rgb_rainbow( hsv, leds[i]);
+    }
+  }
+}
 
 
 
@@ -298,7 +309,16 @@ features:
   color picker?, play with palettes, 
   music reactive, 
   IMU reactive
-bugfixes: why the flash?
+  global hue shift, requires shifting my palets to CHSV
+    make floats
+    make run off noise function
+  
+
+
+bugfixes: 
+  why the flash?
+  remove fastled.delay bc it breaks hue shift by showing w/o shift?
+  only effects bpm demo I think
 
 
 ..remove or tweak
@@ -324,6 +344,7 @@ PatternAndNameList gNeedsWorkPatterns = {
   Distance_Experiment, boring
   waves, was too slow with master timing 0.01
   Scaledemo1, what happened this was a fav?
+  Big_Caleido seems broken, need to make less black
 };
 
 
@@ -335,7 +356,7 @@ good enough.. maybe play with or just leave alone
   SM9, seems too blue, not quite right
   SM8 fun strobe, could use better colors
   SM3 better colors... has potentiall to be nice chill
-  SM2, too black
+  SM2, too black, but really really cool
   Big_Caleido, angle mult, too black
   RGB_Blobs1, pretty good, try playing with color
   Spiralus2 maybe change angle mult
@@ -353,8 +374,8 @@ perfect dont touch
   Complex_Kaleido_3
   Complex_Kaleido_2
   Complex_Kaleido_1
-  SM4
-  SM1 awesome swirl
+  SM4, SM5 amazing
+  SM1 awesome swirl!!!!!
   Slow_Fade, maybe too black
   Spiralus
   Caleido3
@@ -384,6 +405,7 @@ void randomPattern(){
 
 void showCurrentPattern(){
   gPatterns[currentPattern].pattern();
+  applyHueShift();
   FastLED.show();
 }
 
@@ -404,6 +426,7 @@ void setup() {
  // fill_rainbow(leds, NUM_LED, 0);
   //fill_solid(leds, NUM_LED, CRGB::Green);
   //FastLED.show();
+  gHueShift = 0;
 }
 
 
@@ -444,22 +467,26 @@ void loop() {
       incrementPattern();
     } else if (incomingByte == 'b'){
       incrementPattern(-1);
+    } else if (incomingByte == 'h'){
+      gHueShift = gHueShift +10;
+      Serial.print("Setting hue shift to"); Serial.println(gHueShift);
     } else if (incomingByte == 'r'){
       doRandom = not doRandom;
       if (doRandom && play==false) play = true;
     }
 
     if(verbose){
-    // say what you got:
-    Serial.print("I received: ");
-    Serial.println(incomingByte, DEC);    
+      // say what you got:
+      Serial.print("I received: ");
+      Serial.println(incomingByte, DEC);
 
-    Serial.print("verbose: ");
-    Serial.println(verbose);
-    Serial.print("play: ");
-    Serial.println(play);
-    Serial.print("doRandom: ");
-    Serial.println(doRandom);
+
+      Serial.print("verbose: ");
+      Serial.println(verbose);
+      Serial.print("play: ");
+      Serial.println(play);
+      Serial.print("doRandom: ");
+      Serial.println(doRandom);
     }
     
 
