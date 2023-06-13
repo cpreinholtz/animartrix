@@ -262,14 +262,23 @@ PatternAndNameList gPatterns = {
 
 
 /*
+speed adjust:
+Complex_Kaleido_3
+
 PatternAndNameList gChillPatterns = {
   {Module_Experiment8,"Module_Experiment8"},// pretty much just reds and pinks and orange
   {Module_Experiment7,"Module_Experiment7"}, //boring but chill, too black sometimes
   {Module_Experiment6,"Module_Experiment6"},//bit better, only yellow and red, slow
+  mod5
+  mod3
+  Module_Experiment2
+
   {Parametric_Water,"Parametric_Water"},// could tone down radius / blue to save power?
+  water
   {Complex_Kaleido_2,"Complex_Kaleido_2"},
   {Complex_Kaleido_1,"Complex_Kaleido_1"},
   {SM10,"SM10"},
+  sm9
   {SM6,"SM6"},
   SM5
   Slow_Fade
@@ -280,7 +289,6 @@ PatternAndNameList gChillPatterns = {
   Spiralus
   Scaledemo1
   Rotating_Blob
-
 };
 
 PatternAndNameList gHypePatterns = {
@@ -293,6 +301,8 @@ PatternAndNameList gHypePatterns = {
   Caleido1, speed up?
   Rings
 };
+
+bpm patterns
 
 
 low power?
@@ -309,16 +319,28 @@ features:
   color picker?, play with palettes, 
   music reactive, 
   IMU reactive
+  change master speed to be BPM related
   global hue shift, requires shifting my palets to CHSV
+  distance and radial normalization (Spiralus)
+  play with phi
+  change my hsiF usage to color palettes Module_Experiment9_Hsi
+  try some pallets with non zero starting points
+  add more effects like Module_Experiment9_Hsi
+  palette blending
+  effect blending
+
     make floats
     make run off noise function
-  
+
 
 
 bugfixes: 
   why the flash?
   remove fastled.delay bc it breaks hue shift by showing w/o shift?
   only effects bpm demo I think
+  forgot scalez...
+  figure out offsetz vs just z
+  zoom and zoom2 flicker with hue shift i think its the noise hot blob same
 
 
 ..remove or tweak
@@ -379,6 +401,7 @@ perfect dont touch
   Slow_Fade, maybe too black
   Spiralus
   Caleido3
+  Center_Field so fing cool
 
 
 

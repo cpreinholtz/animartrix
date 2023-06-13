@@ -55,7 +55,7 @@ License CC BY-NC 3.0
 #ifndef zind
   #define zind 1
 #endif
-extern float ledMap[NUM_LEDS][3]; // TODO, make this better...
+extern float ledMap[NUM_LEDS][3]; //TODO, make this better...
 
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
@@ -92,9 +92,10 @@ oscillators timings;             // all speed settings in one place
 
 struct modulators {  
 
-  float linear[num_oscillators];        // returns 0 to FLT_MAX
-  float radial[num_oscillators];        // returns 0 to 2*PI
-  float directional[num_oscillators];   // returns -1 to 1
+  float ramp[num_oscillators];        // returns 0 to FLT_MAX
+  float saw[num_oscillators];        // returns 0 to 2*PI
+  float tri[num_oscillators];        // returns 0 to PI double frequency
+  float sine[num_oscillators];   // returns -1 to 1 in a sin waveform
   float noise_angle[num_oscillators];   // returns 0 to 2*PI        
 };
 
@@ -133,13 +134,14 @@ public:
   CRGB* buffer; 
   bool  serpentine;
 
-  // TODO set sizes
+  //TODO set sizes
   float polar_theta[NUM_LEDS];        // look-up table for polar angles
   float spherical_phi[NUM_LEDS];
   float distance[NUM_LEDS];           // look-up table for polar distances TODO
 
   unsigned long a, b, c;                  // for time measurements
   float global_scale = 1.0;
+  float global_bpm = 115.0;
 
   uint16_t BeatsPerMinute; //u8.8 fixed point
 
@@ -270,25 +272,52 @@ public:
   /////////////////////////////////////////////////////////////////////////
   void calculate_oscillators(oscillators &timings) { 
 
-    double runtime = millis() * timings.master_speed;  // global anaimation speed
+    double runtime = millis() * timings.master_speed;  // global anaimation speed gives the frequency in millis of the ramp to increase by 1
 
     for (int i = 0; i < num_oscillators; i++) {
       
-      move.linear[i]      = (runtime + timings.offset[i]) * timings.ratio[i];     // continously rising offsets, returns              0 to max_float
+      move.ramp[i]      = (runtime + timings.offset[i]) * timings.ratio[i];     // continously rising offsets, returns              0 to max_float, infinite ramp
       
-      move.radial[i]      = fmodf(move.linear[i], 2 * PI);                        // angle offsets for continous rotation, returns    0 to 2 * PI
+      move.saw[i]      = fmodf(move.ramp[i], 2 * PI);                        // angle offsets for continous rotation, returns    0 to 2 * PI, sawtooth
+
+      move.tri[i]      = fabsf(move.saw[i] - PI);                        // angle offsets for continous rotation, returns    PI to 0 to PI, triangle double frequency
       
-      move.directional[i] = sinf(move.radial[i]);                                 // directional offsets or factors, returns         -1 to 1
+      move.sine[i] = sinf(move.saw[i]);                                 // directional offsets or factors, returns         -1 to 1, sin
       
-      move.noise_angle[i] = PI * (1 + pnoise(move.linear[i], 0, 0));              // noise based angle offset, returns                0 to 2 * PI
+      move.noise_angle[i] = PI * (1 + pnoise(move.ramp[i], 0, 0));              // noise based angle offset, returns                0 to 2 * PI, smooth noise
       
     }
+
+    //LIB8STATIC uint8_t squarewave8( uint8_t in, uint8_t pulsewidth=128)
+     //LIB8STATIC uint8_t cubicwave8(uint8_t in)
+
+  //LIB8STATIC uint8_t quadwave8(uint8_t in)
+  //706 {LIB8STATIC uint8_t triwave8(uint8_t in)
+  //beatsin88 //sinf
+  //beat 88// sawtooth
+  //beat88( accum88 beats_per_minute_88, uint32_t timebase = 0)
+  //LIB8STATIC uint16_t beatsin88( accum88 beats_per_minute_88, uint16_t lowest = 0, uint16_t highest = 65535,  uint32_t timebase = 0, uint16_t phase_offset = 0);
+  }
+
+
+
+  float bpmToSpeedMillis(float bpm){
+    //double runtime = millis() * timings.master_speed;  // global anaimation speed gives the frequency in millis of the ramp to increase by 1 per millisecond
+    //so if master speed is 1000, ramp increases 1000 times per millisecond
+    //if master speed is .1, it takes 10 millis to increase by ones
+
+    //really master speed is beat per milli.
+    //1m = 60000ms
+
+    //(b/m) * (1m/ 60000ms) would give bpms
+    //but I'm really interested in the time it takes to increase by 2*PI, so lets set "beat" to 2PI instead of 1
+    return bpm/9549.29658551; //2PI*bpm/60000 gives the frequency in millis of the ramp to increase by 2PI
   }
 
 
   void run_default_oscillators(){
 
-    timings.master_speed = 0.005;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.005;    // master speed
 
     timings.ratio[0] = 1;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 2;
@@ -578,17 +607,10 @@ public:
 
     
 
-    timings.master_speed = 0.03;    // master speed 0.031
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.03;    // master speed 0.031
 
-    float w = 0.3;
-
-    timings.ratio[0] = 0.1;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.011;
-    timings.ratio[2] = 0.013;
-    timings.ratio[3] = 0.33*w;
-    timings.ratio[4] = 0.36*w;            // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[5] = 0.38*w; 
-    timings.ratio[6] = 0.0003;  
+    timings.ratio[0] = 0.08;   //linear        // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.051;   //angle
 
     calculate_oscillators(timings); 
     float cutoff = 0.5;
@@ -600,12 +622,12 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
       animation.dist       = distance[n];
-      animation.angle      = polar_theta[n] + move.radial[1];
+      animation.angle      = polar_theta[n] + move.saw[1];
       animation.z          = 5;
       animation.scale_x    = 0.001;
       animation.scale_y    = 0.1;
       animation.scale_z    = 0.1;
-      animation.offset_y   = -10*move.linear[0];
+      animation.offset_y   = -10*move.ramp[0];
       animation.offset_x   = 20;
       animation.offset_z   = 10;
       animation.low_limit  = 0;
@@ -649,17 +671,11 @@ public:
   void Module_Experiment9_Hsi() {
     get_ready();
 
-    timings.master_speed = 0.03;    // master speed 0.031
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.03;    // master speed 0.031
 
-    float w = 0.3;
 
-    timings.ratio[0] = 0.1;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.011;
-    timings.ratio[2] = 0.013;
-    timings.ratio[3] = 0.33*w;
-    timings.ratio[4] = 0.36*w;            // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[5] = 0.38*w; 
-    timings.ratio[6] = 0.0003;  
+    timings.ratio[0] = 0.08;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.051;
 
     calculate_oscillators(timings); 
     
@@ -669,12 +685,12 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
       animation.dist       = distance[n];
-      animation.angle      = polar_theta[n] + move.radial[1];
+      animation.angle      = polar_theta[n] + move.saw[1];
       animation.z          = 5;
       animation.scale_x    = 0.001;
       animation.scale_y    = 0.1;
       animation.scale_z    = 0.1;
-      animation.offset_y   = -10*move.linear[0];
+      animation.offset_y   = -10*move.ramp[0];
       animation.offset_x   = 20;
       animation.offset_z   = 10;
       animation.low_limit  = 0;
@@ -702,10 +718,10 @@ public:
     get_ready(); 
     static Plane3d myPlane;
 
-    timings.master_speed = 0.01;    // speed ratios for the oscillators
-    timings.ratio[0] = 0.5;         // higher values = faster transitions
-    timings.ratio[1] = 0.13;
-    timings.ratio[2] = 0.16;
+    timings.master_speed = bpmToSpeedMillis(global_bpm)/2;// was: 0.01;    // speed ratios for the oscillators
+    timings.ratio[0] = .5;         // higher values = faster transitions
+    timings.ratio[1] = 0.25;
+    timings.ratio[2] = 1/3;
     
     timings.offset[1] = 10;
     timings.offset[2] = 20;
@@ -717,31 +733,31 @@ public:
 
 
 
-    myPlane.yaw(.001 * move.noise_angle[0]);
-    myPlane.setRefpoint(center_x+spread_x*move.directional[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.directional[2]/2.0, center_z);
+    myPlane.yaw(.001 * move.noise_angle[1]);
+    myPlane.setRefpoint(center_x+spread_x*move.sine[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.sine[2]*move.noise_angle[1]/2.0, center_z);
     
       for (int n = 0; n < NUM_LEDS; n++) {
         animation.anglephi   = spherical_phi[n]; //todo, move this later
         // describe and render animation layers
-        animation.angle      = polar_theta[n];//4 * polar_theta[n] +  move.radial[0] ;//- distance[n]/3;
+        animation.angle      = polar_theta[n];//4 * polar_theta[n] +  move.saw[0] ;//- distance[n]/3;
         animation.dist       = distance[n];
         animation.scale_z    = 0.1;  
         animation.scale_y    = 0.1;
         animation.scale_x    = 0.1;
-        animation.offset_x   = move.linear[0];
+        animation.offset_x   = move.ramp[0];
         animation.offset_y   = 0;
         animation.offset_z   = 0;
         animation.z          = 0;
         float show1          = render_value(animation);
 
-        animation.angle      = 3 * polar_theta[n] +  move.radial[1] - distance[n]/3;
+        animation.angle      = 3 * polar_theta[n] +  move.saw[1] - distance[n]/3;
         animation.dist       = distance[n];
-        animation.offset_x   = move.linear[1];
+        animation.offset_x   = move.ramp[1];
         //float show2          = render_value(animation);
 
-        animation.angle      = 3 * polar_theta[n] +  move.radial[2] - distance[n]/3;
+        animation.angle      = 3 * polar_theta[n] +  move.saw[2] - distance[n]/3;
         animation.dist       = distance[n];
-        animation.offset_x   = move.linear[2];
+        animation.offset_x   = move.ramp[2];
         //float show3          = render_value(animation);
 
         // colormapping
@@ -783,10 +799,10 @@ public:
     get_ready(); 
     static Plane3d myPlane;
 
-    timings.master_speed = 0.01;    // speed ratios for the oscillators
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // speed ratios for the oscillators
     timings.ratio[0] = 0.5;         // higher values = faster transitions
-    timings.ratio[1] = 0.13;
-    timings.ratio[2] = 0.16;
+    timings.ratio[1] = 0.25;
+    timings.ratio[2] = 0.33;
     
     timings.offset[1] = 10;
     timings.offset[2] = 20;
@@ -799,30 +815,30 @@ public:
 
 
     myPlane.yaw(.001 * move.noise_angle[0]);
-    myPlane.setRefpoint(center_x+spread_x*move.directional[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.directional[2]/2.0, center_z);
+    myPlane.setRefpoint(center_x+spread_x*move.sine[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.sine[2]/2.0, center_z);
     
       for (int n = 0; n < NUM_LEDS; n++) {
         animation.anglephi   = spherical_phi[n]; //todo, move this later
         // describe and render animation layers
-        animation.angle      = polar_theta[n];//4 * polar_theta[n] +  move.radial[0] ;//- distance[n]/3;
+        animation.angle      = polar_theta[n];//4 * polar_theta[n] +  move.saw[0] ;//- distance[n]/3;
         animation.dist       = distance[n];
         animation.scale_z    = 0.1;  
         animation.scale_y    = 0.1;
         animation.scale_x    = 0.1;
-        animation.offset_x   = move.linear[0];
+        animation.offset_x   = move.ramp[0];
         animation.offset_y   = 0;
         animation.offset_z   = 0;
         animation.z          = 0;
         float show1          = render_value(animation);
 
-        animation.angle      = 3 * polar_theta[n] +  move.radial[1] - distance[n]/3;
+        animation.angle      = 3 * polar_theta[n] +  move.saw[1] - distance[n]/3;
         animation.dist       = distance[n];
-        animation.offset_x   = move.linear[1];
+        animation.offset_x   = move.ramp[1];
         //float show2          = render_value(animation);
 
-        animation.angle      = 3 * polar_theta[n] +  move.radial[2] - distance[n]/3;
+        animation.angle      = 3 * polar_theta[n] +  move.saw[2] - distance[n]/3;
         animation.dist       = distance[n];
-        animation.offset_x   = move.linear[2];
+        animation.offset_x   = move.ramp[2];
         //float show3          = render_value(animation);
 
         // colormapping
@@ -868,10 +884,10 @@ public:
     const float h[num_spheres] = {.7,.04,.9,.5};
     const float resetRadias = maxD*1.1;//maxD*2.5;
 
-    timings.master_speed = 0.01;    // speed ratios for the oscillators
-    timings.ratio[0] = 0.5;         // higher values = faster transitions
-    timings.ratio[1] = 0.13;
-    timings.ratio[2] = 0.16;
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // speed ratios for the oscillators
+    timings.ratio[0] = 1.0;         // higher values = faster transitions
+    timings.ratio[1] = 0.33;
+    timings.ratio[2] = 0.36;
     
     timings.offset[1] = 10;
     timings.offset[2] = 20;
@@ -893,7 +909,7 @@ public:
     for (int s = 0; s < num_spheres; s++) {
       spheres[s].grow(.01);    
       if (spheres[s].mRadias > resetRadias) {
-        //spheres[s].setRefpoint(center_x + spread_x*move.directional[1], center_y + spread_y*move.directional[2], center_z + spread_z*move.directional[0]);
+        //spheres[s].setRefpoint(center_x + spread_x*move.sine[1], center_y + spread_y*move.sine[2], center_z + spread_z*move.sine[0]);
         spheres[s].setRadias(0.0);
       }
     }
@@ -954,11 +970,11 @@ public:
     get_ready(); 
     
 
-    timings.master_speed = 0.01;    // speed ratios for the oscillators
-    timings.ratio[0] = 0.1;         // higher values = faster transitions
-    timings.ratio[1] = 0.03;
-    timings.ratio[2] = 0.03;
-    timings.ratio[3] = 0.03;
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // speed ratios for the oscillators
+    timings.ratio[0] = 1.;         // higher values = faster transitions
+    timings.ratio[1] = 0.3;
+    timings.ratio[2] = 0.31;
+    timings.ratio[3] = 0.35;
     
     
     timings.offset[1] = 10;
@@ -977,27 +993,27 @@ public:
         animation.offset_x   = 0;
         animation.offset_y   = 0;
         animation.offset_z   = 100;
-        animation.angle      = polar_theta[n] +  move.radial[0];
+        animation.angle      = polar_theta[n] +  move.saw[0];
         
         animation.dist       = distance[n];
-        animation.z          = move.linear[0];
+        animation.z          = move.ramp[0];
         animation.low_limit  = -1;
         float show1          = render_value(animation);
         
-        animation.angle      = polar_theta[n] - move.radial[1] + show1/512.0;
+        animation.angle      = polar_theta[n] - move.saw[1] + show1/512.0;
         animation.dist       = distance[n] * show1/255.0;
         animation.low_limit  = 0;
-        animation.z          = move.linear[1];
+        animation.z          = move.ramp[1];
         float show2          = render_value(animation);
 
-        animation.angle      = polar_theta[n] - move.radial[2] + show1/512.0;
+        animation.angle      = polar_theta[n] - move.saw[2] + show1/512.0;
         animation.dist       = distance[n] * show1/220.0;
-        animation.z          = move.linear[2];
+        animation.z          = move.ramp[2];
         float show3          = render_value(animation);
 
-        animation.angle      = polar_theta[n] - move.radial[3] + show1/512.0;
+        animation.angle      = polar_theta[n] - move.saw[3] + show1/512.0;
         animation.dist       = distance[n] * show1/200.0;
-        animation.z          = move.linear[3];
+        animation.z          = move.ramp[3];
         float show4          = render_value(animation);
 
         // colormapping
@@ -1022,10 +1038,10 @@ public:
     get_ready(); 
     
 
-    timings.master_speed = 0.01;    // speed ratios for the oscillators
-    timings.ratio[0] = 0.1;         // higher values = faster transitions
-    timings.ratio[1] = 0.13;
-    timings.ratio[2] = 0.16;
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // speed ratios for the oscillators
+    timings.ratio[0] = 1;         // higher values = faster transitions
+    timings.ratio[1] = 1/3;
+    timings.ratio[2] = 0.5;
     
     timings.offset[1] = 10;
     timings.offset[2] = 20;
@@ -1037,25 +1053,25 @@ public:
       for (int n = 0; n < NUM_LEDS; n++) {
         animation.anglephi   = spherical_phi[n]; //todo, move this later
         // describe and render animation layers
-        animation.angle      = 3 * polar_theta[n] +  move.radial[0] - distance[n]/3;
+        animation.angle      = 3 * polar_theta[n] +  move.saw[0] - distance[n]/3;
         animation.dist       = distance[n];
         animation.scale_z    = 0.1;  
         animation.scale_y    = 0.1;
         animation.scale_x    = 0.1;
-        animation.offset_x   = move.linear[0];
+        animation.offset_x   = move.ramp[0];
         animation.offset_y   = 0;
         animation.offset_z   = 0;
         animation.z          = 0;
         float show1          = render_value(animation);
 
-        animation.angle      = 3 * polar_theta[n] +  move.radial[1] - distance[n]/3;
+        animation.angle      = 3 * polar_theta[n] +  move.saw[1] - distance[n]/3;
         animation.dist       = distance[n];
-        animation.offset_x   = move.linear[1];
+        animation.offset_x   = move.ramp[1];
         float show2          = render_value(animation);
 
-        animation.angle      = 3 * polar_theta[n] +  move.radial[2] - distance[n]/3;
+        animation.angle      = 3 * polar_theta[n] +  move.saw[2] - distance[n]/3;
         animation.dist       = distance[n];
-        animation.offset_x   = move.linear[2];
+        animation.offset_x   = move.ramp[2];
         float show3          = render_value(animation);
 
         // colormapping
@@ -1079,10 +1095,9 @@ public:
     get_ready(); 
     
 
-    timings.master_speed = 0.1;    // speed ratios for the oscillators
-    timings.ratio[0] = 2;         // higher values = faster transitions
-    timings.ratio[1] = 2.1;
-    timings.ratio[2] = 1.2;
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.1;    // speed ratios for the oscillators
+    timings.ratio[0] = .25;         // higher values = faster transitions
+    timings.ratio[1] = .33;
     
     timings.offset[1] = 100;
     timings.offset[2] = 200;
@@ -1102,12 +1117,12 @@ public:
       animation.dist       = distance[n];
       animation.offset_y   = 0;
       animation.offset_x   = 0;
-      animation.z          = 2*distance[n] - move.linear[0];
+      animation.offset_z   = 2*distance[n] - move.ramp[0];
       float show1          = render_value(animation);
 
       animation.angle      = polar_theta[n];
       animation.dist       = distance[n];
-      animation.z          = 2*distance[n] - move.linear[1];
+      animation.offset_z   = 2*distance[n] - move.ramp[1];
       float show2          = render_value(animation);
 
   
@@ -1128,14 +1143,11 @@ public:
     get_ready(); 
     
 
-    timings.master_speed = 0.01;    // speed ratios for the oscillators
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // speed ratios for the oscillators
     timings.ratio[0] = 1;         // higher values = faster transitions
-    timings.ratio[1] = 1.1;
-    timings.ratio[2] = 1.2;
     
     timings.offset[1] = 100;
-    timings.offset[2] = 200;
-    timings.offset[3] = 300;
+
     
     calculate_oscillators(timings);     // get linear movers and oscillators going
 
@@ -1148,7 +1160,7 @@ public:
       animation.scale_y    = 0.07;
       animation.scale_z    = 0.1;
       animation.dist       = 5*sqrtf(distance[n]);
-      animation.offset_y   = move.linear[0];
+      animation.offset_y   = move.ramp[0];
       animation.offset_x   = 0;
       animation.z          = 0;
       float show1          = render_value(animation);
@@ -1158,7 +1170,7 @@ public:
       animation.scale_y    = 0.07;
       animation.scale_z    = 0.1;
       animation.dist       = 4*sqrtf(distance[n]);
-      animation.offset_y   = move.linear[0];
+      animation.offset_y   = move.ramp[0];
       animation.offset_x   = 0;
       animation.z          = 0;
       float show2          = render_value(animation);
@@ -1179,16 +1191,19 @@ public:
 
   }
 
+
+
+
   void Distance_Experiment() {
 
 
     get_ready(); 
     
 
-    timings.master_speed = 0.01;    // speed ratios for the oscillators
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // speed ratios for the oscillators
     timings.ratio[0] = 0.2;         // higher values = faster transitions
     timings.ratio[1] = 0.13;
-    timings.ratio[2] = 0.012;
+    timings.ratio[2] = 0.032;
     
     timings.offset[1] = 100;
     timings.offset[2] = 200;
@@ -1202,11 +1217,11 @@ public:
   
       // describe and render animation layers
       animation.dist       = powf(distance[n], 0.5);
-      animation.angle      = polar_theta[n] + move.radial[0];
+      animation.angle      = polar_theta[n] + move.saw[0];
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
       animation.scale_z    = 0.1;
-      animation.offset_y   = move.linear[0];
+      animation.offset_y   = move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
       animation.z          = 0;
@@ -1217,7 +1232,7 @@ public:
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
       animation.scale_z    = 0.1;
-      animation.offset_y   = move.linear[1];
+      animation.offset_y   = move.ramp[1];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
       animation.z          = 0;
@@ -1242,12 +1257,12 @@ public:
     get_ready(); 
     
 
-    timings.master_speed = 0.003;    // speed ratios for the oscillators
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.003;    // speed ratios for the oscillators
     timings.ratio[0] = 0.02;         // higher values = faster transitions
     timings.ratio[1] = 0.03;
     timings.ratio[2] = 0.04;
     timings.ratio[3] = 0.05;
-    timings.ratio[4] = 0.6;
+    timings.ratio[4] = 0.66;
     timings.offset[0] = 0;
     timings.offset[1] = 100;
     timings.offset[2] = 200;
@@ -1261,33 +1276,33 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
   
       // describe and render animation layers
-      animation.dist       = distance[n] * (2 + move.directional[0]) / 3;
-      animation.angle      = 3 * polar_theta[n] + 3 * move.noise_angle[0] + move.radial[4];
+      animation.dist       = distance[n] * (2 + move.sine[0]) / 3;
+      animation.angle      = 3 * polar_theta[n] + 3 * move.noise_angle[0] + move.saw[4];
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
       animation.scale_z    = 0.1;
-      animation.offset_y   = 2 * move.linear[0];
+      animation.offset_y   = 2 * move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      animation.z          = move.linear[0];
+      animation.z          = move.ramp[0];
       float show1          = render_value(animation);
 
-      animation.dist       = distance[n] * (2 + move.directional[1]) / 3;
-      animation.angle      = 4 * polar_theta[n] + 3 * move.noise_angle[1] + move.radial[4];
-      animation.offset_x   = 2 * move.linear[1];
-      animation.z          = move.linear[1];
+      animation.dist       = distance[n] * (2 + move.sine[1]) / 3;
+      animation.angle      = 4 * polar_theta[n] + 3 * move.noise_angle[1] + move.saw[4];
+      animation.offset_x   = 2 * move.ramp[1];
+      animation.z          = move.ramp[1];
       float show2          = render_value(animation);
 
-      animation.dist       = distance[n] * (2 + move.directional[2]) / 3;
-      animation.angle      = 5 * polar_theta[n] + 3 * move.noise_angle[2] + move.radial[4];
-      animation.offset_y   = 2 * move.linear[2];
-      animation.z          = move.linear[2];
+      animation.dist       = distance[n] * (2 + move.sine[2]) / 3;
+      animation.angle      = 5 * polar_theta[n] + 3 * move.noise_angle[2] + move.saw[4];
+      animation.offset_y   = 2 * move.ramp[2];
+      animation.z          = move.ramp[2];
       float show3          = render_value(animation);
 
-      animation.dist       = distance[n] * (2 + move.directional[3]) / 3;
-      animation.angle      = 4 * polar_theta[n] + 3 * move.noise_angle[3] + move.radial[4];
-      animation.offset_x   = 2 * move.linear[3];
-      animation.z          = move.linear[3];
+      animation.dist       = distance[n] * (2 + move.sine[3]) / 3;
+      animation.angle      = 4 * polar_theta[n] + 3 * move.noise_angle[3] + move.saw[4];
+      animation.offset_x   = 2 * move.ramp[3];
+      animation.z          = move.ramp[3];
       float show4          = render_value(animation);
       
       // colormapping
@@ -1307,7 +1322,7 @@ public:
     get_ready(); 
     
 
-    timings.master_speed = 0.002;    // speed ratios for the oscillators
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.002;    // speed ratios for the oscillators
     timings.ratio[0] = 0.02;         // higher values = faster transitions
     timings.ratio[1] = 0.03;
     timings.ratio[2] = 0.04;
@@ -1326,33 +1341,33 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
   
       // describe and render animation layers
-      animation.dist       = distance[n] * (2 + move.directional[0]) / 3;
-      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[0] + move.radial[4];
+      animation.dist       = distance[n] * (2 + move.sine[0]) / 3;
+      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[0] + move.saw[4];
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
       animation.scale_z    = 0.1;
-      animation.offset_y   = 2 * move.linear[0];
+      animation.offset_y   = 2 * move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      animation.z          = 0;//move.linear[0]; TODO
+      animation.z          = 0;//move.ramp[0]; TODO
       float show1          = render_value(animation);
 
-      animation.dist       = distance[n] * (2 + move.directional[1]) / 3;
-      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[1] + move.radial[4];
-      animation.offset_x   = 2 * move.linear[1];
-      animation.z          = move.linear[1];
+      animation.dist       = distance[n] * (2 + move.sine[1]) / 3;
+      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[1] + move.saw[4];
+      animation.offset_x   = 2 * move.ramp[1];
+      animation.z          = move.ramp[1];
       float show2          = render_value(animation);
 
-      animation.dist       = distance[n] * (2 + move.directional[2]) / 3;
-      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[2] + move.radial[4];
-      animation.offset_y   = 2 * move.linear[2];
-      animation.z          = move.linear[2];
+      animation.dist       = distance[n] * (2 + move.sine[2]) / 3;
+      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[2] + move.saw[4];
+      animation.offset_y   = 2 * move.ramp[2];
+      animation.z          = move.ramp[2];
       float show3          = render_value(animation);
 
-      animation.dist       = distance[n] * (2 + move.directional[3]) / 3;
-      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[3] + move.radial[4];
-      animation.offset_x   = 2 * move.linear[3];
-      animation.z          = move.linear[3];
+      animation.dist       = distance[n] * (2 + move.sine[3]) / 3;
+      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[3] + move.saw[4];
+      animation.offset_x   = 2 * move.ramp[3];
+      animation.z          = move.ramp[3];
       float show4          = render_value(animation);
       
       // colormapping
@@ -1373,12 +1388,12 @@ public:
     get_ready(); 
     
 
-    timings.master_speed = 0.004;    // speed ratios for the oscillators
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.004;    // speed ratios for the oscillators
     timings.ratio[0] = 0.02;         // higher values = faster transitions
     timings.ratio[1] = 0.03;
     timings.ratio[2] = 0.04;
     timings.ratio[3] = 0.05;
-    timings.ratio[4] = 0.6;
+    timings.ratio[4] = 0.60;
     timings.offset[0] = 0;
     timings.offset[1] = 100;
     timings.offset[2] = 200;
@@ -1392,36 +1407,36 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
   
       // describe and render animation layers
-      animation.dist       = distance[n] * (2 + move.directional[0]) / 3;
-      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[0] + move.radial[4];
-      animation.scale_x    = 0.1;// + (move.directional[0] + 2)/100;
-      animation.scale_y    = 0.1;// + (move.directional[1] + 2)/100;
+      animation.dist       = distance[n] * (2 + move.sine[0]) / 3;
+      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[0] + move.saw[4];
+      animation.scale_x    = 0.1;// + (move.sine[0] + 2)/100;
+      animation.scale_y    = 0.1;// + (move.sine[1] + 2)/100;
       animation.scale_z    = 0.1;
-      animation.offset_y   = 2 * move.linear[0];
-      animation.offset_x   = 2 * move.linear[1];
+      animation.offset_y   = 2 * move.ramp[0];
+      animation.offset_x   = 2 * move.ramp[1];
       animation.offset_z   = 0;
-      animation.z          = move.linear[0];
+      animation.z          = move.ramp[0];
       float show1          = render_value(animation);
 
-      animation.dist       = distance[n] * (2 + move.directional[1]) / 3;
-      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[1] + move.radial[4];
-      animation.offset_x   = 2 * move.linear[1];
+      animation.dist       = distance[n] * (2 + move.sine[1]) / 3;
+      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[1] + move.saw[4];
+      animation.offset_x   = 2 * move.ramp[1];
       animation.offset_y   = show1 / 20.0;
-      animation.z          = move.linear[1];
+      animation.z          = move.ramp[1];
       float show2          = render_value(animation);
 
-      animation.dist       = distance[n] * (2 + move.directional[2]) / 3;
-      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[2] + move.radial[4];
-      animation.offset_y   = 2 * move.linear[2];
+      animation.dist       = distance[n] * (2 + move.sine[2]) / 3;
+      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[2] + move.saw[4];
+      animation.offset_y   = 2 * move.ramp[2];
       animation.offset_x   = show2 / 20.0;
-      animation.z          = move.linear[2];
+      animation.z          = move.ramp[2];
       float show3          = render_value(animation);
 
-      animation.dist       = distance[n] * (2 + move.directional[3]) / 3;
-      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[3] + move.radial[4];
-      animation.offset_x   = 2 * move.linear[3];
+      animation.dist       = distance[n] * (2 + move.sine[3]) / 3;
+      animation.angle      = 2 * polar_theta[n] + 3 * move.noise_angle[3] + move.saw[4];
+      animation.offset_x   = 2 * move.ramp[3];
       animation.offset_y   = show3 / 20.0;
-      animation.z          = move.linear[3];
+      animation.z          = move.ramp[3];
       float show4          = render_value(animation);
       
       // colormapping
@@ -1447,17 +1462,13 @@ public:
     get_ready(); 
     
 
-    timings.master_speed = 0.0015;    // speed ratios for the oscillators
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.0015;    // speed ratios for the oscillators
     timings.ratio[0] = 4;         // higher values = faster transitions
     timings.ratio[1] = 1;
     timings.ratio[2] = 1;
-    timings.ratio[3] = 0.05;
-    timings.ratio[4] = 0.6;
     timings.offset[0] = 0;
     timings.offset[1] = 100;
     timings.offset[2] = 200;
-    timings.offset[3] = 300;
-    timings.offset[4] = 400;
     
     calculate_oscillators(timings);     // get linear movers and oscillators going
 
@@ -1468,36 +1479,39 @@ public:
       // describe and render animation layers
       animation.dist       = distance[n] * 0.8;
       animation.angle      = polar_theta[n];
-      animation.scale_x    = 0.15;// + (move.directional[0] + 2)/100;
-      animation.scale_y    = 0.12;// + (move.directional[1] + 2)/100;
+      animation.scale_x    = 0.15;// + (move.sine[0] + 2)/100;
+      animation.scale_y    = 0.12;// + (move.sine[1] + 2)/100;
       animation.scale_z    = 0.01;
-      animation.offset_y   = -move.linear[0];
+      animation.offset_y   = -move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
       animation.z          = 30;
       float show1          = render_value(animation);
 
-      animation.offset_y   = -move.linear[1];
-      animation.scale_x    = 0.15;// + (move.directional[0] + 2)/100;
-      animation.scale_y    = 0.12;// + (move.directional[1] + 2)/100;
+      animation.offset_y   = -move.ramp[1];
+      animation.scale_x    = 0.15;// + (move.sine[0] + 2)/100;
+      animation.scale_y    = 0.12;// + (move.sine[1] + 2)/100;
       animation.offset_x   = show1 / 100;
       animation.offset_y   += show1/100;
      
       float show2          = render_value(animation);
 
-      animation.offset_y   = -move.linear[2];
-      animation.scale_x    = 0.15;// + (move.directional[0] + 2)/100;
-      animation.scale_y    = 0.12;// + (move.directional[1] + 2)/100;
+      animation.offset_y   = -move.ramp[2];
+      animation.scale_x    = 0.15;// + (move.sine[0] + 2)/100;
+      animation.scale_y    = 0.12;// + (move.sine[1] + 2)/100;
       animation.offset_x   = show2 / 100;
       animation.offset_y   += show2/100;
      
       float show3         = render_value(animation);
 
       // colormapping
-      float linear = (ledMap[n][yind])/(spread_y-1.f);  // radial mask
+      float radius = radial_filter_radius;   // radius of a radial brightness filter
+      float radial = (radius-animation.dist)/animation.dist;
 
-      pixel.r = linear*show2;
-      pixel.g = 0.1*linear*(show2-show3);
+
+      pixel.r = 10+radial*show2;
+      pixel.g = 0.1*radial*(show2-show3);
+      pixel.b = 3*move.noise_angle[1]; //todohue
       
       pixel = rgb_sanity_check(pixel);
 
@@ -1510,18 +1524,14 @@ public:
     get_ready(); 
         
 
-    timings.master_speed = 0.00003;    // speed ratios for the oscillators
-    timings.ratio[0] = 4;         // higher values = faster transitions
-    timings.ratio[1] = 3.2;
-    timings.ratio[2] = 10;
-    timings.ratio[3] = 0.05;
-    timings.ratio[4] = 0.6;
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.00003;    // speed ratios for the oscillators
+    timings.ratio[0] = .5;         // higher values = faster transitions
+    timings.ratio[1] = .1;
+    timings.ratio[2] = 1;
     timings.offset[0] = 0;
     timings.offset[1] = 100;
     timings.offset[2] = 200;
-    timings.offset[3] = 300;
-    timings.offset[4] = 400;
-    
+
     calculate_oscillators(timings);     // get linear movers and oscillators going
 
     
@@ -1530,13 +1540,13 @@ public:
   
       // describe and render animation layers
       animation.dist       = 0.3*distance[n] * 0.8;
-      animation.angle      = 3*polar_theta[n] + move.radial[2];
+      animation.angle      = 3*polar_theta[n] + move.saw[2];
       animation.scale_x    = 0.1 + (move.noise_angle[0])/10;
-      animation.scale_y    = 0.1 + (move.noise_angle[1])/10;// + (move.directional[1] + 2)/100;
+      animation.scale_y    = 0.1 + (move.noise_angle[1])/10;// + (move.sine[1] + 2)/100;
       animation.scale_z    = 0.01;
       animation.offset_y   = 0;
       animation.offset_x   = 0;
-      animation.offset_z   = 100*move.linear[0];
+      animation.offset_z   = 100*move.ramp[0];
       animation.z          = 30;
       float show1          = render_value(animation);
 
@@ -1567,19 +1577,11 @@ public:
     get_ready(); 
         
 
-    a = micros();                   // for time measurement in report_performance()
-
-    timings.master_speed = 0.001;    // speed ratios for the oscillators
-    timings.ratio[0] = 3;         // higher values = faster transitions
-    timings.ratio[1] = 2;
-    timings.ratio[2] = 1;
+    timings.master_speed = bpmToSpeedMillis(global_bpm)/3;// was: 0.001;    // speed ratios for the oscillators
     timings.ratio[3] = 0.13;
     timings.ratio[4] = 0.15;
     timings.ratio[5] = 0.03;
     timings.ratio[6] = 0.025;
-    timings.offset[0] = 0;
-    timings.offset[1] = 100;
-    timings.offset[2] = 200;
     timings.offset[3] = 300;
     timings.offset[4] = 400;
     timings.offset[5] = 500;
@@ -1596,7 +1598,7 @@ public:
       animation.scale_x    = 0.08;
       animation.scale_y    = 0.08;
       animation.scale_z    = 0.08;
-      animation.offset_y   = -move.linear[0];
+      animation.offset_y   = -move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
       animation.z          = 0;
@@ -1607,7 +1609,7 @@ public:
       animation.scale_x    = 0.08;
       animation.scale_y    = 0.08;
       animation.scale_z    = 0.08;
-      animation.offset_y   = -move.linear[1];
+      animation.offset_y   = -move.ramp[1];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
       animation.z          = 0;
@@ -1615,7 +1617,7 @@ public:
 
       animation.angle      = polar_theta[n] + show1/100 + move.noise_angle[3] + move.noise_angle[4];
       animation.dist       = distance[n] + show2/50;
-      animation.offset_y   = -move.linear[2];
+      animation.offset_y   = -move.ramp[2];
 
       animation.offset_y   += show1/100;
       animation.offset_x   += show2/100;
@@ -1642,16 +1644,16 @@ public:
     get_ready(); 
         
 
-    timings.master_speed = 0.0011;    // speed ratios for the oscillators
-    timings.ratio[0] = 1.5;         // higher values = faster transitions
-    timings.ratio[1] = 2.3;
-    timings.ratio[2] = 3;
-    timings.ratio[3] = 0.05;
-    timings.ratio[4] = 0.2;
-    timings.ratio[5] = 0.03;
-    timings.ratio[6] = 0.025;
-    timings.ratio[7] = 0.021;
-    timings.ratio[8] = 0.027;
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.0011;    // speed ratios for the oscillators
+    timings.ratio[0] = .15;         // higher values = faster transitions
+    timings.ratio[1] = .23;
+    timings.ratio[2] = .3;
+    timings.ratio[3] = 0.005;
+    timings.ratio[4] = 0.02;
+    timings.ratio[5] = 0.003;
+    timings.ratio[6] = 0.0025;
+    timings.ratio[7] = 0.0021;
+    timings.ratio[8] = 0.0027;
     timings.offset[0] = 0;
     timings.offset[1] = 100;
     timings.offset[2] = 200;
@@ -1667,25 +1669,25 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
       
       animation.dist       = distance[n] ;
-      animation.angle      = 2*polar_theta[n] + move.noise_angle[5] + move.directional[3] * move.noise_angle[6]* animation.dist/10;
+      animation.angle      = 2*polar_theta[n] + move.noise_angle[5] + move.sine[3] * move.noise_angle[6]* animation.dist/10;
       animation.scale_x    = 0.08;
       animation.scale_y    = 0.08;
       animation.scale_z    = 0.02;
-      animation.offset_y   = -move.linear[0];
+      animation.offset_y   = -move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      animation.z          = move.linear[1];
+      animation.z          = move.ramp[1];
       float show1          = render_value(animation);
 
-      animation.angle      = 2*polar_theta[n] + move.noise_angle[7] + move.directional[5] * move.noise_angle[8]* animation.dist/10;
-      animation.offset_y   = -move.linear[1];
-      animation.z          = move.linear[2];
+      animation.angle      = 2*polar_theta[n] + move.noise_angle[7] + move.sine[5] * move.noise_angle[8]* animation.dist/10;
+      animation.offset_y   = -move.ramp[1];
+      animation.z          = move.ramp[2];
             
       float show2          = render_value(animation);
 
-      animation.angle      = 2*polar_theta[n] + move.noise_angle[6] + move.directional[6] * move.noise_angle[7]* animation.dist/10;
-      animation.offset_y   = move.linear[2];
-      animation.z          = move.linear[0];
+      animation.angle      = 2*polar_theta[n] + move.noise_angle[6] + move.sine[6] * move.noise_angle[7]* animation.dist/10;
+      animation.offset_y   = move.ramp[2];
+      animation.z          = move.ramp[0];
       float show3          = render_value(animation);
       
       float f =  1;
@@ -1705,16 +1707,16 @@ public:
     get_ready(); 
       
 
-    timings.master_speed = 0.0015;    // speed ratios for the oscillators
-    timings.ratio[0] = 1.5;         // higher values = faster transitions
-    timings.ratio[1] = 2.3;
-    timings.ratio[2] = 3;
-    timings.ratio[3] = 0.05;
-    timings.ratio[4] = 0.2;
-    timings.ratio[5] = 0.05;
-    timings.ratio[6] = 0.055;
-    timings.ratio[7] = 0.06;
-    timings.ratio[8] = 0.027;
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.0015;    // speed ratios for the oscillators
+    timings.ratio[0] = .125;         // higher values = faster transitions
+    timings.ratio[1] = .225;
+    timings.ratio[2] = .3;
+    timings.ratio[3] = 0.005;
+    timings.ratio[4] = 0.02;
+    timings.ratio[5] = 0.005;
+    timings.ratio[6] = 0.0055;
+    timings.ratio[7] = 0.006;
+    timings.ratio[8] = 0.0027;
     timings.offset[0] = 0;
     timings.offset[1] = 100;
     timings.offset[2] = 200;
@@ -1730,25 +1732,25 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
       
       animation.dist       = distance[n] ;
-      animation.angle      = 5*polar_theta[n] + move.noise_angle[5] + move.directional[3] * move.noise_angle[6]* animation.dist/10;
+      animation.angle      = 2*polar_theta[n] + move.noise_angle[5] + move.sine[3] * move.noise_angle[6]* animation.dist/10;
       animation.scale_x    = 0.08;
       animation.scale_y    = 0.08;
       animation.scale_z    = 0.02;
-      animation.offset_y   = -move.linear[0];
+      animation.offset_y   = -move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
-      animation.z          = move.linear[1];
+      animation.z          = move.ramp[1];
       float show1          = render_value(animation);
 
-      animation.angle      = 6*polar_theta[n] + move.noise_angle[7] + move.directional[5] * move.noise_angle[8]* animation.dist/10;
-      animation.offset_y   = -move.linear[1];
-      animation.z          = move.linear[2];
+      animation.angle      = 6*polar_theta[n] + move.noise_angle[7] + move.sine[5] * move.noise_angle[8]* animation.dist/10;
+      animation.offset_y   = -move.ramp[1];
+      animation.z          = move.ramp[2];
             
       float show2          = render_value(animation);
 
-      animation.angle      = 6*polar_theta[n] + move.noise_angle[6] + move.directional[6] * move.noise_angle[7]* animation.dist/10;
-      animation.offset_y   = move.linear[2];
-      animation.z          = move.linear[0];
+      animation.angle      = 6*polar_theta[n] + move.noise_angle[6] + move.sine[6] * move.noise_angle[7]* animation.dist/10;
+      animation.offset_y   = move.ramp[2];
+      animation.z          = move.ramp[0];
       animation.dist       = distance[n] *0.8;
       float show3          = render_value(animation);
       
@@ -1779,10 +1781,10 @@ public:
       animation.dist       = distance[n] ;
       animation.angle      = polar_theta[n];
       
-      animation.scale_x    = 0.07 + move.directional[0]*0.002;
+      animation.scale_x    = 0.07 + move.sine[0]*0.002;
       animation.scale_y    = 0.07;
       
-      animation.offset_y   = -move.linear[0];
+      animation.offset_y   = -move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
       
@@ -1790,26 +1792,26 @@ public:
       animation.low_limit  = -1;
       float show1          = render_value(animation);
 
-      animation.offset_y   = -move.linear[1];
+      animation.offset_y   = -move.ramp[1];
       float show3          = render_value(animation);
 
       animation.offset_x   = show3/20;
-      animation.offset_y   = -move.linear[0]/2 + show1/70;
+      animation.offset_y   = -move.ramp[0]/2 + show1/70;
       animation.low_limit  = 0;
       float show2          = render_value(animation);
 
       animation.offset_x   = show3/20;
-      animation.offset_y   = -move.linear[0]/2 + show1/70;
+      animation.offset_y   = -move.ramp[0]/2 + show1/70;
       animation.z          = 100;
       float show4          = render_value(animation);
 
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-animation.dist)/animation.dist;
 
-      float linear = (ledMap[n][yind]+1)/(spread_y-1.f);
       
       pixel.r   = radial  * show2;
-      pixel.g   = linear * radial* 0.3* (show2-show4);
+      pixel.g   = radial* 0.3* (show2-show4);
+      pixel.b = 3*move.noise_angle[1]; 
       
       pixel = rgb_sanity_check(pixel);
       buffer[n] = setPixelColor(pixel);
@@ -1824,7 +1826,7 @@ public:
     
 
     run_default_oscillators();
-    timings.master_speed = 0.003;
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.003;
     calculate_oscillators(timings); 
 
     
@@ -1837,7 +1839,7 @@ public:
       animation.scale_x    = 0.005;
       animation.scale_y    = 0.005;
       
-      animation.offset_y   = -10*move.linear[0];
+      animation.offset_y   = -10*move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
       
@@ -1846,10 +1848,12 @@ public:
       float show1          = render_value(animation);
 
   
-      float linear = 1;//(y+1)/(num_y-1.f);
+      float radius = radial_filter_radius;   // radius of a radial brightness filter
+      float radial = (radius-distance[n])/distance[n];
       
-      pixel.r   = show1*linear;
+      pixel.r   = show1*radial; //todo this is pretty boring, maybe make palette
       pixel.g   = 0;
+      pixel.b = 3*move.noise_angle[1]; 
       
       
       pixel = rgb_sanity_check(pixel);
@@ -1865,7 +1869,7 @@ public:
     
 
     run_default_oscillators();
-    timings.master_speed = 0.003;
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.003;
     calculate_oscillators(timings); 
 
     
@@ -1878,9 +1882,9 @@ public:
       animation.scale_x    = 0.005;
       animation.scale_y    = 0.005;
       
-      animation.offset_y   = -10*move.linear[0];
+      animation.offset_y   = -10*move.ramp[0];
       animation.offset_x   = 0;
-      animation.offset_z   = 0.1*move.linear[0];
+      animation.offset_z   = 0.1*move.ramp[0];
       
       animation.z          = 0;
       animation.low_limit  = 0;
@@ -1891,7 +1895,7 @@ public:
       
       pixel.r   = show1;
       pixel.b   = 40-show1;
-      
+      pixel.g = 3*move.noise_angle[1]; 
       
       pixel = rgb_sanity_check(pixel);
       buffer[n] = setPixelColor(pixel);
@@ -1906,24 +1910,24 @@ public:
                       
 
     run_default_oscillators();
-    timings.master_speed = 0.00005;
+    timings.master_speed = bpmToSpeedMillis(global_bpm)/1000;// was: 0.00005;
     calculate_oscillators(timings); 
 
     
     for (int n = 0; n < NUM_LEDS; n++) { 
       animation.anglephi   = spherical_phi[n]; //todo, move this later
       
-      animation.dist       = sqrtf(distance[n]) * 0.7 * (move.directional[0] + 1.5);
-      animation.angle      = polar_theta[n] - move.radial[0] + distance[n] / 5;
+      animation.dist       = sqrtf(distance[n]) * 0.7 * (move.sine[0] + 1.5);
+      animation.angle      = polar_theta[n] - move.saw[0] + distance[n] / 5;
       
       animation.scale_x    = 0.11;
       animation.scale_y    = 0.11;
       
-      animation.offset_y   = -50 * move.linear[0];
+      animation.offset_y   = -50 * move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_z   = 0;
       
-      animation.z          = move.linear[0];
+      animation.z          = move.ramp[0];
       animation.low_limit  = -0.1;
       animation.high_limit = 1;
       float show1          = render_value(animation);
@@ -1961,11 +1965,11 @@ public:
 
                       
 
-    timings.master_speed = 0.5;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm)/2;// was: 0.5;    // master speed
 
-    timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.0027;
-    timings.ratio[2] = 0.0031;
+    timings.ratio[0] = 0.25;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.27;
+    timings.ratio[2] = 0.31;
     
     calculate_oscillators(timings); 
 
@@ -1974,21 +1978,21 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
       
       animation.dist       = (distance[n]);
-      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.radial[0];
-      animation.z          = (animation.dist * 1.5)-10 * move.linear[0];
+      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[0];
+      animation.z          = (animation.dist * 1.5)-10 * move.ramp[0];
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
-      animation.offset_x   = move.linear[0];
+      animation.offset_x   = move.ramp[0];
       
       float show1          = render_value(animation);
-      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.radial[1];
-      animation.z          = (animation.dist * 1.5)-10 * move.linear[1];
-      animation.offset_x   = move.linear[1];
+      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[1];
+      animation.z          = (animation.dist * 1.5)-10 * move.ramp[1];
+      animation.offset_x   = move.ramp[1];
 
       float show2          = render_value(animation);
-      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.radial[2];
-      animation.z          = (animation.dist * 1.5)-10 * move.linear[2];
-      animation.offset_x   = move.linear[2];
+      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[2];
+      animation.z          = (animation.dist * 1.5)-10 * move.ramp[2];
+      animation.offset_x   = move.ramp[2];
 
       float show3          = render_value(animation);
 
@@ -2010,14 +2014,14 @@ public:
     get_ready(); 
                          
 
-    timings.master_speed = 0.2;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.2;    // master speed
 
-    timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.0027;
-    timings.ratio[2] = 0.0031;
-    timings.ratio[3] = 0.0033;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.0036;
-    timings.ratio[5] = 0.0039;
+    timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.027;
+    timings.ratio[2] = 0.031;
+    timings.ratio[3] = 0.033;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[4] = 0.036;
+    timings.ratio[5] = 0.039;
     
     calculate_oscillators(timings); 
 
@@ -2026,21 +2030,21 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
       
       animation.dist       = distance[n];
-      animation.angle      = polar_theta[n] + move.radial[0] + move.noise_angle[0]+ move.noise_angle[3];
-      animation.z          = (sqrtf(animation.dist));// - 10 * move.linear[0];
+      animation.angle      = polar_theta[n] + move.saw[0] + move.noise_angle[0]+ move.noise_angle[3];
+      animation.z          = (sqrtf(animation.dist));// - 10 * move.ramp[0];
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
       animation.offset_z   = 10;
-      animation.offset_x   = 10*move.linear[0];
+      animation.offset_x   = 10*move.ramp[0];
       float show1          = render_value(animation);
 
-      animation.angle      = polar_theta[n] + move.radial[1]+ move.noise_angle[1]+ move.noise_angle[4];
-      animation.offset_x   = 11*move.linear[1];
+      animation.angle      = polar_theta[n] + move.saw[1]+ move.noise_angle[1]+ move.noise_angle[4];
+      animation.offset_x   = 11*move.ramp[1];
       animation.offset_z   = 100;
       float show2          = render_value(animation);
 
-      animation.angle      = polar_theta[n] + move.radial[2]+ move.noise_angle[2]+ move.noise_angle[5];
-      animation.offset_x   = 12*move.linear[2];
+      animation.angle      = polar_theta[n] + move.saw[2]+ move.noise_angle[2]+ move.noise_angle[5];
+      animation.offset_x   = 12*move.ramp[2];
       animation.offset_z   = 300;
       float show3          = render_value(animation);
       
@@ -2066,14 +2070,14 @@ public:
     get_ready(); 
                         
 
-    timings.master_speed = 0.12;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.12;    // master speed
 
-    timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.0027;
-    timings.ratio[2] = 0.0031;
-    timings.ratio[3] = 0.0033;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.0036;
-    timings.ratio[5] = 0.0039;
+    timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.027;
+    timings.ratio[2] = 0.031;
+    timings.ratio[3] = 0.033;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[4] = 0.036;
+    timings.ratio[5] = 0.039;
     
     calculate_oscillators(timings); 
 
@@ -2082,21 +2086,21 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
       
       animation.dist       = distance[n];
-      animation.angle      = polar_theta[n] + move.radial[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
-      animation.z          = (sqrtf(animation.dist));// - 10 * move.linear[0];
+      animation.angle      = polar_theta[n] + move.saw[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
+      animation.z          = (sqrtf(animation.dist));// - 10 * move.ramp[0];
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
       animation.offset_z   = 10;
-      animation.offset_x   = 10*move.linear[0];
+      animation.offset_x   = 10*move.ramp[0];
       float show1          = render_value(animation);
 
-      animation.angle      = polar_theta[n] + move.radial[1]+ move.noise_angle[1]+ move.noise_angle[4] + move.noise_angle[2];
-      animation.offset_x   = 11*move.linear[1];
+      animation.angle      = polar_theta[n] + move.saw[1]+ move.noise_angle[1]+ move.noise_angle[4] + move.noise_angle[2];
+      animation.offset_x   = 11*move.ramp[1];
       animation.offset_z   = 100;
       float show2          = render_value(animation);
 
-      animation.angle      = polar_theta[n] + move.radial[2]+ move.noise_angle[2]+ move.noise_angle[5]+ move.noise_angle[3];
-      animation.offset_x   = 12*move.linear[2];
+      animation.angle      = polar_theta[n] + move.saw[2]+ move.noise_angle[2]+ move.noise_angle[5]+ move.noise_angle[3];
+      animation.offset_x   = 12*move.ramp[2];
       animation.offset_z   = 300;
       float show3          = render_value(animation);
       
@@ -2118,14 +2122,14 @@ public:
 
                      
 
-    timings.master_speed = 0.12;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.12;    // master speed
 
-    timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.0027;
-    timings.ratio[2] = 0.0031;
-    timings.ratio[3] = 0.0033;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.0036;
-    timings.ratio[5] = 0.0039;
+    timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.027;
+    timings.ratio[2] = 0.031;
+    timings.ratio[3] = 0.033;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[4] = 0.036;
+    timings.ratio[5] = 0.039;
     
     calculate_oscillators(timings); 
 
@@ -2134,30 +2138,30 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
       
       animation.dist       = distance[n] + move.noise_angle[4];
-      animation.angle      = polar_theta[n] + move.radial[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
-      animation.z          = (sqrtf(animation.dist));// - 10 * move.linear[0];
+      animation.angle      = polar_theta[n] + move.saw[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
+      animation.z          = (sqrtf(animation.dist));// - 10 * move.ramp[0];
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = 10;
-      animation.offset_x   = 10*move.linear[0];
+      animation.offset_x   = 10*move.ramp[0];
       float show1          = render_value(animation);
 
-      animation.angle      = polar_theta[n] + move.radial[1]+ move.noise_angle[1]+ move.noise_angle[4] + move.noise_angle[2];
-      animation.offset_x   = 11*move.linear[1];
+      animation.angle      = polar_theta[n] + move.saw[1]+ move.noise_angle[1]+ move.noise_angle[4] + move.noise_angle[2];
+      animation.offset_x   = 11*move.ramp[1];
       animation.offset_z   = 100;
       float show2          = render_value(animation);
 
-      animation.angle      = polar_theta[n] + move.radial[2]+ move.noise_angle[2]+ move.noise_angle[5]+ move.noise_angle[3];
-      animation.offset_x   = 12*move.linear[2];
+      animation.angle      = polar_theta[n] + move.saw[2]+ move.noise_angle[2]+ move.noise_angle[5]+ move.noise_angle[3];
+      animation.offset_x   = 12*move.ramp[2];
       animation.offset_z   = 300;
       float show3          = render_value(animation);
       
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/distance[n];
 
-      pixel.r    = radial * (show1+show3)*0.5 * animation.dist/5;
-      pixel.g  = radial * (show2+show1)*0.5 * ledMap[n][yind]/spread_y;
-      pixel.b   = radial * (show3+show2)*0.5 * ledMap[n][xind]/spread_x;
+      pixel.r    = radial * (show1+show3)*0.5 * animation.dist/5;//todo why?
+      pixel.g  = radial * (show2+show1)*0.5;
+      pixel.b   = radial * (show3+show2)*0.5;
      
       pixel = rgb_sanity_check(pixel);
       buffer[n] = setPixelColor(pixel);
@@ -2172,14 +2176,14 @@ public:
 
                        
 
-    timings.master_speed = 0.02;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.02;    // master speed
 
-    timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.0027;
-    timings.ratio[2] = 0.0031;
-    timings.ratio[3] = 0.0033;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.0036;
-    timings.ratio[5] = 0.0039;
+    timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.027;
+    timings.ratio[2] = 0.031;
+    timings.ratio[3] = 0.033;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[4] = 0.036;
+    timings.ratio[5] = 0.039;
     
     calculate_oscillators(timings); 
 
@@ -2188,21 +2192,21 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
       
       animation.dist       = distance[n] + move.noise_angle[4];
-      animation.angle      = polar_theta[n] + move.radial[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
+      animation.angle      = polar_theta[n] + move.saw[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
       animation.z          = 3+sqrtf(animation.dist);
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
       animation.offset_z   = 10;
-      animation.offset_x   = 50 * move.linear[0];
+      animation.offset_x   = 50 * move.ramp[0];
       float show1          = render_value(animation);
 
-      animation.angle      = polar_theta[n] + move.radial[1]+ move.noise_angle[1]+ move.noise_angle[4] + move.noise_angle[2];
-      animation.offset_x   = 50 * move.linear[1];
+      animation.angle      = polar_theta[n] + move.saw[1]+ move.noise_angle[1]+ move.noise_angle[4] + move.noise_angle[2];
+      animation.offset_x   = 50 * move.ramp[1];
       animation.offset_z   = 100;
       float show2          = render_value(animation);
 
-      animation.angle      = polar_theta[n] + move.radial[2]+ move.noise_angle[2]+ move.noise_angle[5]+ move.noise_angle[3];
-      animation.offset_x   = 50 * move.linear[2];
+      animation.angle      = polar_theta[n] + move.saw[2]+ move.noise_angle[2]+ move.noise_angle[5]+ move.noise_angle[3];
+      animation.offset_x   = 50 * move.ramp[2];
       animation.offset_z   = 300;
       float show3          = render_value(animation);
       
@@ -2210,8 +2214,8 @@ public:
       float radial = (radius-distance[n])/distance[n];
 
       pixel.r    = radial * (show1+show3)*0.5 * animation.dist/5;
-      pixel.g  = radial * (show2+show1)*0.5 * ledMap[n][yind]/spread_y;
-      pixel.b   = radial * (show3+show2)*0.5 * ledMap[n][xind]/spread_x;
+      pixel.g  = radial * (show2+show1)*0.5 ;//* ledMap[n][yind]/spread_y;
+      pixel.b   = radial * (show3+show2)*0.5 ;//* ledMap[n][xind]/spread_x;
      
       pixel = rgb_sanity_check(pixel);
       buffer[n] = setPixelColor(pixel);
@@ -2226,14 +2230,14 @@ public:
 
                      
 
-    timings.master_speed = 0.02;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.02;    // master speed
 
-    timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.0027;
-    timings.ratio[2] = 0.0031;
-    timings.ratio[3] = 0.0033;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.0036;
-    timings.ratio[5] = 0.0039;
+    timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.027;
+    timings.ratio[2] = 0.031;
+    timings.ratio[3] = 0.033;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[4] = 0.036;
+    timings.ratio[5] = 0.039;
     
     calculate_oscillators(timings); 
 
@@ -2242,21 +2246,22 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
       
       animation.dist       = distance[n] + move.noise_angle[4];
-      animation.angle      = polar_theta[n] + move.radial[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
+      animation.angle      = polar_theta[n] + move.saw[0] + move.noise_angle[0]+ move.noise_angle[3] + move.noise_angle[1];
       animation.z          = 3+sqrtf(animation.dist);
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
+      animation.scale_z    = 0.05;
       animation.offset_z   = 10;
-      animation.offset_x   = 50 * move.linear[0];
+      animation.offset_x   = 50 * move.ramp[0];
       float show1          = render_value(animation);
 
-      animation.angle      = polar_theta[n] + move.radial[1]+ move.noise_angle[1]+ move.noise_angle[4] + move.noise_angle[2];
-      animation.offset_x   = 50 * move.linear[1];
+      animation.angle      = polar_theta[n] + move.saw[1]+ move.noise_angle[1]+ move.noise_angle[4] + move.noise_angle[2];
+      animation.offset_x   = 50 * move.ramp[1];
       animation.offset_z   = 100;
       float show2          = render_value(animation);
 
-      animation.angle      = polar_theta[n] + move.radial[2]+ move.noise_angle[2]+ move.noise_angle[5]+ move.noise_angle[3];
-      animation.offset_x   = 50 * move.linear[2];
+      animation.angle      = polar_theta[n] + move.saw[2]+ move.noise_angle[2]+ move.noise_angle[5]+ move.noise_angle[3];
+      animation.offset_x   = 50 * move.ramp[2];
       animation.offset_z   = 300;
       float show3          = render_value(animation);
       
@@ -2264,8 +2269,8 @@ public:
       float radial = (radius-distance[n])/distance[n];
 
       pixel.r    = radial * (show1+show3)*0.5 * animation.dist/5;
-      pixel.g  = radial * (show2+show1)*0.5 * ledMap[n][yind]/spread_y;
-      pixel.b   = radial * (show3+show2)*0.5 * ledMap[n][xind]/spread_x;
+      pixel.g  = radial * (show2+show1)*0.5 ;//* ledMap[n][yind]/spread_y;
+      pixel.b   = radial * (show3+show2)*0.5 ;//* ledMap[n][xind]/spread_x;
      
       pixel = rgb_sanity_check(pixel);
    
@@ -2280,7 +2285,7 @@ public:
 
                     
 
-    timings.master_speed = 0.02;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.02;    // master speed
 
     timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.0027;
@@ -2300,16 +2305,15 @@ public:
       animation.z          = 5;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
-      animation.offset_z   = 50 * move.linear[0];
+      animation.scale_z    = 0.05;
+      animation.offset_z   = 50 * move.ramp[0];
       animation.offset_x   = 50 * move.noise_angle[0];
       animation.offset_y   = 50 * move.noise_angle[1];
       float show1          = render_value(animation);
 
       animation.angle      =6 * polar_theta[n] + 5*move.noise_angle[1] + animation.dist * 0.15;
       animation.z          = 5;
-      animation.scale_x    = 0.05;
-      animation.scale_y    = 0.05;
-      animation.offset_z   = 50 * move.linear[1];
+      animation.offset_z   = 50 * move.ramp[1];
       animation.offset_x   = 50 * move.noise_angle[1];
       animation.offset_y   = 50 * move.noise_angle[2];
       float show2          = render_value(animation);
@@ -2318,16 +2322,15 @@ public:
       animation.z          = 5;
       animation.scale_x    = 0.10;
       animation.scale_y    = 0.10;
-      animation.offset_z   = 10 * move.linear[2];
+      animation.scale_z    = 0.10;
+      animation.offset_z   = 10 * move.ramp[2];
       animation.offset_x   = 10 * move.noise_angle[2];
       animation.offset_y   = 10 * move.noise_angle[3];
       float show3          = render_value(animation);
 
       animation.angle      = 15;
       animation.z          = 15;
-      animation.scale_x    = 0.10;
-      animation.scale_y    = 0.10;
-      animation.offset_z   = 10 * move.linear[3];
+      animation.offset_z   = 10 * move.ramp[3];
       animation.offset_x   = 10 * move.noise_angle[3];
       animation.offset_y   = 10 * move.noise_angle[4];
       float show4          = render_value(animation);
@@ -2336,7 +2339,8 @@ public:
       animation.z          = 15;
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
-      animation.offset_z   = 10 * move.linear[4];
+      animation.scale_z    = 0.15;
+      animation.offset_z   = 10 * move.ramp[4];
       animation.offset_x   = 10 * move.noise_angle[4];
       animation.offset_y   = 10 * move.noise_angle[5];
       float show5          = render_value(animation);
@@ -2344,7 +2348,7 @@ public:
       
       pixel.r    = show1-show4;
       pixel.g  = show2-show5;
-      pixel.b   = show3-show2+show1;
+      pixel.b   = 10+show3-show2+show1;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -2359,7 +2363,7 @@ public:
 
     
 
-    timings.master_speed = 0.02;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.02;    // master speed
 
     timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.0027;
@@ -2377,9 +2381,9 @@ public:
       animation.z          = 5;
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
-      animation.offset_z   = 50 * move.linear[0];
-      animation.offset_x   = 150 * move.directional[0];
-      animation.offset_y   = 150 * move.directional[1];
+      animation.offset_z   = 50 * move.ramp[0];
+      animation.offset_x   = 150 * move.sine[0];
+      animation.offset_y   = 150 * move.sine[1];
       float show1          = render_value(animation);
 
       animation.dist       = distance[n];
@@ -2387,9 +2391,9 @@ public:
       animation.z          = 15;
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
-      animation.offset_z   = 50 * move.linear[1];
-      animation.offset_x   = 150 * move.directional[1];
-      animation.offset_y   = 150 * move.directional[2];
+      animation.offset_z   = 50 * move.ramp[1];
+      animation.offset_x   = 150 * move.sine[1];
+      animation.offset_y   = 150 * move.sine[2];
       float show2          = render_value(animation);
 
       animation.dist       = distance[n];
@@ -2397,9 +2401,9 @@ public:
       animation.z          = 25;
       animation.scale_x    = 0.1;
       animation.scale_y    = 0.1;
-      animation.offset_z   = 50 * move.linear[2];
-      animation.offset_x   = 150 * move.directional[2];
-      animation.offset_y   = 150 * move.directional[3];
+      animation.offset_z   = 50 * move.ramp[2];
+      animation.offset_x   = 150 * move.sine[2];
+      animation.offset_y   = 150 * move.sine[3];
       float show3          = render_value(animation);
 
       animation.dist       = distance[n];
@@ -2407,9 +2411,9 @@ public:
       animation.z          = 35;
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
-      animation.offset_z   = 50 * move.linear[3];
-      animation.offset_x   = 150 * move.directional[3];
-      animation.offset_y   = 150 * move.directional[4];
+      animation.offset_z   = 50 * move.ramp[3];
+      animation.offset_x   = 150 * move.sine[3];
+      animation.offset_y   = 150 * move.sine[4];
       float show4          = render_value(animation);
 
       animation.dist       = distance[n];
@@ -2417,9 +2421,9 @@ public:
       animation.z          = 45;
       animation.scale_x    = 0.2;
       animation.scale_y    = 0.2;
-      animation.offset_z   = 50 * move.linear[4];
-      animation.offset_x   = 150 * move.directional[4];
-      animation.offset_y   = 150 * move.directional[5];
+      animation.offset_z   = 50 * move.ramp[4];
+      animation.offset_x   = 150 * move.sine[4];
+      animation.offset_y   = 150 * move.sine[5];
       float show5          = render_value(animation);
 
      
@@ -2440,14 +2444,14 @@ public:
 
     
 
-    timings.master_speed = 0.03;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.03;    // master speed
 
-    timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.027;
-    timings.ratio[2] = 0.031;
+    timings.ratio[0] = 0.05;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.052;
+    timings.ratio[2] = 0.066;
     timings.ratio[3] = 0.0033;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.0036;
-    timings.ratio[5] = 0.0039;
+    timings.ratio[4] = 0.0064;
+    timings.ratio[5] = 0.0080;
     
     calculate_oscillators(timings); 
 
@@ -2455,32 +2459,32 @@ public:
       for (int n = 0; n < NUM_LEDS; n++) {
         animation.anglephi   = spherical_phi[n]; //todo, move this later
         
-        animation.dist       = distance[n] * (move.directional[0]);
-        animation.angle      = polar_theta[n] + move.radial[0];
+        animation.dist       = distance[n] * (move.sine[0]);
+        animation.angle      = polar_theta[n] + move.saw[0];
         animation.z          = 5;
         animation.scale_x    = 0.09;
         animation.scale_y    = 0.09;
-        animation.offset_z   = 5 * move.linear[0];
+        animation.offset_z   = 5 * move.ramp[0];
         animation.offset_x   = 0;
         animation.offset_y   = 0;
         float show1          = render_value(animation);
 
-        animation.dist       = distance[n]* move.directional[1];
-        animation.angle      = polar_theta[n] + move.radial[1];
+        animation.dist       = distance[n]* move.sine[1];
+        animation.angle      = polar_theta[n] + move.saw[1];
         animation.z          = 50;
         animation.scale_x    = 0.07;
         animation.scale_y    = 0.07;
-        animation.offset_z   = 5 * move.linear[1];
+        animation.offset_z   = 5 * move.ramp[1];
         animation.offset_x   = 0;
         animation.offset_y   = 0;
         float show2          = render_value(animation);
         
-        animation.dist       = distance[n]* move.directional[2];
-        animation.angle      = polar_theta[n] + move.radial[2];
+        animation.dist       = distance[n]* move.sine[2];
+        animation.angle      = polar_theta[n] + move.saw[2];
         animation.z          = 500;
         animation.scale_x    = 0.05;
         animation.scale_y    = 0.05;
-        animation.offset_z   = 5 * move.linear[2];
+        animation.offset_z   = 5 * move.ramp[2];
         animation.offset_x   = 0;
         animation.offset_y   = 0;
         float show3          = render_value(animation);
@@ -2504,7 +2508,7 @@ public:
 
     
 
-    timings.master_speed = 0.02;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.02;    // master speed
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -2526,7 +2530,7 @@ public:
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
       animation.offset_x   = 0;
-      animation.offset_y   = -20 * move.linear[0];;
+      animation.offset_y   = -20 * move.ramp[0];;
       animation.low_limit  = -1;
       animation.high_limit = 1;
       show1          = render_value(animation);
@@ -2538,7 +2542,7 @@ public:
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
       animation.offset_x   = 0;
-      animation.offset_y   = -20 * move.linear[0];;
+      animation.offset_y   = -20 * move.ramp[0];;
       animation.low_limit  = -1;
       animation.high_limit = 1;
       show2          = render_value(animation);
@@ -2550,7 +2554,7 @@ public:
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
       animation.offset_x   = 500+show1/20;
-      animation.offset_y   = -4 * move.linear[0] + show2/20;
+      animation.offset_y   = -4 * move.ramp[0] + show2/20;
       animation.low_limit  = 0;
       animation.high_limit = 1;
       show3          = render_value(animation);
@@ -2562,7 +2566,7 @@ public:
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
       animation.offset_x   = 500+show1/18;
-      animation.offset_y   = -4 * move.linear[0] + show2/18;
+      animation.offset_y   = -4 * move.ramp[0] + show2/18;
       animation.low_limit  = 0;
       animation.high_limit = 1;
       show4          = render_value(animation);
@@ -2574,7 +2578,7 @@ public:
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
       animation.offset_x   = 500+show1/19;
-      animation.offset_y   = -4 * move.linear[0] + show2/19;
+      animation.offset_y   = -4 * move.ramp[0] + show2/19;
       animation.low_limit  = 0.3;
       animation.high_limit = 1;
       show5          = render_value(animation);
@@ -2596,7 +2600,7 @@ public:
 
     
 
-    timings.master_speed = 0.02;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.02;    // master speed
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -2618,7 +2622,7 @@ public:
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
       animation.offset_x   = 0;
-      animation.offset_y   = -20 * move.linear[0];;
+      animation.offset_y   = -20 * move.ramp[0];;
       animation.low_limit  = 0;
       animation.high_limit = 1;
       show1          = render_value(animation);
@@ -2630,7 +2634,7 @@ public:
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
       animation.offset_x   = 0;
-      animation.offset_y   = -40 * move.linear[0];;
+      animation.offset_y   = -40 * move.ramp[0];;
       animation.low_limit  = 0;
       animation.high_limit = 1;
       show2          = render_value(animation);
@@ -2653,14 +2657,14 @@ public:
 
     
 
-    timings.master_speed = 0.03;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.03;    // master speed
 
-    timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.027;
-    timings.ratio[2] = 0.031;
-    timings.ratio[3] = 0.0053;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.0056;
-    timings.ratio[5] = 0.0059;
+    timings.ratio[0] = 0.05;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.057;
+    timings.ratio[2] = 0.061;
+    timings.ratio[3] = 0.0103;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[4] = 0.0106;
+    timings.ratio[5] = 0.0109;
     
     calculate_oscillators(timings); 
 
@@ -2668,62 +2672,62 @@ public:
     for (int n = 0; n < NUM_LEDS; n++) {
       animation.anglephi   = spherical_phi[n]; //todo, move this later
       
-      animation.dist       = distance[n] * (move.directional[0]);
-      animation.angle      = polar_theta[n] + move.radial[0];
+      animation.dist       = distance[n] * (move.sine[0]);
+      animation.angle      = polar_theta[n] + move.saw[0];
       animation.z          = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
-      animation.offset_z   = 5 * move.linear[0];
+      animation.offset_z   = 5 * move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show1          = render_value(animation);
 
-      animation.dist       = distance[n]* move.directional[1];
-      animation.angle      = polar_theta[n] + move.radial[1];
+      animation.dist       = distance[n]* move.sine[1];
+      animation.angle      = polar_theta[n] + move.saw[1];
       animation.z          = 50;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
-      animation.offset_z   = 5 * move.linear[1];
+      animation.offset_z   = 5 * move.ramp[1];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show2          = render_value(animation);
       
-      animation.dist       = distance[n]* move.directional[2];
-      animation.angle      = polar_theta[n] + move.radial[2];
+      animation.dist       = distance[n]* move.sine[2];
+      animation.angle      = polar_theta[n] + move.saw[2];
       animation.z          = 500;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
-      animation.offset_z   = 5 * move.linear[2];
+      animation.offset_z   = 5 * move.ramp[2];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show3          = render_value(animation);
 
-      animation.dist       = distance[n] * (move.directional[3]);
-      animation.angle      = polar_theta[n] + move.radial[3];
+      animation.dist       = distance[n] * (move.sine[3]);
+      animation.angle      = polar_theta[n] + move.saw[3];
       animation.z          = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
-      animation.offset_z   = 5 * move.linear[3];
+      animation.offset_z   = 5 * move.ramp[3];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show4          = render_value(animation);
 
-      animation.dist       = distance[n]* move.directional[4];
-      animation.angle      = polar_theta[n] + move.radial[4];
+      animation.dist       = distance[n]* move.sine[4];
+      animation.angle      = polar_theta[n] + move.saw[4];
       animation.z          = 50;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
-      animation.offset_z   = 5 * move.linear[4];
+      animation.offset_z   = 5 * move.ramp[4];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show5          = render_value(animation);
       
-      animation.dist       = distance[n]* move.directional[5];
-      animation.angle      = polar_theta[n] + move.radial[5];
+      animation.dist       = distance[n]* move.sine[5];
+      animation.angle      = polar_theta[n] + move.saw[5];
       animation.z          = 500;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
-      animation.offset_z   = 5 * move.linear[5];
+      animation.offset_z   = 5 * move.ramp[5];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show6          = render_value(animation);
@@ -2748,14 +2752,14 @@ public:
 
     
 
-    timings.master_speed = 0.03;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.03;    // master speed
 
-    timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.027;
-    timings.ratio[2] = 0.031;
-    timings.ratio[3] = 0.0053;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.0056;
-    timings.ratio[5] = 0.0059;
+    timings.ratio[0] = 0.05;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.057;
+    timings.ratio[2] = 0.061;
+    timings.ratio[3] = 0.0103;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[4] = 0.0106;
+    timings.ratio[5] = 0.0109;
     
     calculate_oscillators(timings); 
 
@@ -2765,62 +2769,62 @@ public:
 
       float s = 0.7; // zoom factor
       
-      animation.dist       = distance[n] * (move.directional[0]) * s;
-      animation.angle      = polar_theta[n] + move.radial[0];
+      animation.dist       = distance[n] * (move.sine[0]) * s;
+      animation.angle      = polar_theta[n] + move.saw[0];
       animation.z          = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
-      animation.offset_z   = 5 * move.linear[0];
+      animation.offset_z   = 5 * move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show1          = render_value(animation);
 
-      animation.dist       = distance[n]* move.directional[1] * s;
-      animation.angle      = polar_theta[n] + move.radial[1];
+      animation.dist       = distance[n]* move.sine[1] * s;
+      animation.angle      = polar_theta[n] + move.saw[1];
       animation.z          = 50;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
-      animation.offset_z   = 5 * move.linear[1];
+      animation.offset_z   = 5 * move.ramp[1];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show2          = render_value(animation);
       
-      animation.dist       = distance[n]* move.directional[2] * s;
-      animation.angle      = polar_theta[n] + move.radial[2];
+      animation.dist       = distance[n]* move.sine[2] * s;
+      animation.angle      = polar_theta[n] + move.saw[2];
       animation.z          = 500;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
-      animation.offset_z   = 5 * move.linear[2];
+      animation.offset_z   = 5 * move.ramp[2];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show3          = render_value(animation);
 
-      animation.dist       = distance[n] * (move.directional[3]) * s;
-      animation.angle      = polar_theta[n] + move.radial[3];
+      animation.dist       = distance[n] * (move.sine[3]) * s;
+      animation.angle      = polar_theta[n] + move.saw[3];
       animation.z          = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
-      animation.offset_z   = 5 * move.linear[3];
+      animation.offset_z   = 5 * move.ramp[3];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show4          = render_value(animation);
 
-      animation.dist       = distance[n]* move.directional[4] * s;
-      animation.angle      = polar_theta[n] + move.radial[4];
+      animation.dist       = distance[n]* move.sine[4] * s;
+      animation.angle      = polar_theta[n] + move.saw[4];
       animation.z          = 50;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
-      animation.offset_z   = 5 * move.linear[4];
+      animation.offset_z   = 5 * move.ramp[4];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show5          = render_value(animation);
       
-      animation.dist       = distance[n]* move.directional[5] * s;
-      animation.angle      = polar_theta[n] + move.radial[5];
+      animation.dist       = distance[n]* move.sine[5] * s;
+      animation.angle      = polar_theta[n] + move.saw[5];
       animation.z          = 500;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
-      animation.offset_z   = 5 * move.linear[5];
+      animation.offset_z   = 5 * move.ramp[5];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       float show6          = render_value(animation);
@@ -2849,15 +2853,10 @@ public:
 
     
 
-    timings.master_speed = 0.06;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.06;    // master speed
 
-    timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.027;
-    timings.ratio[2] = 0.031;
-    timings.ratio[3] = 0.0053;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.0056;
-    timings.ratio[5] = 0.01;    // original Reddit post had no radial movement!
-    
+    timings.ratio[0] = 0.      ;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.27;
     calculate_oscillators(timings); 
 
     
@@ -2872,7 +2871,7 @@ public:
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
       animation.offset_z   = 0;
-      animation.offset_y   = 50 * move.linear[0];
+      animation.offset_y   = 5 * move.ramp[0];
       animation.offset_x   = 0;
       animation.low_limit  = 0;
       float show1          = render_value(animation);
@@ -2880,7 +2879,7 @@ public:
       animation.dist       = distance[n];
       animation.angle      = 2;
       animation.z          = 150;
-      animation.offset_x   = -50 * move.linear[0];     
+      animation.offset_x   = -5 * move.ramp[0];     
       float show2          = render_value(animation);
 
       animation.dist       = distance[n];
@@ -2889,7 +2888,7 @@ public:
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
       animation.offset_x   = 0;
-      animation.offset_y   = -50 * move.linear[1];
+      animation.offset_y   = -5 * move.ramp[1];
       float show4          = render_value(animation);      
 
       animation.dist       = distance[n];
@@ -2898,7 +2897,7 @@ public:
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
       animation.offset_x   = 0;
-      animation.offset_y   = 50 * move.linear[1];
+      animation.offset_y   = 5 * move.ramp[1];
       float show5          = render_value(animation);      
       
      
@@ -2927,7 +2926,7 @@ public:
 
     
 
-    timings.master_speed = 0.005;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.005;    // master speed
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -2947,7 +2946,7 @@ public:
       animation.z          = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
-      animation.offset_y   = -30 * move.linear[0];
+      animation.offset_y   = -30 * move.ramp[0];
       animation.offset_z   = 0;
       animation.offset_x   = 0;
       animation.low_limit  = -1;
@@ -2958,7 +2957,7 @@ public:
       animation.z          = 50;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
-      animation.offset_y   = -30 * move.linear[1];
+      animation.offset_y   = -30 * move.ramp[1];
       animation.offset_z   = 0;
       animation.offset_x   = 0;
       animation.low_limit  = -1;
@@ -2969,7 +2968,7 @@ public:
       animation.z          = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
-      animation.offset_y   = -10 * move.linear[0];
+      animation.offset_y   = -10 * move.ramp[0];
       animation.offset_z   = 0;
       animation.offset_x   = 0;
       animation.low_limit  = 0;
@@ -2980,7 +2979,7 @@ public:
       animation.z          = 5;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
-      animation.offset_y   = -20 * move.linear[0];
+      animation.offset_y   = -20 * move.ramp[0];
       animation.offset_z   = 0;
       animation.offset_x   = 0;
       animation.low_limit  = 0;
@@ -2991,12 +2990,13 @@ public:
 
       float sy2 =spread_y*2.0;
 
-      float linear1 = ledMap[n][yind] / sy2;
-      float linear2 = (sy2-ledMap[n][yind]) / sy2;
 
-      pixel.r    = show5 * linear1;
+      float radius = radial_filter_radius;   // radius of a radial brightness filter
+      float radial = (radius-distance[n])/distance[n];
+
+      pixel.r    = show5 * radial;
       pixel.g  = 0;
-      pixel.b   = show6 * linear2;
+      pixel.b   = show6 * radial;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -3010,7 +3010,7 @@ public:
 
     
 
-    timings.master_speed = 0.006;    // 0.006
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.006;    // 0.006
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -3032,7 +3032,7 @@ public:
       animation.z          = 5;
       animation.scale_x    = 0.09 * scale;
       animation.scale_y    = 0.09 * scale;
-      animation.offset_y   = -30 * move.linear[0];
+      animation.offset_y   = -30 * move.ramp[0];
       animation.offset_z   = 0;
       animation.offset_x   = 0;
       animation.low_limit  = -1;
@@ -3043,7 +3043,7 @@ public:
       animation.z          = 50;
       animation.scale_x    = 0.09 * scale;
       animation.scale_y    = 0.09 * scale;
-      animation.offset_y   = -30 * move.linear[1];
+      animation.offset_y   = -30 * move.ramp[1];
       animation.offset_z   = 0;
       animation.offset_x   = 0;
       animation.low_limit  = -1;
@@ -3054,7 +3054,7 @@ public:
       animation.z          = 5;
       animation.scale_x    = 0.09 * scale;
       animation.scale_y    = 0.09 * scale;
-      animation.offset_y   = -10 * move.linear[0];
+      animation.offset_y   = -10 * move.ramp[0];
       animation.offset_z   = 0;
       animation.offset_x   = 0;
       animation.low_limit  = 0;
@@ -3065,7 +3065,7 @@ public:
       animation.z          = 5;
       animation.scale_x    = 0.09 * scale;
       animation.scale_y    = 0.09 * scale;
-      animation.offset_y   = -20 * move.linear[0];
+      animation.offset_y   = -20 * move.ramp[0];
       animation.offset_z   = 0;
       animation.offset_x   = 0;
       animation.low_limit  = 0;
@@ -3074,12 +3074,10 @@ public:
       show5 = screen(show4, show3);
       show6 = colordodge(show5, show3);
 
-      //float linear1 = y / 32.f;
-      //float linear2 = (32-y) / 32.f;
 
       pixel.r    = (show5+show6)/2;
       pixel.g  = (show5-50)+(show6/16);
-      pixel.b   = 0;//show6;
+      pixel.b   = show6;
      
       pixel = rgb_sanity_check(pixel);
       
@@ -3095,7 +3093,7 @@ public:
 
     
 
-    timings.master_speed = 0.009;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.009;    // master speed
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -3113,46 +3111,46 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
       animation.dist       = distance[n];
-      animation.angle      = 5 * polar_theta[n] + 10 * move.radial[0] + animation.dist /2;
+      animation.angle      = 5 * polar_theta[n] + 10 * move.saw[0] + animation.dist /2;
       animation.z          = 5;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
       animation.offset_z   = 0;
-      animation.offset_x   = -30 * move.linear[0];
+      animation.offset_x   = -30 * move.ramp[0];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
       animation.dist       = distance[n];
-      animation.angle      = -5 * polar_theta[n] + 12 * move.radial[1] + animation.dist /2;
+      animation.angle      = -5 * polar_theta[n] + 12 * move.saw[1] + animation.dist /2;
       animation.z          = 500;
       animation.scale_x    = 0.07;
       animation.scale_y    = 0.07;
       animation.offset_z   = 0;
-      animation.offset_x   = -30 * move.linear[1];
+      animation.offset_x   = -30 * move.ramp[1];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show2                = render_value(animation);
 
       animation.dist       = distance[n];
-      animation.angle      = -5 * polar_theta[n] + 12 * move.radial[2] + animation.dist /2;
+      animation.angle      = -5 * polar_theta[n] + 12 * move.saw[2] + animation.dist /2;
       animation.z          = 500;
       animation.scale_x    = 0.05;
       animation.scale_y    = 0.05;
       animation.offset_z   = 0;
-      animation.offset_x   = -40 * move.linear[2];
+      animation.offset_x   = -40 * move.ramp[2];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show3                = render_value(animation);
 
       
       animation.dist       = distance[n];
-      animation.angle      = 5 * polar_theta[n] + 12 * move.radial[3] + animation.dist /2;
+      animation.angle      = 5 * polar_theta[n] + 12 * move.saw[3] + animation.dist /2;
       animation.z          = 500;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
       animation.offset_z   = 0;
-      animation.offset_x   = -35 * move.linear[3];
+      animation.offset_x   = -35 * move.ramp[3];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show4                = render_value(animation);
@@ -3160,8 +3158,7 @@ public:
       show5 = screen(show4, show3);
       show6 = colordodge(show2, show3);
 
-      //float linear1 = y / 32.f;
-      //float linear2 = (32-y) / 32.f;
+
 
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/distance[n];
@@ -3184,7 +3181,7 @@ public:
 
     
 
-    timings.master_speed = 0.009;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.009;    // master speed
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -3202,55 +3199,52 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
       animation.dist       = distance[n];
-      animation.angle      = 5 * polar_theta[n] + 10 * move.radial[0] + animation.dist /2;
+      animation.angle      = 5 * polar_theta[n] + 10 * move.saw[0] + animation.dist /2;
       animation.z          = 5;
       animation.scale_x    = 0.07 * size;
       animation.scale_y    = 0.07 * size;
       animation.offset_z   = 0;
-      animation.offset_x   = -30 * move.linear[0];
+      animation.offset_x   = -30 * move.ramp[0];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
       animation.dist       = distance[n];
-      animation.angle      = -5 * polar_theta[n] + 12 * move.radial[1] + animation.dist /2;
+      animation.angle      = -5 * polar_theta[n] + 12 * move.saw[1] + animation.dist /2;
       animation.z          = 500;
       animation.scale_x    = 0.07 * size;
       animation.scale_y    = 0.07 * size;
       animation.offset_z   = 0;
-      animation.offset_x   = -30 * move.linear[1];
+      animation.offset_x   = -30 * move.ramp[1];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show2                = render_value(animation);
 
       animation.dist       = distance[n];
-      animation.angle      = -5 * polar_theta[n] + 12 * move.radial[2] + animation.dist /2;
+      animation.angle      = -5 * polar_theta[n] + 12 * move.saw[2] + animation.dist /2;
       animation.z          = 500;
       animation.scale_x    = 0.05 * size;
       animation.scale_y    = 0.05 * size;
       animation.offset_z   = 0;
-      animation.offset_x   = -40 * move.linear[2];
+      animation.offset_x   = -40 * move.ramp[2];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show3                = render_value(animation);
 
       
       animation.dist       = distance[n];
-      animation.angle      = 5 * polar_theta[n] + 12 * move.radial[3] + animation.dist /2;
+      animation.angle      = 5 * polar_theta[n] + 12 * move.saw[3] + animation.dist /2;
       animation.z          = 500;
       animation.scale_x    = 0.09 * size;
       animation.scale_y    = 0.09 * size;
       animation.offset_z   = 0;
-      animation.offset_x   = -35 * move.linear[3];
+      animation.offset_x   = -35 * move.ramp[3];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show4                = render_value(animation);
 
       show5 = screen(show4, show3);
       show6 = colordodge(show2, show3);
-
-      //float linear1 = y / 32.f;
-      //float linear2 = (32-y) / 32.f;
 
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/distance[n];
@@ -3274,19 +3268,19 @@ public:
 
     
 
-    timings.master_speed = 0.001;    // master speed
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.001;    // master speed
 
-    timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.027;
-    timings.ratio[2] = 0.031;
-    timings.ratio[3] = 0.033;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.037;
-    timings.ratio[5] = 0.038;
-    timings.ratio[5] = 0.041;
+    timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.0027;
+    timings.ratio[2] = 0.0031;
+    timings.ratio[3] = 0.0033;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[4] = 0.0037;
+    timings.ratio[5] = 0.0038;
+    timings.ratio[5] = 0.0041;
     
     calculate_oscillators(timings); 
 
-    float size = 0.4 + move.directional[0]*0.1;
+    float size = 0.4 + move.sine[0]*0.1;
 
     float q = 2;
 
@@ -3295,46 +3289,46 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
       animation.dist       = distance[n];
-      animation.angle      = 5 * polar_theta[n] + 10 * move.radial[0] + animation.dist / (((move.directional[0] + 3)*2)) + move.noise_angle[0]*q;
+      animation.angle      = 5 * polar_theta[n] + 10 * move.saw[0] + animation.dist / (((move.sine[0] + 3)*2)) + move.noise_angle[0]*q;
       animation.z          = 5;
-      animation.scale_x    = 0.08 * size * (move.directional[0]+1.5);
+      animation.scale_x    = 0.08 * size * (move.sine[0]+1.5);
       animation.scale_y    = 0.07 * size;
-      animation.offset_z   = -10 * move.linear[0];
-      animation.offset_x   = -30 * move.linear[0];
+      animation.offset_z   = -10 * move.ramp[0];
+      animation.offset_x   = -30 * move.ramp[0];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
       animation.dist       = distance[n];
-      animation.angle      = -5 * polar_theta[n] + 10 * move.radial[1] + animation.dist / (((move.directional[1] + 3)*2))+ move.noise_angle[1]*q;
+      animation.angle      = -5 * polar_theta[n] + 10 * move.saw[1] + animation.dist / (((move.sine[1] + 3)*2))+ move.noise_angle[1]*q;
       animation.z          = 500;
-      animation.scale_x    = 0.07 * size * (move.directional[1]+1.1);
-      animation.scale_y    = 0.07 * size * (move.directional[2]+1.3);;
-      animation.offset_z   = -12 * move.linear[1];;
-      animation.offset_x   = -31 * move.linear[1];
+      animation.scale_x    = 0.07 * size * (move.sine[1]+1.1);
+      animation.scale_y    = 0.07 * size * (move.sine[2]+1.3);;
+      animation.offset_z   = -12 * move.ramp[1];;
+      animation.offset_x   = -31 * move.ramp[1];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show2                = render_value(animation);
 
       animation.dist       = distance[n];
-      animation.angle      = -5 * polar_theta[n] + 12 * move.radial[2] + animation.dist /(((move.directional[3] + 3)*2))+ move.noise_angle[2]*q;
+      animation.angle      = -5 * polar_theta[n] + 12 * move.saw[2] + animation.dist /(((move.sine[3] + 3)*2))+ move.noise_angle[2]*q;
       animation.z          = 500;
-      animation.scale_x    = 0.05 * size * (move.directional[3]+1.5);;
-      animation.scale_y    = 0.05 * size * (move.directional[4]+1.5);;
-      animation.offset_z   = -12 * move.linear[3];
-      animation.offset_x   = -40 * move.linear[3];
+      animation.scale_x    = 0.05 * size * (move.sine[3]+1.5);;
+      animation.scale_y    = 0.05 * size * (move.sine[4]+1.5);;
+      animation.offset_z   = -12 * move.ramp[3];
+      animation.offset_x   = -40 * move.ramp[3];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show3                = render_value(animation);
 
       
       animation.dist       = distance[n];
-      animation.angle      = 5 * polar_theta[n] + 12 * move.radial[3] + animation.dist /(((move.directional[5] + 3)*2))+ move.noise_angle[3]*q;
+      animation.angle      = 5 * polar_theta[n] + 12 * move.saw[3] + animation.dist /(((move.sine[5] + 3)*2))+ move.noise_angle[3]*q;
       animation.z          = 500;
-      animation.scale_x    = 0.09 * size * (move.directional[5]+1.5);;;
-      animation.scale_y    = 0.09 * size * (move.directional[6]+1.5);;;
+      animation.scale_x    = 0.09 * size * (move.sine[5]+1.5);;;
+      animation.scale_y    = 0.09 * size * (move.sine[6]+1.5);;;
       animation.offset_z   = 0;
-      animation.offset_x   = -35 * move.linear[3];
+      animation.offset_x   = -35 * move.ramp[3];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show4                = render_value(animation);
@@ -3345,7 +3339,6 @@ public:
       show7 = multiply(show1, show2);
       
       float linear1 = ledMap[n][yind] / (spread_y*2);
-      //float linear2 = (32-y) / 32.f;
 
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/distance[n];
@@ -3370,7 +3363,7 @@ public:
 
     
 
-    timings.master_speed = 0.01;    // master speed 0.01 in the video
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // master speed 0.01 in the video
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -3390,26 +3383,26 @@ public:
     for (int n = 0; n < NUM_LEDS; n++) {
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
-      float s = 1 +  move.directional[6]*0.3;
+      float s = 1 +  move.sine[6]*0.3;
 
       animation.dist       = distance[n] * s;
-      animation.angle      = 5 * polar_theta[n] + 1 * move.radial[0] - animation.dist / (3+move.directional[0]*0.5);
+      animation.angle      = 5 * polar_theta[n] + 1 * move.saw[0] - animation.dist / (3+move.sine[0]*0.5);
       animation.z          = 5;
-      animation.scale_x    = 0.08 * size + (move.directional[0]*0.01);
-      animation.scale_y    = 0.07 * size + (move.directional[1]*0.01);
-      animation.offset_z   = -10 * move.linear[0];
-      animation.offset_x   = 0;//-30 * move.linear[0];
+      animation.scale_x    = 0.08 * size + (move.sine[0]*0.01);
+      animation.scale_y    = 0.07 * size + (move.sine[1]*0.01);
+      animation.offset_z   = -10 * move.ramp[0];
+      animation.offset_x   = 0;//-30 * move.ramp[0];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
       animation.dist       = distance[n] * s;
-      animation.angle      = 5 * polar_theta[n] + 1 * move.radial[1] + animation.dist / (3+move.directional[1]*0.5);
+      animation.angle      = 5 * polar_theta[n] + 1 * move.saw[1] + animation.dist / (3+move.sine[1]*0.5);
       animation.z          = 50;
-      animation.scale_x    = 0.08 * size + (move.directional[1]*0.01);
-      animation.scale_y    = 0.07 * size + (move.directional[2]*0.01);
-      animation.offset_z   = -10 * move.linear[1];
-      animation.offset_x   = 0;//-30 * move.linear[0];
+      animation.scale_x    = 0.08 * size + (move.sine[1]*0.01);
+      animation.scale_y    = 0.07 * size + (move.sine[2]*0.01);
+      animation.offset_z   = -10 * move.ramp[1];
+      animation.offset_x   = 0;//-30 * move.ramp[0];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show2                = render_value(animation);
@@ -3419,20 +3412,20 @@ public:
       animation.z          = 500;
       animation.scale_x    = 0.2 * size ;
       animation.scale_y    = 0.2 * size ;
-      animation.offset_z   = 0;//-12 * move.linear[3];
-      animation.offset_y   = +7 * move.linear[3] +  move.noise_angle[3];
+      animation.offset_z   = 0;//-12 * move.ramp[3];
+      animation.offset_y   = +7 * move.ramp[3] +  move.noise_angle[3];
       animation.offset_x   = 0;
       animation.low_limit  = 0;
       show3                = render_value(animation);
 
       
       animation.dist       = distance[n];
-      animation.angle      = 5 * polar_theta[n] + 12 * move.radial[3] + animation.dist /(((move.directional[5] + 3)*2))+ move.noise_angle[3]*q;
+      animation.angle      = 5 * polar_theta[n] + 12 * move.saw[3] + animation.dist /(((move.sine[5] + 3)*2))+ move.noise_angle[3]*q;
       animation.z          = 500;
-      animation.scale_x    = 0.09 * size * (move.directional[5]+1.5);;;
-      animation.scale_y    = 0.09 * size * (move.directional[6]+1.5);;;
+      animation.scale_x    = 0.09 * size * (move.sine[5]+1.5);;;
+      animation.scale_y    = 0.09 * size * (move.sine[6]+1.5);;;
       animation.offset_z   = 0;
-      animation.offset_x   = -35 * move.linear[3];
+      animation.offset_x   = -35 * move.ramp[3];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show4                = render_value(animation);
@@ -3441,17 +3434,11 @@ public:
       //show6 = colordodge(show4, show1);
 
       //show7 = multiply(show1, show2);
-      /*
-      float linear1 = y / 32.f;
-      float linear2 = (32-y) / 32.f;
-      */
+
 
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/distance[n];
-      /*
-      show7 = multiply(show1, show2) * linear1*2;
-      show8 = subtract(show7, show5);
-      */
+
 
       show5 = ((show1 + show2)) - show3;
       if (show5>255) show5=255;
@@ -3462,8 +3449,7 @@ public:
       pixel.r    = show5 * radial;
       pixel.b   = (64-show5-show3) * radial;
       pixel.g  = 0.5*(show6);
-      //pixel.b   = show5 * radial;
-      //pixel.r    = (1*show1 + 1*show2) - show7/2;
+
      
       pixel = rgb_sanity_check(pixel);
       
@@ -3477,7 +3463,7 @@ public:
 
     
 
-    timings.master_speed = 0.03;    // master speed 
+    timings.master_speed = bpmToSpeedMillis(global_bpm)*2;// was: 0.03;    // master speed 
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -3497,14 +3483,14 @@ public:
     for (int n = 0; n < NUM_LEDS; n++) {
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
-      float s = 1 +  move.directional[6]*0.8;
+      float s = 1 +  move.sine[6]*0.8;
 
       animation.dist       = distance[n] * s;
-      animation.angle      = move.radial[6] + 2 * move.directional[5] * polar_theta[n]  - animation.dist / 3;
+      animation.angle      = move.saw[6] + 2 * move.sine[5] * polar_theta[n]  - animation.dist / 3;
       animation.z          = 5;
       animation.scale_x    = 0.08 * size ;
       animation.scale_y    = 0.07 * size ;
-      animation.offset_z   = -10 * move.linear[0];
+      animation.offset_z   = -10 * move.ramp[0];
       animation.offset_x   = 0;
       animation.offset_y   = 0;
       animation.low_limit  = -0.5;
@@ -3515,12 +3501,8 @@ public:
       float radial = (radius-distance[n])/distance[n];
       //12-10/10,  12-1/10,  brighter in center
      
-     uint8_t color = float_to_uint8_t(show1 * radial);
-     uint8_t brightness = 200;
-     TBlendType    currentBlending = LINEARBLEND;
-
-
-      buffer[n] = ColorFromPalette( currentPalette, color, brightness, currentBlending);
+      uint8_t color = float_to_uint8_t(show1 * radial);
+      buffer[n] = ColorFromPalette( currentPalette, color);
     }
   }
 
@@ -3530,7 +3512,7 @@ public:
 
     
 
-    timings.master_speed = 0.01;    // master speed 
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // master speed 
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -3549,22 +3531,22 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
       animation.dist       = distance[n];
-      animation.angle      = 16 * polar_theta[n] + 16*move.radial[0];
+      animation.angle      = 16 * polar_theta[n] + 16*move.saw[0];
       animation.z          = 5;
       animation.scale_x    = 0.06 ;
       animation.scale_y    = 0.06 ;
-      animation.offset_z   = -10 * move.linear[0];
+      animation.offset_z   = -10 * move.ramp[0];
       animation.offset_y   = 10 * move.noise_angle[0];
       animation.offset_x   = 10 * move.noise_angle[4];
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
       animation.dist       = distance[n];
-      animation.angle      = 16 * polar_theta[n] + 16*move.radial[1];
+      animation.angle      = 4 * polar_theta[n] + 16*move.saw[1];
       animation.z          = 500;
       animation.scale_x    = 0.06 ;
       animation.scale_y    = 0.06 ;
-      animation.offset_z   = -10 * move.linear[1];
+      animation.offset_z   = -10 * move.ramp[1];
       animation.offset_y   = 10 * move.noise_angle[1];
       animation.offset_x   = 10 * move.noise_angle[3];
       animation.low_limit  = 0;
@@ -3589,7 +3571,7 @@ public:
 
     
 
-    timings.master_speed = 0.037;    // master speed 
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.037;    // master speed 
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -3606,46 +3588,46 @@ public:
     for (int n = 0; n < NUM_LEDS; n++) {
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
-      animation.dist       = distance[n] + 4*sinf(move.directional[5]*PI+(float)ledMap[n][xind]/2) + 4 * cosf(move.directional[6]*PI+float(ledMap[n][yind])/2);
+      animation.dist       = distance[n] + 4*sinf(move.sine[5]*PI+(float)ledMap[n][xind]/2) + 4 * cosf(move.sine[6]*PI+float(ledMap[n][yind])/2);
       animation.angle      = 1 * polar_theta[n];
       animation.z          = 5;
       animation.scale_x    = 0.06 ;
       animation.scale_y    = 0.06 ;
-      animation.offset_z   = -10 * move.linear[0];
+      animation.offset_z   = -10 * move.ramp[0];
       animation.offset_y   = 10;
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      animation.dist       = (10+move.directional[0]) * sinf(-move.radial[5]+move.radial[0]+(distance[n] / (3)));
+      animation.dist       = (10+move.sine[0]) * sinf(-move.saw[5]+move.saw[0]+(distance[n] / (3)));
       animation.angle      = 1 * polar_theta[n];
       animation.z          = 5;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 20 * move.linear[0];
+      animation.offset_y   = 20 * move.ramp[0];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show2                = render_value(animation);
 
-      animation.dist       = (10+move.directional[1]) * sinf(-move.radial[5]+move.radial[1]+(distance[n] / (3)));
+      animation.dist       = (10+move.sine[1]) * sinf(-move.saw[5]+move.saw[1]+(distance[n] / (3)));
       animation.angle      = 1 * polar_theta[n];
       animation.z          = 500;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 20 * move.linear[1];
+      animation.offset_y   = 20 * move.ramp[1];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show3                = render_value(animation);
 
-      animation.dist       = (10+move.directional[2]) * sinf(-move.radial[5]+move.radial[2]+(distance[n] / (3)));
+      animation.dist       = (10+move.sine[2]) * sinf(-move.saw[5]+move.saw[2]+(distance[n] / (3)));
       animation.angle      = 1 * polar_theta[n];
       animation.z          = 500;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 20 * move.linear[2];
+      animation.offset_y   = 20 * move.ramp[2];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show4                = render_value(animation);
@@ -3677,7 +3659,7 @@ public:
 
     
 
-    timings.master_speed = 0.003;    // master speed 
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.003;    // master speed 
 
     timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.027;
@@ -3695,48 +3677,48 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
       float s = 4;
-      float f = 10 + 2* move.directional[0];
+      float f = 10 + 2* move.sine[0];
 
-      animation.dist       = (f+move.directional[0]) * sinf(-move.radial[5]+move.radial[0]+(distance[n] / (s)));
+      animation.dist       = (f+move.sine[0]) * sinf(-move.saw[5]+move.saw[0]+(distance[n] / (s)));
       animation.angle      = 1 * polar_theta[n];
       animation.z          = 5;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 20 * move.linear[0];
+      animation.offset_y   = 20 * move.ramp[0];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show2                = render_value(animation);
 
-      animation.dist       = (f+move.directional[1]) * sinf(-move.radial[5]+move.radial[1]+(distance[n] / (s)));
+      animation.dist       = (f+move.sine[1]) * sinf(-move.saw[5]+move.saw[1]+(distance[n] / (s)));
       animation.angle      = 1 * polar_theta[n];
       animation.z          = 500;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 20 * move.linear[1];
+      animation.offset_y   = 20 * move.ramp[1];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show3                = render_value(animation);
 
-      animation.dist       = (f+move.directional[2]) * sinf(-move.radial[5]+move.radial[2]+(distance[n] / (s)));
+      animation.dist       = (f+move.sine[2]) * sinf(-move.saw[5]+move.saw[2]+(distance[n] / (s)));
       animation.angle      = 1 * polar_theta[n];
       animation.z          = 5000;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 20 * move.linear[2];
+      animation.offset_y   = 20 * move.ramp[2];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show4                = render_value(animation);
 
-      animation.dist       = (f+move.directional[3]) * sinf(-move.radial[5]+move.radial[3]+(distance[n] / (s)));
+      animation.dist       = (f+move.sine[3]) * sinf(-move.saw[5]+move.saw[3]+(distance[n] / (s)));
       animation.angle      = 1 * polar_theta[n];
       animation.z          = 2000;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 20 * move.linear[3];
+      animation.offset_y   = 20 * move.ramp[3];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show5                = render_value(animation);
@@ -3771,7 +3753,7 @@ public:
 
     
 
-    timings.master_speed = 0.03;    // master speed 
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.03;    // master speed 
 
     timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.0027;
@@ -3784,22 +3766,19 @@ public:
     for (int n = 0; n < NUM_LEDS; n++) {
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
-      animation.dist       = distance[n] + 20 * move.directional[0];
+      animation.dist       = distance[n] + 20 * move.sine[0];
       animation.angle      = move.noise_angle[0] + move.noise_angle[1] + polar_theta[n];
       animation.z          = 5;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 20 * move.linear[2];
+      animation.offset_y   = 20 * move.ramp[2];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      pixel.b    = show1;
-      
-      pixel = rgb_sanity_check(pixel);
-      
-      buffer[n] = setPixelColor(pixel);
+      uint8_t color = float_to_uint8_t(show1);
+      buffer[n] = ColorFromPalette( currentPalette, color);
     }
   }
 
@@ -3809,7 +3788,7 @@ public:
 
     
 
-    timings.master_speed = 0.02;    // master speed 
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.02;    // master speed 
 
     timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.0027;
@@ -3822,13 +3801,13 @@ public:
     for (int n = 0; n < NUM_LEDS; n++) {
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
-      animation.dist       = distance[n] - ( 16 + move.directional[0] * 16);
+      animation.dist       = distance[n] - ( 16 + move.sine[0] * 16);
       animation.angle      = move.noise_angle[0] + move.noise_angle[1] + polar_theta[n];
       animation.z          = 5;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 20 * move.linear[2];
+      animation.offset_y   = 20 * move.ramp[2];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
@@ -3849,7 +3828,7 @@ public:
 
     
 
-    timings.master_speed = 0.01;    // master speed 
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // master speed 
 
     timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.0027;
@@ -3862,13 +3841,13 @@ public:
     for (int n = 0; n < NUM_LEDS; n++) {
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
-      animation.dist       = distance[n] - (12 + move.directional[3]*4);
+      animation.dist       = distance[n] - (12 + move.sine[3]*4);
       animation.angle      = move.noise_angle[0] + move.noise_angle[1] + polar_theta[n];
       animation.z          = 5;
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 20 * move.linear[2];
+      animation.offset_y   = 20 * move.ramp[2];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
@@ -3890,7 +3869,7 @@ public:
 
     
 
-    timings.master_speed = 0.031;    // master speed 
+    timings.master_speed = bpmToSpeedMillis(global_bpm)*3;// was: 0.031;    // master speed 
 
     timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.0027;
@@ -3911,8 +3890,8 @@ public:
       animation.z          = 5;
       animation.scale_x    = 0.004 * s;
       animation.scale_y    = 0.003 * s;
-      animation.offset_z   = 0.1*move.linear[2] ;
-      animation.offset_y   = -20 * move.linear[2];
+      animation.offset_z   = 0.1*move.ramp[2] ;
+      animation.offset_y   = -20 * move.ramp[2];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
@@ -3922,8 +3901,8 @@ public:
       animation.z          = 50;
       animation.scale_x    = 0.004 * s;
       animation.scale_y    = 0.003 * s;
-      animation.offset_z   = 0.1*move.linear[3] ;
-      animation.offset_y   = -20 * move.linear[3];
+      animation.offset_z   = 0.1*move.ramp[3] ;
+      animation.offset_y   = -20 * move.ramp[3];
       animation.offset_x   = 100;
       animation.low_limit  = 0;
       show2                = render_value(animation);
@@ -3933,8 +3912,8 @@ public:
       animation.z          = 5000;
       animation.scale_x    = 0.004 * s;
       animation.scale_y    = 0.003 * s;
-      animation.offset_z   = 0.1*move.linear[4] ;
-      animation.offset_y   = -20 * move.linear[4];
+      animation.offset_z   = 0.1*move.ramp[4] ;
+      animation.offset_y   = -20 * move.ramp[4];
       animation.offset_x   = 1000;
       animation.low_limit  = 0;
       show3                = render_value(animation);
@@ -3966,13 +3945,10 @@ public:
 
     
 
-    timings.master_speed = 0.031;    // master speed 
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.031;    // master speed 
 
     timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.0027;
-    timings.ratio[2] = 0.029;
     timings.ratio[3] = 0.33;
-    timings.ratio[4] = 0.036;            // speed ratios for the oscillators, higher values = faster transitions
     
     calculate_oscillators(timings); 
 
@@ -3982,25 +3958,20 @@ public:
 
       float s = 1.5;
 
-      animation.dist       = distance[n] + sinf(0.5*distance[n]-move.radial[3]);
+      animation.dist       = distance[n] + sinf(0.5*distance[n]-move.saw[3]);
       animation.angle      = polar_theta[n];
       animation.z          = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
-      animation.offset_z   = 0.1*move.linear[0] ;
-      animation.offset_y   = -20 * move.linear[0];
+      animation.offset_z   = 0.1*move.ramp[0] ;
+      animation.offset_y   = -20 * move.ramp[0];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      
-      
-      pixel.r    = show1;
-      
-      
-      pixel = rgb_sanity_check(pixel);
-      
-      buffer[n] = setPixelColor(pixel);
+      uint8_t color = float_to_uint8_t(show1);
+      buffer[n] = ColorFromPalette( currentPalette, color);
+
     }
   }
 
@@ -4010,7 +3981,7 @@ public:
 
     
 
-    timings.master_speed = 0.01;    // master speed 0.031
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // master speed 0.031
 
     float w = 0.7;
 
@@ -4028,24 +3999,24 @@ public:
 
       float s = 0.8;
 
-      animation.dist       = distance[n] + sinf(0.25*distance[n]-move.radial[3]);
+      animation.dist       = distance[n] + sinf(0.25*distance[n]-move.saw[3]);
       animation.angle      = polar_theta[n];
       animation.z          = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
-      animation.offset_z   = 0.1*move.linear[0] ;
-      animation.offset_y   = -20 * move.linear[0];
+      animation.offset_z   = 0.1*move.ramp[0] ;
+      animation.offset_y   = -20 * move.ramp[0];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      animation.dist       = distance[n] + sinf(0.24*distance[n]-move.radial[4]);
+      animation.dist       = distance[n] + sinf(0.24*distance[n]-move.saw[4]);
       animation.angle      = polar_theta[n];
       animation.z          = 10;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
-      animation.offset_z   = 0.1*move.linear[1] ;
-      animation.offset_y   = -20 * move.linear[1];
+      animation.offset_z   = 0.1*move.ramp[1] ;
+      animation.offset_y   = -20 * move.ramp[1];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show2                = render_value(animation);
@@ -4074,7 +4045,7 @@ public:
 
     
 
-    timings.master_speed = 0.005;    // master speed 0.031
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.005;    // master speed 0.031
 
     float w = 0.3;
 
@@ -4092,24 +4063,24 @@ public:
 
       float s = 0.7;
 
-      animation.dist       = 2+distance[n] + 2*sinf(0.25*distance[n]-move.radial[3]);
+      animation.dist       = 2+distance[n] + 2*sinf(0.25*distance[n]-move.saw[3]);
       animation.angle      = polar_theta[n];
       animation.z          = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
-      animation.offset_z   = 10*move.linear[0] ;
-      animation.offset_y   = -20 * move.linear[0];
+      animation.offset_z   = 10*move.ramp[0] ;
+      animation.offset_y   = -20 * move.ramp[0];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      animation.dist       = 2+distance[n] + 2*sinf(0.24*distance[n]-move.radial[4]);
+      animation.dist       = 2+distance[n] + 2*sinf(0.24*distance[n]-move.saw[4]);
       animation.angle      = polar_theta[n];
       animation.z          = 10;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
-      animation.offset_z   = 0.1*move.linear[1] ;
-      animation.offset_y   = -20 * move.linear[1];
+      animation.offset_z   = 0.1*move.ramp[1] ;
+      animation.offset_y   = -20 * move.ramp[1];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show2                = render_value(animation);
@@ -4139,7 +4110,7 @@ public:
 
     
 
-    timings.master_speed = 0.01;    // master speed 0.031
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // master speed 0.031
 
     float w = 0.3;
 
@@ -4169,42 +4140,42 @@ public:
       float s = 0.4; // scale
       float r = 1.5; // scroll speed
 
-      animation.dist       = 3+distance[n] + 3*sinf(0.25*distance[n]-move.radial[3]);
+      animation.dist       = 3+distance[n] + 3*sinf(0.25*distance[n]-move.saw[3]);
       animation.angle      = polar_theta[n] + move.noise_angle[0] + move.noise_angle[6];
       animation.z          = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
-      animation.offset_z   = 10*move.linear[0] ;
-      animation.offset_y   = -5 * r * move.linear[0];
+      animation.offset_z   = 10*move.ramp[0] ;
+      animation.offset_y   = -5 * r * move.ramp[0];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      animation.dist       = 4+distance[n] + 4*sinf(0.24*distance[n]-move.radial[4]);
+      animation.dist       = 4+distance[n] + 4*sinf(0.24*distance[n]-move.saw[4]);
       animation.angle      = polar_theta[n] + move.noise_angle[1] + move.noise_angle[6];
       animation.z          = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
-      animation.offset_z   = 0.1*move.linear[1] ;
-      animation.offset_y   = -5 * r * move.linear[1];
+      animation.offset_z   = 0.1*move.ramp[1] ;
+      animation.offset_y   = -5 * r * move.ramp[1];
       animation.offset_x   = 100;
       animation.low_limit  = 0;
       show2                = render_value(animation);
 
-      animation.dist       = 5+distance[n] + 5*sinf(0.23*distance[n]-move.radial[5]);
+      animation.dist       = 5+distance[n] + 5*sinf(0.23*distance[n]-move.saw[5]);
       animation.angle      = polar_theta[n] + move.noise_angle[2] + move.noise_angle[6];
       animation.z          = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
-      animation.offset_z   = 0.1*move.linear[2] ;
-      animation.offset_y   = -5 * r * move.linear[2];
+      animation.offset_z   = 0.1*move.ramp[2] ;
+      animation.offset_y   = -5 * r * move.ramp[2];
       animation.offset_x   = 1000;
       animation.low_limit  = 0;
       show3                = render_value(animation);
 
       show4 = colordodge(show1, show2);
 
-      float rad = sinf(PI/2+distance[n]/14); // better radial filter?!
+      float rad = sinf(PI/2+distance[n]/14); // todo better radial filter?!
 
       
       /*
@@ -4231,8 +4202,7 @@ public:
 
     
 
-    timings.master_speed = 0.03;    // master speed 0.031
-
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.03;    // master speed 0.031
     float w = 0.3;
 
     timings.ratio[0] = 0.1;           // speed ratios for the oscillators, higher values = faster transitions
@@ -4250,24 +4220,64 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
       animation.dist       = distance[n];
-      animation.angle      = polar_theta[n] + move.radial[1];
+      animation.angle      = polar_theta[n] + move.saw[1];
       animation.z          = 5;
       animation.scale_x    = 0.001;
       animation.scale_y    = 0.1;
       animation.scale_z    = 0.1;
-      animation.offset_y   = -10*move.linear[0];
+      animation.offset_y   = -10*move.ramp[0];
       animation.offset_x   = 20;
       animation.offset_z   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      pixel.r    = 10*show1;
-    
-      pixel = rgb_sanity_check(pixel);
-      
-      buffer[n] = setPixelColor(pixel);
+      uint8_t color = float_to_uint8_t(10*show1);
+      buffer[n] = ColorFromPalette( currentPalette, color);
+
     }
   }
+
+  void SPARKLE_EDGES_MOD9() { 
+
+    get_ready();
+
+    
+
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.03;    // master speed 0.031
+    float w = 0.3;
+
+    timings.ratio[0] = 0.1;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.011;
+    timings.ratio[2] = 0.013;
+    timings.ratio[3] = 0.33*w;
+    timings.ratio[4] = 0.36*w;            // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[5] = 0.38*w; 
+    timings.ratio[6] = 0.0003;  
+
+    calculate_oscillators(timings); 
+
+    
+    for (int n = 0; n < NUM_LEDS; n++) {
+      animation.anglephi   = spherical_phi[n]; //todo, move this later
+
+      animation.dist       = distance[n];
+      animation.angle      = polar_theta[n] + move.saw[1];
+      animation.z          = 5;
+      animation.scale_x    = 0.001;
+      animation.scale_y    = 0.1;
+      animation.scale_z    = 0.1;
+      animation.offset_y   = -10*move.ramp[0];
+      animation.offset_x   = 20;
+      animation.offset_z   = 10;
+      animation.low_limit  = 0;
+      show1                = render_value(animation);
+
+      uint8_t color = float_to_uint8_t(10*show1);
+      buffer[n] = ColorFromPalette( currentPalette, color);
+
+    }
+  }
+
 
   void Module_Experiment10() { 
 
@@ -4275,16 +4285,16 @@ public:
 
     
 
-    timings.master_speed = 0.01;    // master speed 0.031
+    timings.master_speed = bpmToSpeedMillis(global_bpm)/9;// was: 0.01;    // master speed 0.031
 
-    float w = 1;
+
 
     timings.ratio[0] = 0.01;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 0.011;
     timings.ratio[2] = 0.013;
-    timings.ratio[3] = 0.33*w;
-    timings.ratio[4] = 0.36*w;            // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[5] = 0.38*w; 
+    timings.ratio[3] = 0.33;
+    timings.ratio[4] = 0.36;            // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[5] = 0.38; 
     timings.ratio[6] = 0.0003;  // master rotation
 
     timings.offset[0] = 0;
@@ -4305,35 +4315,35 @@ public:
       float s = 0.4; // scale
       float r = 1.5; // scroll speed
 
-      animation.dist       = 3+distance[n] + 3*sinf(0.25*distance[n]-move.radial[3]);
+      animation.dist       = 3+distance[n] + 3*sinf(0.25*distance[n]-move.saw[3]);
       animation.angle      = polar_theta[n] + move.noise_angle[0] + move.noise_angle[6];
       animation.z          = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
-      animation.offset_z   = 10*move.linear[0] ;
-      animation.offset_y   = -5 * r * move.linear[0];
+      animation.offset_z   = 10*move.ramp[0] ;
+      animation.offset_y   = -5 * r * move.ramp[0];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      animation.dist       = 4+distance[n] + 4*sinf(0.24*distance[n]-move.radial[4]);
+      animation.dist       = 4+distance[n] + 4*sinf(0.24*distance[n]-move.saw[4]);
       animation.angle      = polar_theta[n] + move.noise_angle[1] + move.noise_angle[6];
       animation.z          = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
-      animation.offset_z   = 0.1*move.linear[1] ;
-      animation.offset_y   = -5 * r * move.linear[1];
+      animation.offset_z   = 0.1*move.ramp[1] ;
+      animation.offset_y   = -5 * r * move.ramp[1];
       animation.offset_x   = 100;
       animation.low_limit  = 0;
       show2                = render_value(animation);
 
-      animation.dist       = 5+distance[n] + 5*sinf(0.23*distance[n]-move.radial[5]);
+      animation.dist       = 5+distance[n] + 5*sinf(0.23*distance[n]-move.saw[5]);
       animation.angle      = polar_theta[n] + move.noise_angle[2] + move.noise_angle[6];
       animation.z          = 5;
       animation.scale_x    = 0.1 * s;
       animation.scale_y    = 0.1 * s;
-      animation.offset_z   = 0.1*move.linear[2] ;
-      animation.offset_y   = -5 * r * move.linear[2];
+      animation.offset_z   = 0.1*move.ramp[2] ;
+      animation.offset_y   = -5 * r * move.ramp[2];
       animation.offset_x   = 1000;
       animation.low_limit  = 0;
       show3                = render_value(animation);
@@ -4369,7 +4379,7 @@ public:
     get_ready(); 
     
 
-    timings.master_speed = 0.01;    // speed ratios for the oscillators
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // speed ratios for the oscillators
     timings.ratio[0] = 1;         // higher values = faster transitions
     timings.ratio[1] = 1.1;
     timings.ratio[2] = 1.2;
@@ -4390,7 +4400,7 @@ public:
       animation.scale_y    = 0.2;
       animation.scale_z    = 1;
       animation.dist       = distance[n];
-      animation.offset_y   = -move.linear[0];
+      animation.offset_y   = -move.ramp[0];
       animation.offset_x   = 0;
       float show1          = render_value(animation);
 
@@ -4398,14 +4408,14 @@ public:
       animation.angle      = 10;
       
       animation.dist       = distance[n];
-      animation.offset_y   = -move.linear[1];
+      animation.offset_y   = -move.ramp[1];
       float show2          = render_value(animation);
 
        // describe and render animation layers
       animation.angle      = 12;
       
       animation.dist       = distance[n];
-      animation.offset_y   = -move.linear[2];
+      animation.offset_y   = -move.ramp[2];
       float show3          = render_value(animation);
 
       // colormapping
