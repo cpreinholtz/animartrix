@@ -24,6 +24,7 @@ License CC BY-NC 3.0
 
 
 //******************************************************************************************************************
+//float ledMap[NUM_LEDS][3];
 
 float ledMap[NUM_LEDS][3] = {
 
@@ -317,7 +318,7 @@ features:
   fade patterns into one another, 
   switch input, 
   color picker?, play with palettes, 
-  music reactive, 
+  music reactive,  incoorperate ANIMaudio
   IMU reactive
   change master speed to be BPM related
   global hue shift, requires shifting my palets to CHSV
@@ -431,7 +432,9 @@ void randomPattern(){
 void showCurrentPattern(){
   gPatterns[currentPattern].pattern();
   applyHueShift();
+  art.markStartOfShow();
   FastLED.show();
+  art.markEndOfShow();
 }
 
 //******************************************************************************************************************
@@ -442,9 +445,9 @@ void setup() {
   // FastLED.addLeds<NEOPIXEL, 13>(leds, NUM_LED);
   
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
-  FastLED.addLeds<WS2813, 2, GRB>(leds, NUM_LEDS);
+  FastLED.addLeds<WS2811, 2, GRB>(leds, NUM_LEDS);
   FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA] 
-  FastLED.setBrightness(128);
+  FastLED.setBrightness(64);
   Serial.begin(115200);                 // check serial monitor for current fps count
   art.setGlobalScale(0.5);
  

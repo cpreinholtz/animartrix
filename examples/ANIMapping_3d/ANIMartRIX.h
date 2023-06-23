@@ -510,9 +510,28 @@ public:
 
   void get_ready() {  // wait until new buffer is ready, measure time
     // TODO: make callback
-    // a = micros(); 
+    markStartOfRender();
     // while(backgroundLayer.isSwapPending());
-    // b = micros(); 
+    // b = micros();
+  }
+
+  void markStartOfRender(){
+    a = micros();
+  }
+  void markStartOfShow(){
+    b = micros();
+  }  
+  void markEndOfShow(){
+    c = micros();
+  }  
+  unsigned long getRenderTime(){
+    return b -a;
+  }  
+  unsigned long getShowTime(){
+    return c - b;
+  }
+  unsigned long getTotalUpdateTime(){
+    return c - a;
   }
 
 
@@ -528,9 +547,12 @@ public:
     int fps = FastLED.getFPS();                 // frames per second
     int kpps = (fps * NUM_LEDS) / 1000;   // kilopixel per second
   
-    Serial.print(kpps); Serial.print(" kpps ... ");
+    //Serial.print(kpps); Serial.print(" kpps ... ");
+    Serial.print(getRenderTime()); Serial.print(" us RenderTime ... ");
+    Serial.print(getShowTime()); Serial.print(" us ShowTime ... ");
+    Serial.print(getTotalUpdateTime()); Serial.print(" TotalUpdateTime ... ");
     Serial.print(fps); Serial.print(" fps @ ");
-    Serial.print(NUM_LEDS); Serial.println(" LEDs ... ");
+    Serial.print(NUM_LEDS); Serial.println(" LEDs ... "); Serial.println();
   }
 
   // Show the current framerate, rendered pixels per second,
