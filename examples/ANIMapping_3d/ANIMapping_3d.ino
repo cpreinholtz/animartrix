@@ -21,6 +21,7 @@ License CC BY-NC 3.0
 
 #include <FastLED.h>
 #include "ANIMartRIX.h" //TODO make <> when you copy files back to the right directory
+#include "ANIMaudio.h" //TODO make <> when you copy files back to the right directory
 
 
 //******************************************************************************************************************
@@ -101,6 +102,7 @@ float ledMap[NUM_LEDS][3] = {
 
 CRGB leds[NUM_LEDS];               // framebuffer
 ANIMartRIX art(leds);  //led buffer, global scale
+ANIMaudio audio;  //
 uint8_t gHueShift = 0;
 
 void applyHueShift(){
@@ -312,6 +314,19 @@ rotating blob?
 
 
 //TODO
+update readme
+hardware
+  imu
+  microphone
+  level shifter
+  leds
+req libraries
+  Adafruit ICM20X
+  Adafruit BusIO?
+  dafruit Unified Sensor
+
+
+
 modes: all, low power, chill
 features: 
   darkwad check, 
@@ -437,6 +452,9 @@ void showCurrentPattern(){
   art.markEndOfShow();
 }
 
+
+
+
 //******************************************************************************************************************
 
 
@@ -450,6 +468,13 @@ void setup() {
   FastLED.setBrightness(64);
   Serial.begin(115200);                 // check serial monitor for current fps count
   art.setGlobalScale(0.5);
+
+#ifdef TEST
+  pinMode(17,OUTPUT);
+  digitalWrite(17,HIGH); //for my testing only
+
+
+#endif
  
  // fill_rainbow(leds, NUM_LED, 0);
   //fill_solid(leds, NUM_LED, CRGB::Green);
@@ -465,22 +490,58 @@ bool verbose = false;
 bool play = false;
 bool doRandom = true;
 
+
+
+const int min_brt = 16;
+const int max_brt = 255;
+
+int brt = 32;
+int cnt = 32;
+
+
+
 void loop() {
 
+  //audio stuff
+  audio.update();
+  int i=0;
 
+  //Serial.print("audio.raw_signal ");
+  //Serial.print(audio.raw_signal);
+  //Serial.print(" audio.scaled_signal ");
+  //Serial.print(audio.scaled_signal);
+  //Serial.print(" audio.abs_signal ");
+  //Serial.print(audio.abs_signal);
+  Serial.print(" audio.getLp ");
+  Serial.print(audio.getLp());
+  if (audio.beat_detected) {
+    brt = max_brt;
+    Serial.print("beat");
+  } else {
+    if (brt>min_brt) brt--;
+  }
+  Serial.println("");
+
+
+  //brt = (int)(map_float(audio.getLp()*audio.getLp(),0,1.0,min_brt,max_brt));
+  FastLED.setBrightness(brt);
+
+  //led output
   showCurrentPattern();
 
+  //changing paterns
   if (play){
       if (doRandom) {EVERY_N_SECONDS(30) randomPattern();}
       else {EVERY_N_SECONDS(30) incrementPattern();}
   }
 
 
+  // report
   if(verbose){
     EVERY_N_MILLIS(500) art.report_performance();   // check serial monitor for report 
   }
 
-  // testing interface
+  // testing interface, user input
   if (Serial.available() > 0) {
     // read the incoming byte:
     int incomingByte = Serial.read();

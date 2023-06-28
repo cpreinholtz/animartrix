@@ -35,10 +35,13 @@ float map_float(float x, float in_min, float in_max, float out_min, float out_ma
 }
 
 
+
+
+
 // Function for Selection sort, not the fastest but it is nice and simple https://www.geeksforgeeks.org/selection-sort/?ref=lbp
 //since the array is passed by reference, no output is needed and this function works directly on the "sorted_arr"
 // "arr" is left untouched
-void selectionSort(const int arr[], int sorted_arr[], const int const n)
+void selectionSort(const int arr[], int sorted_arr[], const int n)
 {
     int i, j, min_idx;
     //copy original
@@ -57,7 +60,9 @@ void selectionSort(const int arr[], int sorted_arr[], const int const n)
         }
          // Swap the found minimum element
         // with the first element
-        if (min_idx != i)  swap(sorted_arr[min_idx], sorted_arr[i]); // might need "using namespace std;" for this?
+        if (min_idx != i) {std::swap(sorted_arr[min_idx], sorted_arr[i]); // might need "using namespace std;" for this?
+
+        }
     }
 }
  
@@ -80,7 +85,7 @@ public:
   }
 
   void setWeight(float w) {
-    iir_average_weight = w;
+    iir_weight = w;
     if (iir_weight > 1.0) iir_weight = 1.0;
   }
 
@@ -88,10 +93,6 @@ public:
     signal = a;
   }
 
-  //experiment
-  void createSignalReference(float refTo){
-    &signal = &refTo;
-  }
 
 }; 
 
@@ -110,25 +111,27 @@ public:
 
   int raw_signal;
   unsigned long raw_time_ms;
-  float raw_min = 0;
-  float raw_max = 1023;
-  float raw_ac_couple = raw_max/2; // this needs to be the "0" level of your aplifier!!
+  const float raw_min = 0;
+  const float raw_max = 1023;
+  const float raw_ac_couple = raw_max/2; // this needs to be the "0" level of your aplifier!!
 
-  float scaled_min = -1.0;
-  float scaled_max = 1.0;
+  const float scaled_min = -1.0;
+  const float scaled_max = 1.0;
   float scaled_signal;
 
   float abs_signal;
 
   IIR iir_volume; //lowpass iir tuned to a VERY slow update time for measuring volume
   IIR iir_lowpass; //lowpass iir tuned to a  slow update time for measuring volume bass kicks
+  IIR iir_bias; //lowpass iir tuned to a  slow update time for dc offset correction
 
 
 
   bool beat_detected;
   float beat_last;
-  float beat_delta_min = 100; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
-  float beat_multiplier_min = 1.5; //must hit moving average * multiplier to be considered a beat
+  const float beat_delta_min = 100; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
+  const float beat_multiplier_min = 1.3; //must hit moving average * multiplier to be considered a beat
+  int beat_debounce_count;
 
   static const int bpm_num_samples = 21; // use odd to prevent DC offset
   static const int bpm_median_sample = bpm_num_samples/2;
@@ -138,14 +141,17 @@ public:
   float bpm_median_delta; //average (median) time between beats in miliseconds.  this is the period of the pulse in millis
   float bpm; //the estimated bpm, collected by using the median.  this is the frequency of the pulse in millis
 
-  int audioPin = 1;
+  int audioPin = 19;
 
   ANIMaudio() {
     this->init();
   }
 
   void init() {
-    
+    raw_signal = raw_ac_couple;
+    raw_time_ms = 0;
+    scaled_signal = 0;
+    abs_signal = 0;
 
     //To the extent that time constants mean anything in discrete time constant would be
     //-(sample time) * ln(1-weight)
@@ -157,7 +163,23 @@ public:
     //wt = .75; 5tau = 5 * -.1* ln(.25); 5tau = 0.69 seconds
     //wt = .5; 5tau = 5 * -.1* ln(.5); 5tau = 0.3 seconds
     iir_volume.setWeight(.99);
-    iir_lowpass.setWeight(.5);
+    iir_volume.setAverage(0.0);
+    //.95 works for beat detect with 1.5 mult
+    iir_lowpass.setWeight(.96); //.95 works for beat detect with 1.5 mult
+    iir_lowpass.setAverage(0.0);
+    iir_bias.setWeight(.999);
+    iir_bias.setAverage(511);
+
+    beat_detected = false;
+    beat_last = 0;
+    beat_debounce_count = 0;
+
+    for (int i = 0; i < bpm_num_samples; i++) { bpm_deltas[i] = 500; }
+
+    bpm = 120;
+
+    this->update();
+    
   }
 
 
@@ -165,9 +187,10 @@ public:
     //read the analog pin and record the current time
     raw_signal = analogRead(audioPin);
     raw_time_ms = millis();
+
     
     //scale from -1 to 1 and remove DC bias
-    scaled_signal = map_float(((float) raw_signal) - raw_ac_couple), raw_min, raw_max, scaled_min, scaled_max);
+    scaled_signal = map_float(((float) raw_signal), raw_min, raw_max, scaled_min, scaled_max);
     
     //take the abs value of that to get the current energy
     abs_signal = (scaled_signal >= 0.0) ? scaled_signal : - scaled_signal;
@@ -175,6 +198,7 @@ public:
     // update filters
     iir_volume.update(abs_signal);
     iir_lowpass.update(abs_signal);
+    iir_bias.update(raw_signal);
 
     //beat detected if its been a while since the last beat and the current energy is much higher than the average
     float delta = raw_time_ms - beat_last;
@@ -182,6 +206,7 @@ public:
       beat_last = raw_time_ms;
       beat_detected = true;
 
+      /*
       //put this delta into the buffer
       bpm_deltas[bpm_current_sample] = delta;
 
@@ -190,14 +215,14 @@ public:
       if (bpm_current_sample >= bpm_num_samples) bpm_current_sample = 0;
 
       //sort then for median
-      selectionSort(bpm_deltas, bpm_sorted_deltas, bpm_num_samples);
+      //selectionSort(bpm_deltas, bpm_sorted_deltas, bpm_num_samples);
       //todo really this isnt so good, because many 8th notes will skew the quarter notes,  
       //really you should somehow detect if samples are multiples of one another within some margin, 
       //and throw out the smaller ones, that should leave you with only quarters?
       //honestly the whole bpm thing is totally uneeded anyways
-      bpm_median_delta = bpm_sorted_deltas[bpm_median_sample];
+      //bpm_median_delta = bpm_sorted_deltas[bpm_median_sample];
       bpm = 60000/bpm_median_delta;// to convert millis per beat to bpm, invert to get beats per milli, then multiply by 60000 millis per 1 second
-
+      */
 
     } else {
       beat_detected = false;
@@ -206,6 +231,11 @@ public:
 
 
 
+  }
+
+  //! returns lowpass.signal, should be between 0 and 1.0
+  float getLp(){
+    return iir_lowpass.signal;
   }
 
 
