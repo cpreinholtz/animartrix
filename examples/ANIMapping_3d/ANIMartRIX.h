@@ -163,7 +163,7 @@ public:
     setBpm(82.0);
     setGlobalScale(scale);
     render_spherical_lookup_table();
-    //gHue.edge = edgeWrap;
+    gHue.edge = edgeWrap;
   }
 
   void setGlobalScale(float setTo){
@@ -469,16 +469,16 @@ public:
         //if (pixel.b < 0)   pixel.b = fabsf(pixel.b);
         
         // discard everything above the valid 8 bit colordepth 0-255 range
-        //if (pixel.r   > 255)   pixel.r = 255;
-        //if (pixel.g > 255) pixel.g = 255;
-        //if (pixel.b  > 255)  pixel.b = 255;
+        if (pixel.r   > 255)   pixel.r = 255;
+        if (pixel.g > 255) pixel.g = 255;
+        if (pixel.b  > 255)  pixel.b = 255;
 
         return pixel;
   }
 
   float color_sanity_check(float &color) {
         // discard everything above the valid 8 bit colordepth 0-255 range
-        //if (color   > 255)   color = 255;
+        if (color   > 255)   color = 255;
         return color;
   }
 
@@ -494,7 +494,9 @@ public:
       //if (pixel.red < 0)     pixel.red = fabsf(pixel.red);
       //if (pixel.green < 0) pixel.green = fabsf(pixel.green);
       //if (pixel.blue < 0)   pixel.blue = fabsf(pixel.blue);
-      
+        if (pixel.h   > 1.0)   pixel.h = 1.0;
+        if (pixel.s > 1.0) pixel.h = 1.0;
+        if (pixel.i  > 255)  pixel.i = 255;
       return pixel;
   }
 
@@ -512,15 +514,16 @@ public:
 
   rgbF CRGB2Rgb(CRGB rgb){
     rgbF rgbf;
-    rgbf.r = round(rgb.r);
-    rgbf.g = round(rgb.g);
-    rgbf.b = round(rgb.b);
+    rgbf.r = rgb.r;
+    rgbf.g = rgb.g;
+    rgbf.b = rgb.b;
     return rgbf;
   }
 
   rgbF hue_shift(rgbF rgb){
-      hsiF hsi = CHSV2Hsi(rgb2hsv_approximate(setPixelColor(rgb)));    
-      //hsiF hsi = Rgb2Hsi(rgb);
+      //hsiF hsi = CHSV2Hsi(rgb2hsv_approximate(setPixelColor(rgb)));    
+      //if (gHue.base == 0.0) return rgb;
+      hsiF hsi = Rgb2Hsi(rgb);
       hsi.h = gHue.modulate(hsi.h);
       return Hsi2Rgb(hsi);
   }

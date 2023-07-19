@@ -133,15 +133,15 @@ hsiF Rgb2Hsi(rgbF rgb)
 {
   float h,s,i;
   rgb.r = constrain_float(rgb.r,0,255);
-  rgb.b = constrain_float(rgb.g,0,255);
   rgb.b = constrain_float(rgb.b,0,255);
+  rgb.g = constrain_float(rgb.g,0,255);
   i = (rgb.r+rgb.g+rgb.b) / 3.0;
   if (i==0.0) {
     s = 0.0;
     h = 0.0;
   }
   else{
-    s = 1.0;// - (min(rgb.r,min(rgb.g,rgb.b))/i);
+    s = 1.0 - (min(rgb.r,min(rgb.g,rgb.b))/i);
 
     //H = cos-1[ (R - ½G - ½B)/√(R² + G² + B² - RG - RB - GB) ]            if G ≥ B, or
     //H = 360 - cos-1[ (R - ½G - ½B)/√(R² + G² + B² - RG - RB - GB) ]    if B > G,

@@ -330,7 +330,7 @@ void setup() {
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
   FastLED.addLeds<WS2811, 2, GRB>(leds, NUM_LEDS);
   FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA] 
-  FastLED.setBrightness(255);
+  FastLED.setBrightness(60);
   Serial.begin(115200);                 // check serial monitor for current fps count
   art.setGlobalScale(0.5);
 
