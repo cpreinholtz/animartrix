@@ -29,12 +29,9 @@ License CC BY-NC 3.0
 //#include <SmartMatrix.h>
 #include <FastLED.h>
 #include "custom_palettes.h"
-// from AeroKeiths repo ColorUtilsHsi
-#include <ColorUtilsHsi.h>
+#include "ANIMutils.h"
 #include <plane3d.h>
 #include <sphere3d.h>
-#define HSI_SCALE 1.0
-#define RGB_SCALE_FACTORS {255.0, 255.0, 255.0}
 
 #define num_oscillators 10
 
@@ -133,6 +130,8 @@ public:
   CRGB* buffer; 
   bool  serpentine;
 
+  modableF gHue;
+
   //TODO set sizes
   float polar_theta[NUM_LEDS];        // look-up table for polar angles
   float spherical_phi[NUM_LEDS];
@@ -164,7 +163,7 @@ public:
     setBpm(82.0);
     setGlobalScale(scale);
     render_spherical_lookup_table();
-
+    //gHue.edge = edgeWrap;
   }
 
   void setGlobalScale(float setTo){
@@ -470,16 +469,16 @@ public:
         //if (pixel.b < 0)   pixel.b = fabsf(pixel.b);
         
         // discard everything above the valid 8 bit colordepth 0-255 range
-        if (pixel.r   > 255)   pixel.r = 255;
-        if (pixel.g > 255) pixel.g = 255;
-        if (pixel.b  > 255)  pixel.b = 255;
+        //if (pixel.r   > 255)   pixel.r = 255;
+        //if (pixel.g > 255) pixel.g = 255;
+        //if (pixel.b  > 255)  pixel.b = 255;
 
         return pixel;
   }
 
   float color_sanity_check(float &color) {
         // discard everything above the valid 8 bit colordepth 0-255 range
-        if (color   > 255)   color = 255;
+        //if (color   > 255)   color = 255;
         return color;
   }
 
@@ -496,17 +495,45 @@ public:
       //if (pixel.green < 0) pixel.green = fabsf(pixel.green);
       //if (pixel.blue < 0)   pixel.blue = fabsf(pixel.blue);
       
-      if (pixel.h   > 1.0)   pixel.h = 1.0;
-      if (pixel.s > 1.0) pixel.s = 1.0;
-      if (pixel.i  > 1.0)  pixel.i = 1.0;
-
       return pixel;
+  }
+
+  CRGB setPixelColor(rgbF pixel) {
+    return CRGB(round(pixel.r), round(pixel.g), round(pixel.b));
+  }
+
+  hsiF CHSV2Hsi(CHSV c){
+    hsiF p;
+    p.h = ((float)c.h)/255.0;
+    p.s = ((float)c.s)/255.0;
+    p.i = ((float)c.v);
+    return p;
+  }
+
+  rgbF CRGB2Rgb(CRGB rgb){
+    rgbF rgbf;
+    rgbf.r = round(rgb.r);
+    rgbf.g = round(rgb.g);
+    rgbf.b = round(rgb.b);
+    return rgbf;
+  }
+
+  rgbF hue_shift(rgbF rgb){
+      hsiF hsi = CHSV2Hsi(rgb2hsv_approximate(setPixelColor(rgb)));    
+      //hsiF hsi = Rgb2Hsi(rgb);
+      hsi.h = gHue.modulate(hsi.h);
+      return Hsi2Rgb(hsi);
+  }
+  CRGB hue_shiftb(CRGB rgb){
+      return setPixelColor(hue_shift(CRGB2Rgb(rgb)));
   }
 
 
 
 
 
+  ///////////////////////////////////////////////////////////////////////
+  //timings
 
   void get_ready() {  // wait until new buffer is ready, measure time
     // TODO: make callback
@@ -535,17 +562,11 @@ public:
   }
 
 
-  CRGB setPixelColor(rgbF pixel) {
-    return CRGB(pixel.r, pixel.g, pixel.b);
-  }
-
-
-
   // show current framerate and rendered pixels per second
   void report_performance() {
    
     int fps = FastLED.getFPS();                 // frames per second
-    int kpps = (fps * NUM_LEDS) / 1000;   // kilopixel per second
+    //int kpps = (fps * NUM_LEDS) / 1000;   // kilopixel per second
   
     //Serial.print(kpps); Serial.print(" kpps ... ");
     Serial.print(getRenderTime()); Serial.print(" us RenderTime ... ");
@@ -564,10 +585,10 @@ public:
     float push  = c - b;                         // rendering time
     float total = c - a;                         // time per frame
     int fps  = 1000000 / total;                // frames per second
-    int kpps = (fps * NUM_LEDS) / 1000;   // kilopixel per second
+    //int kpps = (fps * NUM_LEDS) / 1000;   // kilopixel per second
 
     Serial.print(fps);                         Serial.print(" fps  ");
-    Serial.print(kpps);                        Serial.print(" kpps @");
+    //Serial.print(kpps);                        Serial.print(" kpps @");
     Serial.print(NUM_LEDS);                 Serial.print(" LEDs  ");  
     Serial.print(round(total));                Serial.print(" µs per frame  waiting: ");
     Serial.print(round((calc * 100) / total)); Serial.print("%  rendering: ");
@@ -599,23 +620,23 @@ public:
 
   void demoBpm()
   {
-    static uint8_t gHue = 0;
-    EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
+    static uint8_t bhue = 0;
+    EVERY_N_MILLISECONDS( 20 ) { bhue++; } // slowly cycle the "base color" through the rainbow
     CRGBPalette16 palette = HeatColors_p    ;
     uint16_t beat = beatsin88( BeatsPerMinute, 64, 255);
     for( int i = 0; i < NUM_LEDS; i++) { //9948
-      buffer[i] = ColorFromPalette(palette, gHue+(i*2), beat-gHue+(i*10));
+      buffer[i] = ColorFromPalette(palette, bhue+(i*2), beat-bhue+(i*10));
     }
   }
 
   void demoBpm2()
   {
-    static uint8_t gHue = 0;
-    EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
+    static uint8_t bhue = 0;
+    EVERY_N_MILLISECONDS( 20 ) { bhue++; } // slowly cycle the "base color" through the rainbow
     CRGBPalette16 palette = PartyColors_p;
     uint8_t beat = beatsin8( 62, 64, 255);
     for( int i = 0; i < NUM_LEDS; i++) { //9948
-      buffer[i] = ColorFromPalette(palette, gHue+(i*2), beat-gHue+(i*10));
+      buffer[i] = ColorFromPalette(palette, bhue+(i*2), beat-bhue+(i*10));
     }
   }
 
@@ -634,8 +655,8 @@ public:
     timings.ratio[1] = 0.051;   //angle
 
     calculate_oscillators(timings); 
-    float cutoff = 0.5;
-    float scale = cutoff *4;
+    //float cutoff = 0.5;
+    //float scale = cutoff *4;
     
     for (int n = 0; n < NUM_LEDS; n++) { 
 
@@ -651,39 +672,17 @@ public:
       animation.offset_x   = 20;
       animation.offset_z   = 10;
       animation.low_limit  = 0;
-      show1                = render_value(animation, scale);
-
-
-      pixel_hsi.h    = show1-cutoff;
+      show1                = render_value(animation, 1.0);
+      pixel_hsi.h    = gHue.modulate(show1);
       pixel_hsi.s = 1.0;
       
-      if(show1<cutoff) {
-        if (random16(1000) > 1000-50.0*show1){
-          pixel_hsi.h = random16(100) / 100.0;
-          pixel_hsi.s = 0.0 + random16(50) / 100.0;
-          pixel_hsi.i = 0.30;
-          pixel_hsi = hsi_sanity_check(pixel_hsi);
-          pixel = Hsi2Rgb(pixel_hsi, DEFAULT_GAMMA, RGB_SCALE_FACTORS);
-          pixel = rgb_sanity_check(pixel);
-          buffer[n] = setPixelColor(pixel);
-        } else {
-          pixel_hsi.i = 0.0;
-          pixel_hsi = hsi_sanity_check(pixel_hsi);
-          pixel = Hsi2Rgb(pixel_hsi, DEFAULT_GAMMA, RGB_SCALE_FACTORS);
-          pixel = rgb_sanity_check(pixel);
-          buffer[n] += setPixelColor(pixel);
-        }
-      //not black, use this
-      } else {
-        pixel_hsi.i = 0.3;
-        pixel_hsi = hsi_sanity_check(pixel_hsi);
-        pixel = Hsi2Rgb(pixel_hsi, DEFAULT_GAMMA, RGB_SCALE_FACTORS);
-        pixel = rgb_sanity_check(pixel);
-        buffer[n] = setPixelColor(pixel);
-      }
+      pixel_hsi.i = 255;
+      pixel_hsi = hsi_sanity_check(pixel_hsi);
+      pixel = Hsi2Rgb(pixel_hsi);
+      pixel = rgb_sanity_check(pixel);
+      buffer[n] = setPixelColor(pixel);
     }
-    //this prevents the fade from happening too fast
-    FastLED.delay(6);
+
     
   }
 
@@ -713,16 +712,16 @@ public:
       animation.offset_x   = 20;
       animation.offset_z   = 10;
       animation.low_limit  = 0;
-      show1                = render_value(animation, 2.0);
+      show1                = render_value(animation, 1.0);
 
-      pixel_hsi.h    = show1;
+      pixel_hsi.h    = gHue.modulate(show1);
       pixel_hsi.s = 1.0;
-      pixel_hsi.i = 0.3;
+      pixel_hsi.i = 255;
 
     
       pixel_hsi = hsi_sanity_check(pixel_hsi);
 
-      pixel = Hsi2Rgb(pixel_hsi, DEFAULT_GAMMA, RGB_SCALE_FACTORS);
+      pixel = Hsi2Rgb(pixel_hsi);
       pixel = rgb_sanity_check(pixel);
 
 
@@ -766,7 +765,7 @@ public:
         animation.offset_x   = move.ramp[0];
         animation.offset_y   = 0;
         animation.offset_z   = 0;
-        float show1          = render_value(animation);
+        //float show1          = render_value(animation);
 
         animation.angle      = 3 * polar_theta[n] +  move.saw[1] - distance[n]/3;
         animation.dist       = distance[n];
@@ -779,21 +778,21 @@ public:
         //float show3          = render_value(animation);
 
         // colormapping
-        float radius = radial_filter_radius;
-        float radial_filter = (radius - distance[n]) / radius;
+        //float radius = radial_filter_radius;
+        //float radial_filter = (radius - distance[n]) / radius;
 
 
 
-        pixel_hsi.i = 0.5;//6.0/255.0 *show1 * radial_filter;
+        pixel_hsi.i = 255;//6.0/255.0 *show1 * radial_filter;
         pixel_hsi.s = 1;
 
         float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
         d=fmodf(d,maxD);
-        pixel_hsi.h = map_float(d, -maxD/2, maxD/2, 0, 1);
+        pixel_hsi.h = gHue.modulate(map_float(d, -maxD/2, maxD/2, 0, 1));
 
         pixel_hsi = hsi_sanity_check(pixel_hsi);
 
-        pixel = Hsi2Rgb(pixel_hsi, DEFAULT_GAMMA, RGB_SCALE_FACTORS);
+        pixel = Hsi2Rgb(pixel_hsi);
         
         //pixel.r   = 3*show1 * radial_filter;
         //pixel.g=0;
@@ -846,7 +845,7 @@ public:
         animation.offset_x   = move.ramp[0];
         animation.offset_y   = 0;
         animation.offset_z   = 0;
-        float show1          = render_value(animation);
+        //float show1          = render_value(animation);
 
         animation.angle      = 3 * polar_theta[n] +  move.saw[1] - distance[n]/3;
         animation.dist       = distance[n];
@@ -859,21 +858,21 @@ public:
         //float show3          = render_value(animation);
 
         // colormapping
-        float radius = radial_filter_radius;
-        float radial_filter = (radius - distance[n]) / radius;
+        //float radius = radial_filter_radius;
+        //float radial_filter = (radius - distance[n]) / radius;
 
 
 
-        pixel_hsi.i = 0.5;//6.0/255.0 *show1 * radial_filter;
+        pixel_hsi.i = 255;//6.0/255.0 *show1 * radial_filter;
         pixel_hsi.s = 1;
 
         float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
         d=fmodf(d,maxD/2);
-        pixel_hsi.h = map_float(d, -maxD/2, maxD/2, 0, 1);
+        pixel_hsi.h = gHue.modulate(map_float(d, -maxD/2, maxD/2, 0, 1));
 
         pixel_hsi = hsi_sanity_check(pixel_hsi);
 
-        pixel = Hsi2Rgb(pixel_hsi, DEFAULT_GAMMA, RGB_SCALE_FACTORS);
+        pixel = Hsi2Rgb(pixel_hsi);
         
         //pixel.r   = 3*show1 * radial_filter;
         //pixel.g=0;
@@ -934,14 +933,7 @@ public:
     //check last, reorder list
 
 
-    EVERY_N_MILLISECONDS(1000){
-      Serial.println("spheres[s].mRadias;");
-      for (int s = 0; s <num_spheres; s++) {
-        Serial.print(spheres[s].mRadias);
-        Serial.print("\t");
-      }
-      Serial.println("");
-    }
+
 
     //fadeToBlackBy( buffer, NUM_LEDS, 1);
     /////////
@@ -963,18 +955,35 @@ public:
       pixel_hsi.h = h[mind];
       
 
-      pixel_hsi.i = 0.5;//6.0/255.0 *show1 * radial_filter;
+      pixel_hsi.i = 255;//6.0/255.0 *show1 * radial_filter;
       pixel_hsi.s = 1;
 
       pixel_hsi = hsi_sanity_check(pixel_hsi);
 
-      pixel = Hsi2Rgb(pixel_hsi, DEFAULT_GAMMA, RGB_SCALE_FACTORS);
+      pixel = Hsi2Rgb(pixel_hsi);
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       //if (minD < .2) 
       buffer[n] = setPixelColor(pixel);
       //else buffer[n] += setPixelColor(pixel);
-      
+      EVERY_N_MILLISECONDS(1000){
+        Serial.print("pixel_hsi.h\t");Serial.print(pixel_hsi.h);
+        Serial.print("\tpixel_hsi.s\t");Serial.print(pixel_hsi.s);
+        Serial.print("\tpixel_hsi.i\t");Serial.println(pixel_hsi.i);
+        Serial.print("pixel.r\t");Serial.print(pixel.r);
+        Serial.print("\tpixel.b\t");Serial.print(pixel.b);
+        Serial.print("\tpixel.g\t");Serial.println(pixel.g);
+
+
+        /*
+        Serial.println("spheres[s].mRadias;");
+        for (int s = 0; s <num_spheres; s++) {
+          Serial.print(spheres[s].mRadias);
+          Serial.print("\t");
+        }
+        Serial.println("");
+        */
+      }
       
       //buffer[n] = setPixelColor(pixel);
     }
@@ -1037,7 +1046,7 @@ public:
         pixel.g = show3 / 6;
         pixel.b  = 0;
 
-        pixel = rgb_sanity_check(pixel);
+        pixel = hue_shift(rgb_sanity_check(pixel));
 
         buffer[n] = setPixelColor(pixel);
       }
@@ -1098,7 +1107,7 @@ public:
         pixel.g = show2 * radial_filter / 2;
         pixel.b  = show3 * radial_filter / 4;
 
-        pixel = rgb_sanity_check(pixel);
+        pixel = hue_shift(rgb_sanity_check(pixel));
 
         buffer[n] = setPixelColor(pixel);
       }
@@ -1147,7 +1156,7 @@ public:
       pixel.g = 0;
       pixel.b  = show2;
 
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1199,7 +1208,7 @@ public:
       pixel.g = show2;
       pixel.b  = 0;
 
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1259,7 +1268,7 @@ public:
       pixel.g = show2;
       pixel.b  = 0;
 
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1326,7 +1335,7 @@ public:
       pixel.g = show3 * distance[n] / 10;
       pixel.b  = (show2 + show4) / 2;
 
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1392,7 +1401,7 @@ public:
       pixel.b  = (show2 + show4) / 2;
 
 
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1467,7 +1476,7 @@ public:
         pixel.b = 0;
       }
 
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1529,7 +1538,7 @@ public:
       pixel.g = 0.1*radial*(show2-show3);
       pixel.b = 3*move.noise_angle[1]; //todohue
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1580,7 +1589,7 @@ public:
 
       }
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1647,7 +1656,7 @@ public:
       pixel.g = show3*show4/255;
       pixel.b  = 0;
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -1708,7 +1717,7 @@ public:
       pixel.g = f*(show1-show2);
       pixel.b  = f*(show3-show1);
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
    
@@ -1772,7 +1781,7 @@ public:
       pixel.g = f*(show1-show2);
       pixel.b  = f*(show3-show1);
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -1820,9 +1829,9 @@ public:
       
       pixel.r   = radial  * show2;
       pixel.g   = radial* 0.3* (show2-show4);
-      pixel.b = 3*move.noise_angle[1]; 
+      pixel.b = 15;
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
  
@@ -1861,10 +1870,10 @@ public:
       
       pixel.r   = show1*radial; //todo this is pretty boring, maybe make palette
       pixel.g   = 0;
-      pixel.b = 3*move.noise_angle[1]; 
+      pixel.b = 15; 
       
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -1902,9 +1911,9 @@ public:
       
       pixel.r   = show1;
       pixel.b   = 40-show1;
-      pixel.g = 3*move.noise_angle[1]; 
+      pixel.g = 15; 
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -1958,7 +1967,7 @@ public:
       pixel.b   = radial * (show1 - show3) / 5;
       
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -2010,7 +2019,7 @@ public:
       pixel.b   = radial * show3;
       
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -2063,7 +2072,7 @@ public:
      
       
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
     
@@ -2115,7 +2124,7 @@ public:
       pixel.g  = radial * (show2-show1);
       pixel.b   = radial * (show3-show2);
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -2166,7 +2175,7 @@ public:
       pixel.g  = radial * (show2+show1)*0.5;
       pixel.b   = radial * (show3+show2)*0.5;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -2219,7 +2228,7 @@ public:
       pixel.g  = radial * (show2+show1)*0.5 ;//* ledMap[n][yind]/spread_y;
       pixel.b   = radial * (show3+show2)*0.5 ;//* ledMap[n][xind]/spread_x;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -2273,7 +2282,7 @@ public:
       pixel.g  = radial * (show2+show1)*0.5 ;//* ledMap[n][yind]/spread_y;
       pixel.b   = radial * (show3+show2)*0.5 ;//* ledMap[n][xind]/spread_x;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
    
       buffer[n] = setPixelColor(pixel);
     }
@@ -2346,7 +2355,7 @@ public:
       pixel.g  = show2-show5;
       pixel.b   = 10+show3-show2+show1;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -2423,7 +2432,7 @@ public:
       pixel.g  = show3+show4;
       pixel.b   = show5;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
     }
     //show_frame();
@@ -2483,7 +2492,7 @@ public:
         pixel.g  = show2;
         pixel.b   = show3;
        
-        pixel = rgb_sanity_check(pixel);
+        pixel = hue_shift(rgb_sanity_check(pixel));
         
         buffer[n] = setPixelColor(pixel);
       }
@@ -2570,7 +2579,7 @@ public:
       pixel.g  = show3;
       pixel.b   = show5;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -2626,7 +2635,7 @@ public:
       pixel.g  = 0;
       pixel.b   = colordodge(show2, show1);
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
 
@@ -2722,7 +2731,7 @@ public:
       pixel.g  = radial * colordodge(show2,show5);
       pixel.b   = radial * screen(show3,show6);
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -2823,7 +2832,7 @@ public:
       pixel.g  = 0;
       pixel.b   = radial * show9;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -2896,7 +2905,7 @@ public:
       pixel.g  = 0;
       pixel.b   = show6;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -2971,7 +2980,7 @@ public:
       show5 = screen(show4, show3);
       show6 = colordodge(show5, show3);
 
-      float sy2 =spread_y*2.0;
+      //float sy2 =spread_y*2.0;
 
 
       float radius = radial_filter_radius;   // radius of a radial brightness filter
@@ -2981,7 +2990,7 @@ public:
       pixel.g  = 0;
       pixel.b   = show6 * radial;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3062,7 +3071,7 @@ public:
       pixel.g  = (show5-50)+(show6/16);
       pixel.b   = show6;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3150,7 +3159,7 @@ public:
       pixel.g  = 0.3*radial*show6;//(radial*(show1))*0.3f;
       pixel.b   = radial*show5;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3236,7 +3245,7 @@ public:
       pixel.g  = 0.3*radial*show6;//(radial*(show1))*0.3f;
       pixel.b   = radial*show5;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3334,7 +3343,7 @@ public:
       pixel.b   = show5 * radial;
       pixel.r    = (1*show1 + 1*show2) - show7/2;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3434,7 +3443,7 @@ public:
       pixel.g  = 0.5*(show6);
 
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3485,7 +3494,7 @@ public:
       //12-10/10,  12-1/10,  brighter in center
      
       uint8_t color = float_to_uint8_t(show1 * radial);
-      buffer[n] = ColorFromPalette( currentPalette, color);
+      buffer[n] = hue_shiftb(ColorFromPalette( currentPalette, color));
     }
   }
 
@@ -3542,7 +3551,7 @@ public:
       pixel.r    = show1;
       pixel.b   = show2;
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3630,7 +3639,7 @@ public:
       
      
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3724,7 +3733,7 @@ public:
       
      
      
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3799,7 +3808,7 @@ public:
       pixel.g  = show1 - 80;
       pixel.b   = show1 - 150;
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3839,7 +3848,7 @@ public:
       pixel.g  = show1 - 80;
       pixel.b   = show1 - 150;
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3916,7 +3925,7 @@ public:
       //pixel.g  = show1 - 80;
       //pixel.b   = show1 - 150;
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -4016,7 +4025,7 @@ public:
       pixel.b   = 0;
       
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -4081,7 +4090,7 @@ public:
       
       
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -4173,7 +4182,7 @@ public:
       
       
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -4214,7 +4223,7 @@ public:
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      uint8_t color = float_to_uint8_t(10*show1);
+      uint8_t color = float_to_uint8_t(show1);
       buffer[n] = ColorFromPalette( currentPalette, color);
 
     }
@@ -4255,7 +4264,7 @@ public:
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      uint8_t color = float_to_uint8_t(10*show1);
+      uint8_t color = float_to_uint8_t(100*show1);
       buffer[n] = ColorFromPalette( currentPalette, color);
 
     }
@@ -4347,7 +4356,7 @@ public:
       
       
       
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
 
       byte a = millis()/100;
       
@@ -4406,7 +4415,7 @@ public:
       pixel.g = show2 / 4;
       pixel.b  = show3 / 4;
 
-      pixel = rgb_sanity_check(pixel);
+      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }

@@ -103,17 +103,7 @@ float ledMap[NUM_LEDS][3] = {
 CRGB leds[NUM_LEDS];               // framebuffer
 ANIMartRIX art(leds);  //led buffer, global scale
 ANIMaudio audio;  //
-uint8_t gHueShift = 0;
 
-void applyHueShift(){
-  if (gHueShift >0){
-    for (int i =0; i < NUM_LEDS; i++){
-      CHSV hsv = rgb2hsv_approximate(leds[i]);
-      hsv.h = hsv.h + gHueShift;
-      hsv2rgb_rainbow( hsv, leds[i]);
-    }
-  }
-}
 
 
 
@@ -134,6 +124,7 @@ int currentPattern = 0;
 
 void Module_Experiment10(){art.Module_Experiment10();}
 void Module_Experiment9(){art.Module_Experiment9();}
+void SPARKLE_EDGES_MOD9(){art.SPARKLE_EDGES_MOD9();}
 void Module_Experiment8(){art.Module_Experiment8();}
 void Module_Experiment7(){art.Module_Experiment7();}
 void Module_Experiment6(){art.Module_Experiment6();}
@@ -207,6 +198,7 @@ PatternAndNameList gPatterns = {
   {Rings, "Rings"},
   {Module_Experiment10,"Module_Experiment10"},
   {Module_Experiment9,"Module_Experiment9"}, // FAV swipes!
+  {SPARKLE_EDGES_MOD9,"SPARKLE_EDGES_MOD9"}, // FAV swipes! with sweet edges
   {Module_Experiment8,"Module_Experiment8"},
   {Module_Experiment7,"Module_Experiment7"},
   {Module_Experiment6,"Module_Experiment6"},
@@ -265,169 +257,43 @@ PatternAndNameList gPatterns = {
 
 
 /*
-speed adjust:
-Complex_Kaleido_3
-
-PatternAndNameList gChillPatterns = {
-  {Module_Experiment8,"Module_Experiment8"},// pretty much just reds and pinks and orange
-  {Module_Experiment7,"Module_Experiment7"}, //boring but chill, too black sometimes
-  {Module_Experiment6,"Module_Experiment6"},//bit better, only yellow and red, slow
-  mod5
-  mod3
-  Module_Experiment2
-
-  {Parametric_Water,"Parametric_Water"},// could tone down radius / blue to save power?
-  water
-  {Complex_Kaleido_2,"Complex_Kaleido_2"},
-  {Complex_Kaleido_1,"Complex_Kaleido_1"},
-  {SM10,"SM10"},
-  sm9
-  {SM6,"SM6"},
-  SM5
-  Slow_Fade
-  Zoom2
-  Zoom
-  Hot_Blob
-  Spiralus2
-  Spiralus
-  Scaledemo1
-  Rotating_Blob
-};
-
-PatternAndNameList gHypePatterns = {
-  {Complex_Kaleido_3,"Complex_Kaleido_3"},
-  {SM8,"SM8"},//fun strobe
-  SM1, beautiful swirls
-  RGB_Blobs
-  Caleido3, maybe make a bit faster? morwe color?, see ledMap Y
-  Caleido2, speed up?
-  Caleido1, speed up?
-  Rings
-};
-
-bpm patterns
-
-
-low power?
-rotating blob?
-
-
 
 //TODO
-update readme
-hardware
-  imu
-  microphone
-  level shifter
-  leds
-req libraries
-  Adafruit ICM20X
-  Adafruit BusIO?
-  dafruit Unified Sensor
 
 
-
-modes: all, low power, chill
-features: 
-  darkwad check, 
-  fade patterns into one another, 
-  switch input, 
-  color picker?, play with palettes, 
-  music reactive,  incoorperate ANIMaudio
-  IMU reactive
-  change master speed to be BPM related
-  global hue shift, requires shifting my palets to CHSV
-  distance and radial normalization (Spiralus)
-  play with phi
-  change my hsiF usage to color palettes Module_Experiment9_Hsi
-  try some pallets with non zero starting points
-  add more effects like Module_Experiment9_Hsi
-  palette blending
-  effect blending
-
-    make floats
-    make run off noise function
 
 
 
 bugfixes: 
-  why the flash?
-  remove fastled.delay bc it breaks hue shift by showing w/o shift?
-  only effects bpm demo I think
-  forgot scale_z...
+  perform hue shift in class.
+  NEED TO COMPLETLEY DO AWAY WITH THE PIXEL.R etc change everything to HSI make the show values the intensities?  hues are fixed?  add them together after converting to RGB?  add together before?
+
+
+  forgot scale_z...n
   figure out offsetz vs just z
   zoom and zoom2 flicker with hue shift i think its the noise hot blob same
   Scaledemo1 still weird
-
-
-
-..remove or tweak
-PatternAndNameList gNeedsWorkPatterns = {
-  {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"}, try making the plane dynamic and re-adding other layers and movmnet
-  {demoBpm, "demoBpm"}, //has potential, try incoorperating bpm into other patterns
-  {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"}, //might get too black, really sweet though
-  Module_Experiment9 blue and green not touched, different color every time, also dont really need since we have hsi versions
-  Module_Experiment5 red only, fix g b 
-  Module_Experiment4 boring colors, only rgb with no mixing
-  water, no green fix that
-  Complex_Kaleido_5 red only, fix
-  RGB_Blobs5, not dynamic enough fix radius?
-  RGB_Blobs4 radius?
-  RGB_Blobs3 green blue broken?
-  RGB_Blobs2, still boring...
-  Polar_Waves has potential but seems off
-  zoom no blue???
-  zoom2 no green???
-  hot blob missing blue
-  Yves, what is it even doing???  seems to get more dynamic with time?
-  Lava1 no blue, really boring???
-  Distance_Experiment, boring
-  waves, was too slow with master timing 0.01
-  Scaledemo1, what happened this was a fav?
-  Big_Caleido seems broken, need to make less black
-};
-
-
-good enough.. maybe play with or just leave alone
-  Module_Experiment10
-  Module_Experiment3 really like this one, again colors could be cooler
-  Module_Experiment2 this one even better! love the fades and speed
-  SM10
-  SM9, seems too blue, not quite right
-  SM8 fun strobe, could use better colors
-  SM3 better colors... has potentiall to be nice chill
-  SM2, too black, but really really cool
-  Big_Caleido, angle mult, too black
-  RGB_Blobs1, pretty good, try playing with color
-  Spiralus2 maybe change angle mult
-  Chasing_Spirals pretty good...
-
-
-perfect dont touch
-  Module_Experiment9_Hsi
-  {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"}, //might get too black, really sweet though
-  Module_Experiment1 pretty cool but blue only, fix r g
-  Parametric_Water
-  Water
-  Complex_Kaleido_6, maybe just change the angle multiplier to less than 16
-  Complex_Kaleido_4
-  Complex_Kaleido_3
-  Complex_Kaleido_2
-  Complex_Kaleido_1
-  SM4, SM5 amazing
-  SM1 awesome swirl!!!!!
-  Slow_Fade, maybe too black
-  Spiralus
-  Caleido3
-  Center_Field so fing cool
-
-
+  hsi_sanity_check use constants you sucker, even in utils
+  audio set min peak amplitude
+  audio create more settings for different modulators
+  audio figure out how to smooth out the signal better
+  audio make the weights universal, aka immune to sample time changes
+  audio play with mic gain
+  audio if no beats in a while disable until bpm stabalizes
+  audio fix the sort function
+  audio make the brightness flash proportional to the beat amplitude
+  audio find out what weights make for better volume detection, .99 was not the intent, i think .999 was but that may not be enough either
 
 
 
 */
 
 int gPatternCount = ARRAY_SIZE(gPatterns);
+void clearPattern(){
+  currentPattern = 0;
+  Serial.print("Setting pattern to: "); Serial.print(currentPattern); Serial.print(" "); Serial.println(gPatterns[currentPattern].name);
+}
+
 
 void incrementPattern(int inc = 1){
   currentPattern = currentPattern + inc;
@@ -446,7 +312,6 @@ void randomPattern(){
 
 void showCurrentPattern(){
   gPatterns[currentPattern].pattern();
-  applyHueShift();
   art.markStartOfShow();
   FastLED.show();
   art.markEndOfShow();
@@ -465,7 +330,7 @@ void setup() {
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
   FastLED.addLeds<WS2811, 2, GRB>(leds, NUM_LEDS);
   FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA] 
-  FastLED.setBrightness(64);
+  FastLED.setBrightness(255);
   Serial.begin(115200);                 // check serial monitor for current fps count
   art.setGlobalScale(0.5);
 
@@ -479,7 +344,6 @@ void setup() {
  // fill_rainbow(leds, NUM_LED, 0);
   //fill_solid(leds, NUM_LED, CRGB::Green);
   //FastLED.show();
-  gHueShift = 0;
 }
 
 
@@ -504,7 +368,7 @@ void loop() {
 
   //audio stuff
   audio.update();
-  int i=0;
+  //int i=0;
 
   //Serial.print("audio.raw_signal ");
   //Serial.print(audio.raw_signal);
@@ -512,18 +376,19 @@ void loop() {
   //Serial.print(audio.scaled_signal);
   //Serial.print(" audio.abs_signal ");
   //Serial.print(audio.abs_signal);
-  Serial.print(" audio.getLp ");
-  Serial.print(audio.getLp());
+  //Serial.print(" audio.getLp ");
+  //Serial.print(audio.getLp());
   if (audio.beat_detected) {
     brt = max_brt;
-    Serial.print("beat");
+    //Serial.print("beat");
   } else {
     if (brt>min_brt) brt--;
   }
-  Serial.println("");
+  //Serial.println("");
 
 
   //brt = (int)(map_float(audio.getLp()*audio.getLp(),0,1.0,min_brt,max_brt));
+  brt=64;
   FastLED.setBrightness(brt);
 
   //led output
@@ -556,9 +421,14 @@ void loop() {
       incrementPattern();
     } else if (incomingByte == 'b'){
       incrementPattern(-1);
+    } else if (incomingByte == 'B'){
+      clearPattern();
     } else if (incomingByte == 'h'){
-      gHueShift = gHueShift +10;
-      Serial.print("Setting hue shift to"); Serial.println(gHueShift);
+      art.gHue.inc(.1);
+      Serial.print("Setting hue shift to"); Serial.println(art.gHue.base);
+    } else if (incomingByte == 'H'){
+      art.gHue.base = 0;
+      Serial.print("Setting hue shift to"); Serial.println(art.gHue.base);
     } else if (incomingByte == 'r'){
       doRandom = not doRandom;
       if (doRandom && play==false) play = true;

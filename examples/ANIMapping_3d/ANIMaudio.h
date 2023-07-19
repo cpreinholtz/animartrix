@@ -16,26 +16,7 @@ License CC BY-NC 3.0
 
 */
 
-//#include <SmartMatrix.h>
-
-
-
-
-
-
-
-//helper functions todo move to a new place?
-float map_float(float x, float in_min, float in_max, float out_min, float out_max) { 
-  
-  float result = (x-in_min) * (out_max-out_min) / (in_max-in_min) + out_min;
-  if (result < out_min) result = out_min;
-  if( result > out_max) result = out_max;
-
-  return result; 
-}
-
-
-
+#include "ANIMutils.h"
 
 
 // Function for Selection sort, not the fastest but it is nice and simple https://www.geeksforgeeks.org/selection-sort/?ref=lbp

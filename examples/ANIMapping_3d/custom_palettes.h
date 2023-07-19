@@ -27,7 +27,7 @@ License CC BY-NC 3.0
 */
 #pragma once
 #include <FastLED.h>
-#define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
+#include "ANIMutils.h"
 
 
 ////////////////////////////////////////////////////////////////////////
