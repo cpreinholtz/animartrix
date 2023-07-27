@@ -286,6 +286,7 @@ void Spiralus2(){art.Spiralus2();}
 void Spiralus(){art.Spiralus();}
 void Yves(){art.Yves();}
 void Scaledemo1(){art.Scaledemo1();}
+void Scaledemo2(){art.Scaledemo2();}
 void Caleido3(){art.Caleido3();}
 void Caleido2(){art.Caleido2();}
 void Caleido1(){art.Caleido1();}
@@ -362,6 +363,7 @@ PatternAndNameList gPatterns = {
   {Spiralus,"Spiralus"},
   {Yves,"Yves"},
   {Scaledemo1,"Scaledemo1"},///active and fun
+  {Scaledemo2,"Scaledemo2"},///active and fun
   {Lava1,"Lava1"},//broken
   
   {Caleido3,"Caleido3"},
@@ -388,12 +390,15 @@ PatternAndNameList gPatterns = {
 bugfixes: 
 
   test 400 leds with ESP vs teensy
+  low limit, high limit?  set in get ready?
+  maybey its a good idea to introduce randomness when selecting a new pattern?
   
-  some patterns (hit b a couple times) are too dark? is this a scaling thing?
 
-  forgot scale_z...n
-  figure out offsetz vs just z
+
+
   zoom and zoom2 flicker with hue shift i think its the noise hot blob same
+
+  
   Scaledemo1 still weird
   hsi_sanity_check use constants you sucker, even in utils
   audio set min peak amplitude
