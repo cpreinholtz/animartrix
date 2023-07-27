@@ -392,24 +392,14 @@ bugfixes:
   test 400 leds with ESP vs teensy
   low limit, high limit?  set in get ready?
   maybey its a good idea to introduce randomness when selecting a new pattern?
-  
-
-
-
-  zoom and zoom2 flicker with hue shift i think its the noise hot blob same
-
-  
-  Scaledemo1 still weird
+  make music modes and toggleability
   hsi_sanity_check use constants you sucker, even in utils
-  audio set min peak amplitude
-  audio create more settings for different modulators
-  audio figure out how to smooth out the signal better
-  audio make the weights universal, aka immune to sample time changes
-  audio play with mic gain
-  audio if no beats in a while disable until bpm stabalizes
-  audio fix the sort function
-  audio make the brightness flash proportional to the beat amplitude
-  audio find out what weights make for better volume detection, .99 was not the intent, i think .999 was but that may not be enough either
+
+
+
+  --Scaledemo1 still weird
+  -- made scaldemo2
+
 
 
 
@@ -457,7 +447,7 @@ void setup() {
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
   FastLED.addLeds<WS2811, 2, GRB>(leds, NUM_LEDS);
   FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA] 
-  FastLED.setBrightness(32);
+  FastLED.setBrightness(32); // this is OVERWRITTEN!!!!!!
   Serial.begin(115200);                 // check serial monitor for current fps count
   art.setGlobalScale(0.5);
 
@@ -483,8 +473,8 @@ bool doRandom = true;
 
 
 
-const int min_brt = 16;
-const int max_brt = 255;
+const int min_brt = 32;
+const int max_brt = 128;
 
 int brt = 32;
 int cnt = 32;
@@ -497,25 +487,18 @@ void loop() {
   audio.update();
   //int i=0;
 
-  //Serial.print("audio.raw_signal ");
-  //Serial.print(audio.raw_signal);
-  //Serial.print(" audio.scaled_signal ");
-  //Serial.print(audio.scaled_signal);
-  //Serial.print(" audio.abs_signal ");
-  //Serial.print(audio.abs_signal);
-  //Serial.print(" audio.getLp ");
-  //Serial.print(audio.getLp());
+
   if (audio.beat_detected) {
-    brt = max_brt;
+    brt = round(map_float(audio.abs_signal, -.2, .8, min_brt, max_brt)); // todo test minimums???
     //Serial.print("beat");
   } else {
-    if (brt>min_brt) brt--;
+    if (brt>min_brt) brt--; //todo make this agnostic to FPS
   }
   //Serial.println("");
 
 
   //brt = (int)(map_float(audio.getLp()*audio.getLp(),0,1.0,min_brt,max_brt));
-  brt=64;
+  //brt=64;
   FastLED.setBrightness(brt);
 
   //led output
@@ -538,16 +521,26 @@ void loop() {
     // read the incoming byte:
     int incomingByte = Serial.read();
 
-    if (incomingByte == 'v'){
+    if (incomingByte == 'd'){
       verbose = not verbose;
     } else if(incomingByte == 'p'){
       play = not play;    
     } else if(incomingByte == 'c'){
       incrementPalette();
-    } else if (incomingByte == 's' or incomingByte == 'n'){
+    } else if (incomingByte == 'n'){
       incrementPattern();
     } else if (incomingByte == 'b'){
-      incrementPattern(-1);
+      incrementPattern(-1);     
+    } else if (incomingByte == 'g'){
+      int i = Serial.parseInt();
+      clearPattern();
+      incrementPattern(i);
+    } else if (incomingByte == 'v'){
+      float i = Serial.parseFloat();
+      audio.iir_volume.setWeight(float(i));
+    } else if (incomingByte == 'l'){
+      float i = Serial.parseFloat();
+      audio.iir_lowpass.setWeight(float(i));
     } else if (incomingByte == 'B'){
       clearPattern();
     } else if (incomingByte == 'h'){

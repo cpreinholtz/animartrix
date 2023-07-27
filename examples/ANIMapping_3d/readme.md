@@ -1,4 +1,51 @@
 
+
+
+bugfixes
+  use every n millis for decay intensity
+  try sampling multiple times during update?  make a callbalck / interupt for more regular sampling?
+  audio create beat ratios to find "biggest" beats rather than delta, and increase delta, put inside the beat detection circuit, make larger than 100ms which is 600 bpm
+  really just need to coordinate bpms...
+  audio create serial plotter stream  
+    audio figure out how to smooth out the signal better  
+    audio find out what weights make for better volume detection, .99 was not the intent, i think .999 was but that may not be enough either
+    audio make the weights universal, aka immune to sample time changes
+  audio test hardware lowpass?? I think i'm getting aliasing
+
+  audio create intensity moddable in art, NOT use global brightness  
+    audio make the brightness flash proportional to the beat amplitude
+
+  audio set min peak amplitude
+
+
+
+
+
+features
+  audio create more settings for different modulators
+  audio play with mic gain
+  bpm
+    audio if no beats in a while disable until bpm stabalizes
+    audio fix the sort function
+
+
+modables
+  fractaly--intger?-- controls number of spirals, can mult with existing setup, use FLOOR if cutting off oddly 
+  intensity--0 to 255--
+  speed
+
+
+
+
+
+
+
+
+
+
+
+
+
 features: 
   modes: all, low power, chill
   darkwad check, 

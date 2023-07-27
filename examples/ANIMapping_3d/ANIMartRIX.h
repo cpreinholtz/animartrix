@@ -1550,10 +1550,10 @@ public:
     get_ready(); 
         
 
-    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.00003;    // speed ratios for the oscillators
-    timings.ratio[0] = .5;         // higher values = faster transitions
-    timings.ratio[1] = .1;
-    timings.ratio[2] = 1/8;
+    timings.master_speed = bpmToSpeedMillis(global_bpm)*.5;// was: 0.00003;    // speed ratios for the oscillators
+    timings.ratio[0] = .02;         // higher values = faster transitions
+    timings.ratio[1] = .008;
+    timings.ratio[2] = .00125;
     timings.offset[0] = 0;
     timings.offset[1] = 100;
     timings.offset[2] = 200;
@@ -1568,19 +1568,19 @@ public:
       animation.dist       = 0.3*distance[n] * 0.8;
       animation.angle      = 3*polar_theta[n] + move.saw[2];
       animation.scale_x    = 0.1 + (move.noise_angle[0])/10;
-      animation.scale_y    = 0.1 + (move.noise_angle[1])/10;// + (move.sine[1] + 2)/100;
+      animation.scale_y    = 0.1 + (move.noise_angle[1])/10 +  (move.sine[1] + 2)/100;
       animation.scale_z    = 0.1 + (move.noise_angle[0]+move.noise_angle[1])/10;
-      animation.offset_y   = 0;
+      animation.offset_y   = 0; // todo make this more interesting ?
       animation.offset_x   = 0;
       animation.offset_z   = 10*move.ramp[0];
       float show1          = render_value(animation);
 
-      animation.angle      = 3;
+      animation.angle      = 3; // todo make this cooler? 
       float show2          = render_value(animation);
 
       float dist = 1;//(10-distance[n])/ 10;
       pixel.r = show1*dist;
-      pixel.g = (show1-show2)*dist*0.3;
+      pixel.g = (show1-show2)*dist*0.7;
       pixel.b = (show2-show1)*dist;
 
       if (distance[n] > 16) { // todo make scaled version????
@@ -1603,9 +1603,9 @@ public:
         
 
     timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.00003;    // speed ratios for the oscillators
-    timings.ratio[0] = .05;         // higher values = faster transitions
-    timings.ratio[1] = .01;
-    timings.ratio[2] = .0125;
+    timings.ratio[0] = .005;         // higher values = faster transitions
+    timings.ratio[1] = .001;
+    timings.ratio[2] = .00125;
     timings.offset[0] = 0;
     timings.offset[1] = 100;
     timings.offset[2] = 200;
@@ -1630,9 +1630,9 @@ public:
       animation.angle      = 3;
       float show2          = render_value(animation);
 
-      float dist = 1;//(10-distance[n])/ 10;
+      float dist = 1;//(10-distance[n])/ 10; // todo replace with radial?
       pixel.r = show1*dist;
-      pixel.g = (show1-show2)*dist*0.3;
+      pixel.g = (show1-show2)*dist*0.76;
       pixel.b = (show2-show1)*dist;
 
       if (distance[n] > 16) { // todo make scaled version????
@@ -2216,7 +2216,7 @@ public:
       animation.offset_z   = (sqrtf(animation.dist));// - 10 * move.ramp[0];
       animation.scale_x    = 0.1 ;
       animation.scale_y    = 0.1 ;
-      animation.scale_z    = 0.1 ;
+      animation.scale_z    = 0.1 ; // todo scaling seems small
       animation.offset_x   = 10*move.ramp[0];
       float show1          = render_value(animation);
 

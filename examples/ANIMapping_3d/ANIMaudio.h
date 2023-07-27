@@ -49,6 +49,41 @@ void selectionSort(const int arr[], int sorted_arr[], const int n)
  
 
 
+class FIR {
+
+public:
+
+  float signal; //lowpass fir 
+  static const int nSamples = 19; // THIS is how you tune the filter!!!!!! // moving average with this many inputs  20 seems to work ok at 192 FPS
+  int thisSample;
+  float sum;
+  float samples[nSamples];
+  
+  FIR() {
+    thisSample = 0;
+    sum=0;
+    for (int i = 0; i< nSamples; i++){
+      samples[i] = 0;
+    }
+  }
+
+  void update(float v){
+    //subtract out old one
+    sum = sum - samples[thisSample];
+
+    //add in new one
+    samples[thisSample] = v;
+    sum = sum+v;
+
+    //inc index, simple round robbin
+    thisSample = thisSample+1;
+    if (thisSample >= nSamples) thisSample = 0;
+
+    signal = sum / nSamples;
+  }
+
+
+}; 
 
 
 
@@ -86,11 +121,11 @@ class ANIMaudio {
 public:
 
 
-
+  bool verbose = true;
   float global_bpm = 115.0;
   float energy_level = 0.0;
 
-  int raw_signal;
+  float raw_signal;
   unsigned long raw_time_ms;
   const float raw_min = 0;
   const float raw_max = 1023;
@@ -105,12 +140,13 @@ public:
   IIR iir_volume; //lowpass iir tuned to a VERY slow update time for measuring volume
   IIR iir_lowpass; //lowpass iir tuned to a  slow update time for measuring volume bass kicks
   IIR iir_bias; //lowpass iir tuned to a  slow update time for dc offset correction
-
+  FIR lp;
 
 
   bool beat_detected;
+  bool beat_detected_dbg;
   float beat_last;
-  const float beat_delta_min = 100; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
+  const float beat_delta_min = 300; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
   const float beat_multiplier_min = 1.3; //must hit moving average * multiplier to be considered a beat
   int beat_debounce_count;
 
@@ -143,15 +179,25 @@ public:
     //wt = .9; 5tau = 5 * -.1* ln(.1); 5tau = 1.1 seconds
     //wt = .75; 5tau = 5 * -.1* ln(.25); 5tau = 0.69 seconds
     //wt = .5; 5tau = 5 * -.1* ln(.5); 5tau = 0.3 seconds
-    iir_volume.setWeight(.99);
+    iir_volume.setWeight(.995);
     iir_volume.setAverage(0.0);
     //.95 works for beat detect with 1.5 mult
-    iir_lowpass.setWeight(.96); //.95 works for beat detect with 1.5 mult
+    iir_lowpass.setWeight(.99999999999999); //.95 works for beat detect with 1.5 mult
     iir_lowpass.setAverage(0.0);
     iir_bias.setWeight(.999);
     iir_bias.setAverage(511);
 
+    //findings 7/26
+    /*
+    volume .995 works well at 192 FPS
+      takes less than second but still dips between beats
+
+
+    */
+
     beat_detected = false;
+    beat_detected_dbg = false;
+    
     beat_last = 0;
     beat_debounce_count = 0;
 
@@ -162,16 +208,79 @@ public:
     this->update();
     
   }
+  void debug(){
+        
+    EVERY_N_MILLIS(100) if (verbose){
+      //Serial.print(" audio.raw_signal: ");
+      //Serial.print(audio.raw_signal);
+      //Serial.print(",");
 
+      //Serial.print(" audio.scaled_signal: ");
+      //Serial.print(audio.scaled_signal);
+      //Serial.print(",");
+      
+      Serial.print("ref:");
+      Serial.print("1");
+      Serial.print(",");
+  
+      Serial.print("abs_signal:");
+      Serial.print(abs_signal);
+      Serial.print(",");
+      
+      Serial.print("iir_vol_weight:");
+      Serial.print(iir_volume.iir_weight);
+      Serial.print(",");
+
+      Serial.print("iir_lowpass_weight:");
+      Serial.print(iir_lowpass.iir_weight);
+      Serial.print(",");
+      
+
+      Serial.print("iir_volume:");
+      Serial.print(iir_volume.signal);
+      Serial.print(",");
+/*
+      Serial.print("iir_lowpass:");
+      Serial.print(iir_lowpass.signal);
+      Serial.print(",");
+*/
+      Serial.print("Fir_lowpass:");
+      Serial.print(lp.signal);
+      Serial.print(",");
+
+      Serial.print("ratio:");
+      Serial.print(max(0,lp.signal/iir_volume.signal/beat_multiplier_min));
+      Serial.print(",");
+
+      Serial.print("beat:"); 
+      int b=0;
+      if (beat_detected_dbg){
+        beat_detected_dbg = false;
+        b=1;
+      }
+      Serial.print(b);
+
+      Serial.println();
+
+
+    }
+  }
 
   void update(){
     //read the analog pin and record the current time
-    raw_signal = analogRead(audioPin);
-    raw_time_ms = millis();
+    raw_time_ms = millis();    
+    
+    float avg = 0;
+    int div = 5;
+    for (int i=0; i< div; i++){
+      avg = avg + analogRead(audioPin);
+    }
+    raw_signal = avg/div;
+
 
     
     //scale from -1 to 1 and remove DC bias
-    scaled_signal = map_float(((float) raw_signal), raw_min, raw_max, scaled_min, scaled_max);
+    scaled_signal = map_float( raw_signal, raw_min, raw_max, scaled_min, scaled_max);
     
     //take the abs value of that to get the current energy
     abs_signal = (scaled_signal >= 0.0) ? scaled_signal : - scaled_signal;
@@ -179,13 +288,17 @@ public:
     // update filters
     iir_volume.update(abs_signal);
     iir_lowpass.update(abs_signal);
-    iir_bias.update(raw_signal);
+    lp.update(abs_signal);
+    iir_bias.update(raw_signal); // todo unused
 
     //beat detected if its been a while since the last beat and the current energy is much higher than the average
     float delta = raw_time_ms - beat_last;
-    if(delta > beat_delta_min && iir_lowpass.signal > iir_volume.signal * beat_multiplier_min){
+    //if(delta > beat_delta_min && iir_lowpass.signal > iir_volume.signal * beat_multiplier_min){
+    if(delta > beat_delta_min && lp.signal > iir_volume.signal * beat_multiplier_min){
+
       beat_last = raw_time_ms;
       beat_detected = true;
+      beat_detected_dbg = true;
 
       /*
       //put this delta into the buffer
@@ -208,10 +321,7 @@ public:
     } else {
       beat_detected = false;
     }
-
-
-
-
+    this->debug();
   }
 
   //! returns lowpass.signal, should be between 0 and 1.0
