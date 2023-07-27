@@ -36,7 +36,7 @@ License CC BY-NC 3.0
 #define num_oscillators 10
 
 #ifndef NUM_LEDS
-  #define NUM_LEDS 50
+  //#define NUM_LEDS 100
 #endif
 
 //change the x, y, z index of your map here
@@ -483,6 +483,7 @@ public:
   }
 
   uint8_t float_to_uint8_t(float color){
+    if (color < 0.0) color = 0.0; // todo check behavioor of this??? 
     color = color_sanity_check(color);
     return ((uint8_t) color);
   }
@@ -621,7 +622,7 @@ public:
     Serial.println(BeatsPerMinute);
   }
 
-  void demoBpm()
+  void demoBpm() // todo remove this its hideous
   {
     static uint8_t bhue = 0;
     EVERY_N_MILLISECONDS( 20 ) { bhue++; } // slowly cycle the "base color" through the rainbow
@@ -644,7 +645,7 @@ public:
   }
 
 
-  void Module_Experiment11_Hsi() { 
+  void Module_Experiment11_Hsi() { //todo brightness
     get_ready();
 
     //nscale might provide smoother fade?
@@ -690,7 +691,7 @@ public:
   }
 
 
-  void Module_Experiment9_Hsi() {
+  void Module_Experiment9_Hsi() { // todo brightness
     get_ready();
 
     timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.03;    // master speed 0.031
@@ -734,7 +735,7 @@ public:
   }
 
 
-  void Chasing_Spirals_Hsi() {
+  void Chasing_Spirals_Hsi() { // todo rename, brighness
 
     get_ready(); 
     static Plane3d myPlane;
@@ -1045,9 +1046,9 @@ public:
         float show4          = render_value(animation);
 
         // colormapping
-        pixel.r   = (show2+show4)/2;
-        pixel.g = show3 / 6;
-        pixel.b  = 0;
+        pixel.r   = (show2+show4);
+        pixel.g = show3 / 2;
+        pixel.b  = 0; //todo
 
         pixel = hue_shift(rgb_sanity_check(pixel));
 
@@ -1061,7 +1062,7 @@ public:
 
 
 
-  void Chasing_Spirals() {
+  void Chasing_Spirals() { // todo make this aperiodic
 
     get_ready(); 
     
@@ -1269,7 +1270,7 @@ public:
       // colormapping
       pixel.r   = show1+show2;
       pixel.g = show2;
-      pixel.b  = 0;
+      pixel.b  = 0; // todo
 
       pixel = hue_shift(rgb_sanity_check(pixel));
 
@@ -1539,7 +1540,7 @@ public:
 
       pixel.r = 10+radial*show2;
       pixel.g = 0.1*radial*(show2-show3);
-      pixel.b = 3*move.noise_angle[1]; //todohue
+      pixel.b = 4;//3*move.noise_angle[1]; //todohue
       
       pixel = hue_shift(rgb_sanity_check(pixel));
 
@@ -1547,7 +1548,7 @@ public:
     }
   }
 
-  void Scaledemo1() {
+  void Scaledemo1() { // todo copy and try to fix?
 
     get_ready(); 
         
@@ -1585,7 +1586,7 @@ public:
       pixel.g = (show1-show2)*dist*0.3;
       pixel.b = (show2-show1)*dist;
 
-      if (distance[n] > 16) {
+      if (distance[n] > 16) { // todo make scaled version????
          pixel.r = 0;
          pixel.g = 0;
          pixel.b = 0;
@@ -1599,7 +1600,7 @@ public:
   }
 
 
-  void Yves() {
+  void Yves() { 
 
     get_ready(); 
         
@@ -1657,7 +1658,7 @@ public:
      
       pixel.r   = show3;
       pixel.g = show3*show4/255;
-      pixel.b  = 0;
+      pixel.b  = 0;// todo to dark
       
       pixel = hue_shift(rgb_sanity_check(pixel));
       buffer[n] = setPixelColor(pixel);
@@ -2906,7 +2907,7 @@ public:
      
       pixel.r    = show3;
       pixel.g  = 0;
-      pixel.b   = show6;
+      pixel.b   = show6; // todo this one is SOOOO cool but too monochrome
      
       pixel = hue_shift(rgb_sanity_check(pixel));
       
@@ -2991,7 +2992,7 @@ public:
 
       pixel.r    = show5 * radial;
       pixel.g  = 0;
-      pixel.b   = show6 * radial;
+      pixel.b   = show6 * radial; // todo again too monochrome
      
       pixel = hue_shift(rgb_sanity_check(pixel));
       
@@ -3140,7 +3141,7 @@ public:
 
       
       animation.dist       = distance[n];
-      animation.angle      = 5 * polar_theta[n] + 12 * move.saw[3] + animation.dist /2;
+      animation.angle      = 5 * polar_theta[n] + 12 * move.saw[3] + animation.dist /2; // todo scale the kaleido complexity  for different setups?
       animation.offset_z   = 500;
       animation.scale_x    = 0.09;
       animation.scale_y    = 0.09;
@@ -3289,7 +3290,7 @@ public:
       animation.scale_x    = 0.08 * size * (move.sine[0]+1.5);
       animation.scale_y    = 0.07 * size;
       animation.offset_z   = -10 * move.ramp[0];
-      animation.offset_x   = -30 * move.ramp[0];
+      animation.offset_x   = -3.20 * move.ramp[0];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show1                = render_value(animation);
@@ -3298,9 +3299,9 @@ public:
       animation.angle      = -5 * polar_theta[n] + 10 * move.saw[1] + animation.dist / (((move.sine[1] + 3)*2))+ move.noise_angle[1]*q;
       animation.offset_z   = 500;
       animation.scale_x    = 0.07 * size * (move.sine[1]+1.1);
-      animation.scale_y    = 0.07 * size * (move.sine[2]+1.3);;
-      animation.offset_z   = -12 * move.ramp[1];;
-      animation.offset_x   = -31 * move.ramp[1];
+      animation.scale_y    = 0.07 * size * (move.sine[2]+1.3);
+      animation.offset_z   = -12 * move.ramp[1];
+      animation.offset_x   = -3.1 * move.ramp[1];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show2                = render_value(animation);
@@ -3308,10 +3309,10 @@ public:
       animation.dist       = distance[n];
       animation.angle      = -5 * polar_theta[n] + 12 * move.saw[2] + animation.dist /(((move.sine[3] + 3)*2))+ move.noise_angle[2]*q;
       animation.offset_z   = 500;
-      animation.scale_x    = 0.05 * size * (move.sine[3]+1.5);;
-      animation.scale_y    = 0.05 * size * (move.sine[4]+1.5);;
+      animation.scale_x    = 0.05 * size * (move.sine[3]+1.5);
+      animation.scale_y    = 0.05 * size * (move.sine[4]+1.5);
       animation.offset_z   = -12 * move.ramp[3];
-      animation.offset_x   = -40 * move.ramp[3];
+      animation.offset_x   = -4.0 * move.ramp[3];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show3                = render_value(animation);
@@ -3320,10 +3321,10 @@ public:
       animation.dist       = distance[n];
       animation.angle      = 5 * polar_theta[n] + 12 * move.saw[3] + animation.dist /(((move.sine[5] + 3)*2))+ move.noise_angle[3]*q;
       animation.offset_z   = 500;
-      animation.scale_x    = 0.09 * size * (move.sine[5]+1.5);;;
-      animation.scale_y    = 0.09 * size * (move.sine[6]+1.5);;;
+      animation.scale_x    = 0.09 * size * (move.sine[5]+1.5);
+      animation.scale_y    = 0.09 * size * (move.sine[6]+1.5);
       animation.offset_z   = 0;
-      animation.offset_x   = -35 * move.ramp[3];
+      animation.offset_x   = -3.5 * move.ramp[3];
       animation.offset_y   = 0;
       animation.low_limit  = 0;
       show4                = render_value(animation);
@@ -3338,13 +3339,13 @@ public:
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/distance[n];
 
-      show7 = multiply(show1, show2) * linear1*2;
+      show7 = multiply(show1, show2) * linear1*2; // todo should this be radial?  at least it should be normalized?
       show8 = subtract(show7, show5);
 
       //pixel.r    = radial*(show1+show2);
       pixel.g  = 0.2*show8;//(radial*(show1))*0.3f;
-      pixel.b   = show5 * radial;
-      pixel.r    = (1*show1 + 1*show2) - show7/2;
+      pixel.b   = show5 * radial; // todo flickering.... attemting to slow by 10/2 (deleted 0 in osc added *2 in master timing)
+      pixel.r    = (1*show1 + 1*show2) - show7/2; 
      
       pixel = hue_shift(rgb_sanity_check(pixel));
       
@@ -3965,7 +3966,7 @@ public:
       show1                = render_value(animation);
 
       uint8_t color = float_to_uint8_t(show1);
-      buffer[n] = ColorFromPalette( currentPalette, color);
+      buffer[n] = ColorFromPalette( currentPalette, color); // todo why is this soo much brighter than all others?  also very black?
 
     }
   }
@@ -4227,7 +4228,7 @@ public:
       show1                = render_value(animation);
 
       uint8_t color = float_to_uint8_t(show1);
-      buffer[n] = ColorFromPalette( currentPalette, color);
+      buffer[n] = ColorFromPalette( currentPalette, color); // todo hue shift????  todo, these all seem WWWAAAAY brighter than others
 
     }
   }
@@ -4274,7 +4275,7 @@ public:
   }
 
 
-  void Module_Experiment10() { 
+  void Module_Experiment10() {  // todo brightness
 
     get_ready();
 
