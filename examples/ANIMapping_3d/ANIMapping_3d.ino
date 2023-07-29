@@ -464,8 +464,8 @@ AudioConnection          patchCord4(amp1, 0, fft256_1, 0);
 //******************************************************************************************************************
 void setup() {
 
-  art.global_intensity.min = 0.1;//MUST be >0
-  art.global_intensity.max = 0.7;//MUST be <=1
+  art.global_intensity.min = 0.2;//MUST be >0
+  art.global_intensity.max = 1.0;//MUST be <=1
   //art.global_intensity.modulate(art.global_intensity.min);
   art.global_intensity = (art.global_intensity.min); //sets the base to min
   art.global_intensity.modulate(0);  //sets mod to 0

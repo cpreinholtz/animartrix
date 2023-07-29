@@ -147,7 +147,7 @@ public:
   bool beat_detected_dbg;
   float beat_last;
   bool beat_armed = true;
-  const float beat_delta_min = 150; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
+  const float beat_delta_min = 120; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
   const float beat_multiplier_min = 2.0; //must hit moving average * multiplier to be considered a beat
   const float beat_volume_min = 0.5/20.0; //must hit moving average * multiplier to be considered a beat
   const float beat_hysteresis = beat_multiplier_min * 0.5;
@@ -288,9 +288,9 @@ public:
       hyst_count = 0;
     } else {
       //add hysterisis to beat thingy
-      if (abs_signal < iir_volume.signal * beat_hysteresis && hyst_count <= 2.0) {
-        hyst_count = hyst_count + .1;
-        if (hyst_count > 1.0) beat_armed = true;
+      if (abs_signal < iir_volume.signal * beat_hysteresis ) {
+        if  (hyst_count < 2.0) hyst_count = hyst_count + .1;
+        if (hyst_count > 0.6) beat_armed = true; /// set armed HERE if hysterisis conditions satisfied  // 6 llops at ratio < hyst
       }
       beat_detected = false;
     }
