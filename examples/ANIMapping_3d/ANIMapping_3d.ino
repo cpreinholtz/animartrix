@@ -438,8 +438,30 @@ void showCurrentPattern(){
 
 
 //******************************************************************************************************************
+volatile float tinterruptCounter=0;  //for counting interrupt
+volatile float tsum =0;
+//TEENSY
+IntervalTimer myTimer;
+//ESP 32
+void tTime(){
+  tinterruptCounter++;
+  tsum += analogRead(audio.audioPin);
+}
+
+volatile int interruptCounter=0;  //for counting interrupt
+/*
+hw_timer_t * timer = NULL;      //H/W timer defining (Pointer to the Structure)
+portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
+
+void IRAM_ATTR onTimer() {      //Defining Inerrupt function with IRAM_ATTR for faster access
+ portENTER_CRITICAL_ISR(&timerMux);
+ interruptCounter++;
+ portEXIT_CRITICAL_ISR(&timerMux);
+}*/
 
 
+
+//******************************************************************************************************************
 void setup() {
 
   art.global_intensity.min = 0.1;//MUST be >0
@@ -456,6 +478,17 @@ void setup() {
   //art.setGlobalScale(0.5); 
 
 
+  //TEENSY
+  myTimer.begin(tTime, 1000000/5000);  //  1000000/20000 to run every 20khz
+  myTimer.priority(255);// lowst prio
+
+
+  //ESP
+  //divider at 400 gives 8e6/4e2 = 20khz
+  //timer= timerBegin(0, 400, true); //timer, divider value to the clock frequency i.e. 80MHz., Flag indicates the counter shall count UP(true) or Count DOWN(false)
+
+
+
 }
 
 
@@ -470,9 +503,32 @@ bool hueDrift = false;
 int cnt = 32;
 
 void loop() {
+  
+  /*EVERY_N_MILLIS(500) {
+    Serial.print("tinterruptCounter: ");
+    Serial.print(tinterruptCounter);
+    Serial.print("tsum: ");
+    Serial.print(tsum);
+    //Serial.print(", interruptCounter: ");
+    //Serial.println(interruptCounter);
+  }*/
 
   //audio stuff
-  audio.update();
+  //by averaging audio signals at 20KHz we should eliminate most signals above 2* loop frequency
+  noInterrupts();  
+  float sum = tsum;
+  float div  = tinterruptCounter;
+  tsum = 0;
+  tinterruptCounter = 0;
+  interrupts();
+  
+
+  if (div >0 ) audio.update(sum/div); // in order for this to work, loop speed must be faster than the frequency you are looking for
+  else audio.update(0);
+  //audio.update();
+
+
+
   //int i=0;
 
   if (hueDrift) art.gHue.incBase(.0003); // todo make this scale with FPS
@@ -504,6 +560,8 @@ void loop() {
   if(verbose){
     EVERY_N_MILLIS(500) art.report_performance();   // check serial monitor for report 
   }
+  
+
 
   // testing interface, user input
   if (Serial.available() > 0) {
@@ -512,7 +570,7 @@ void loop() {
 
     if (incomingByte == 'd'){
       verbose = not verbose;
-    } else if(incomingByte == 'p'){
+    } else if(incomingByte == 'P'){
       play = not play;    
     } else if(incomingByte == 'c'){
       incrementPalette();

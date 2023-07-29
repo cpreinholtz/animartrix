@@ -92,7 +92,7 @@ class IIR {
 
 public:
 
-  float signal; //lowpass iir tuned to 
+  float signal=0; //lowpass iir tuned to 
   float iir_weight = .99; // must be <1, weight of the previous samples, this (along with the sample rate) determines the cutoff frequency, more weight = lower cutoff
 
 
@@ -266,19 +266,12 @@ public:
     }
   }
 
-  void update(){
-    //read the analog pin and record the current time
+  //!update by passing in a raw signal
+  void update(float audiolevel){
+    //record the current time
     raw_time_ms = millis();    
-    
-    float avg = 0;
-    int div = 5;
-    for (int i=0; i< div; i++){
-      avg = avg + analogRead(audioPin);
-    }
-    raw_signal = avg/div;
+    raw_signal = audiolevel;
 
-
-    
     //scale from -1 to 1 and remove DC bias
     scaled_signal = map_float( raw_signal, raw_min, raw_max, scaled_min, scaled_max);
     
@@ -299,7 +292,6 @@ public:
       beat_last = raw_time_ms;
       beat_detected = true;
       beat_detected_dbg = true;
-
       /*
       //put this delta into the buffer
       bpm_deltas[bpm_current_sample] = delta;
@@ -324,10 +316,21 @@ public:
     this->debug();
   }
 
-  //! returns lowpass.signal, should be between 0 and 1.0
-  float getLp(){
-    return iir_lowpass.signal;
+  //!update by reading from pin
+  void update(){
+    //read the analog pin
+    float avg = 0;
+    int div = 5;
+    for (int i=0; i< div; i++){
+      avg = avg + analogRead(audioPin);
+    }
+    update(avg/div);
   }
+
+  //! returns lowpass.signal, should be between 0 and 1.0
+  //float getLp(){
+  //  return iir_lowpass.signal;
+  //}
 
 
 
