@@ -312,7 +312,7 @@ PatternAndNameList gPatterns = {
   {GrowingSpheres, "GrowingSpheres"},
   {PlaneRotation1, "PlaneRotation1"},
   {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
-  {demoBpm, "demoBpm"},
+  //{demoBpm, "demoBpm"}, //ugly
   {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},
   {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},
 
@@ -341,7 +341,7 @@ PatternAndNameList gPatterns = {
   {SM10,"SM10"},
   {SM9,"SM9"},
   {SM8,"SM8"},//fun strobe
-  // {SM7,"SM7"},
+  //{SM7,"SM7"}, //todo why is this commented out?
   {SM6,"SM6"},
   {SM5,"SM5"},
   {SM4,"SM4"},
@@ -441,19 +441,22 @@ void showCurrentPattern(){
 
 
 void setup() {
-  
+
+  art.global_intensity.min = 32.0;
+  art.global_intensity.max = 128.0;
+  art.global_intensity = art.global_intensity.min;
   // FastLED.addLeds<NEOPIXEL, 13>(leds, NUM_LED);
   
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
   FastLED.addLeds<WS2811, 2, GRB>(leds, NUM_LEDS);
   FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA] 
-  FastLED.setBrightness(32); // this is OVERWRITTEN!!!!!!
+  FastLED.setBrightness(128); // this is OVERWRITTEN!!!!!! see art.global_intensity  //todo set to 255 in final production???
   Serial.begin(115200);                 // check serial monitor for current fps count
-  art.setGlobalScale(0.5);
+  //art.setGlobalScale(0.5); 
 
 #ifdef TEST
-  pinMode(17,OUTPUT);
-  digitalWrite(17,HIGH); //for my testing only
+  //pinMode(17,OUTPUT);
+  //digitalWrite(17,HIGH); //for my testing only
 
 
 #endif
@@ -461,6 +464,7 @@ void setup() {
  // fill_rainbow(leds, NUM_LED, 0);
   //fill_solid(leds, NUM_LED, CRGB::Green);
   //FastLED.show();
+
 }
 
 
@@ -473,10 +477,8 @@ bool doRandom = true;
 
 
 
-const int min_brt = 32;
-const int max_brt = 128;
 
-int brt = 32;
+
 int cnt = 32;
 
 
@@ -489,17 +491,17 @@ void loop() {
 
 
   if (audio.beat_detected) {
-    brt = round(map_float(audio.abs_signal, -.2, .8, min_brt, max_brt)); // todo test minimums???
+    //art.global_intensity.modulate(map_float(audio.abs_signal, -.2, .8, 0, art.global_intensity.max - art.global_intensity.min)); // todo test minimums???
     //Serial.print("beat");
   } else {
-    if (brt>min_brt) brt--; //todo make this agnostic to FPS
+    //art.global_intensity.incMod(-.5); //todo make this proportional to FPS, this controls decay rate
   }
   //Serial.println("");
 
 
   //brt = (int)(map_float(audio.getLp()*audio.getLp(),0,1.0,min_brt,max_brt));
   //brt=64;
-  FastLED.setBrightness(brt);
+  FastLED.setBrightness(64);
 
   //led output
   showCurrentPattern();
@@ -530,7 +532,9 @@ void loop() {
     } else if (incomingByte == 'n'){
       incrementPattern();
     } else if (incomingByte == 'b'){
-      incrementPattern(-1);     
+      incrementPattern(-1); 
+    } else if (incomingByte == 'p'){
+      audio.verbose = not audio.verbose;
     } else if (incomingByte == 'g'){
       int i = Serial.parseInt();
       clearPattern();
@@ -544,11 +548,11 @@ void loop() {
     } else if (incomingByte == 'B'){
       clearPattern();
     } else if (incomingByte == 'h'){
-      art.gHue.inc(.1);
-      Serial.print("Setting hue shift to"); Serial.println(art.gHue.base);
+      art.gHue.incBase(.1);
+      Serial.print("Setting hue shift to"); Serial.println(art.gHue.getBase());
     } else if (incomingByte == 'H'){
-      art.gHue.base = 0;
-      Serial.print("Setting hue shift to"); Serial.println(art.gHue.base);
+      art.gHue = 0;
+      Serial.print("Setting hue shift to"); Serial.println(art.gHue.getBase());
     } else if (incomingByte == 'r'){
       doRandom = not doRandom;
       if (doRandom && play==false) play = true;

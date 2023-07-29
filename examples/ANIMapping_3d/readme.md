@@ -1,27 +1,31 @@
 
 
-
 bugfixes
   use every n millis for decay intensity
-  try sampling multiple times during update?  make a callbalck / interupt for more regular sampling?
-  audio create beat ratios to find "biggest" beats rather than delta, and increase delta, put inside the beat detection circuit, make larger than 100ms which is 600 bpm
-  really just need to coordinate bpms...
-  audio create serial plotter stream  
-    audio figure out how to smooth out the signal better  
-    audio find out what weights make for better volume detection, .99 was not the intent, i think .999 was but that may not be enough either
-    audio make the weights universal, aka immune to sample time changes
+  audio figure out how to smooth out the signal better  
+    --try sampling multiple times during update?  make a callbalck / interupt for more regular sampling?
+  bpms
+    make a "lock" signal, increment when you get a periodic beat, decrement otherwise
+    audio create beat ratios to find "biggest" beats rather than delta, and increase delta, put inside the beat detection circuit, make larger than 100ms which is 600 bpm
+    really just need to coordinate bpms...
+  --audio create serial plotter stream    
+  --audio find out what weights make for better volume detection, .99 was not the intent, i think .999 was but that may not be enough either
+  audio make the weights universal, aka immune to sample time changes
   audio test hardware lowpass?? I think i'm getting aliasing
 
   audio create intensity moddable in art, NOT use global brightness  
-    audio make the brightness flash proportional to the beat amplitude
+    --audio make the brightness flash proportional to the beat amplitude
+  audio set min peak amplitude??
 
-  audio set min peak amplitude
+  try setting a slightly slower IIR average when we get a peak manually to disable double peaks?
+
 
 
 
 
 
 features
+  make moodables able to have multiple inputs, for now CANNOT modulate ghue because it is being modulated inside hue shift
   audio create more settings for different modulators
   audio play with mic gain
   bpm

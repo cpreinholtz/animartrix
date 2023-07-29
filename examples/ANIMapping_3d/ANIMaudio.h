@@ -121,7 +121,7 @@ class ANIMaudio {
 public:
 
 
-  bool verbose = true;
+  bool verbose = false;
   float global_bpm = 115.0;
   float energy_level = 0.0;
 

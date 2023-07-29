@@ -210,28 +210,74 @@ float mirror_float(float x, float side_distance, int n_sides=2, float start_at =
 }
 
 
-//! Struct used to represent RGB colors using floats. r, b, g  value ranges from 0 - 1. 
+//! moddable class has 2 control signals, MAX and MIN, these control VALUE output clipping and BASE level
+//2 input signals BASE and MOD.  BASE is constrained to remain in the bounds of MAX and MIN, MOD is not constrained
+//1 output signal VALUE, value = BASE + MOD, but is clipped to the bounds of MAX and MIN
 class modableF {  
+private:
+
+  float base = 0.0;//!this is the base input signal
+  float mod = 0.0;//!this is the modulation sorce input signal
+  float value = 0.0;//!this is base+mod output
+
+ 
+float clip(float v) const{
+    if (edge == edgeClip) v =  constrain_float(v, min, max);//edgeClip = clipped like an op-amp hitting the rails
+    else if (edge == edgeWrap) v = (fmodf(v - min, max - min) + min); //edgeWrap = sawtooth
+    else v = mirror_float(v,max-min, 2, min); //edgeMirror = triangle //float mirror_float(float x, float side_distance, int n_sides=2, float start_at = 0.0){
+    return v;
+  }
+ 
 public:
-  float base = 0.0;
   modEdge edge = edgeClip;
   float min = 0.0;
   float max = 1.0;
 
+  float getBase() const{return base;}
+  float getMod()const {return mod;}
+  float getValue()const{return value;}
+
+
+
+
+  //!add input m to base and return result after clipping
+
+  //! get VALUE, value = base + mod result after clipping
+  float modulate(){
+    value = clip(mod + base);//todo multiplying modable?
+    return value;
+  }
+
+  //! set MOD input, recalculate VALUE output, return value... follows edge rules for result but not mod
   float modulate(float m){
-    float result = m + base;
-    if (edge == edgeClip) return constrain_float(result, min, max);//edgeClip = clipped like an op-amp hitting the rails
-    else if (edge == edgeWrap) return (fmodf(result - min, max - min) + min); //edgeWrap = sawtooth
-    else return mirror_float(result,max-min, 2, min); //edgeMirror = triangle //float mirror_float(float x, float side_distance, int n_sides=2, float start_at = 0.0){
-
+    mod = m;
+    return modulate();
   }
 
-  void inc(float m){
-    base = modulate(m);
+  //!increment the MOD by this ammount, recalculate VALUE output, return value...  follows edge rules for result but not mod
+  float incMod(float m){
+    return modulate(mod+m);
   }
 
+  //!increment the BASE by this ammount, recalculate VALUE output, return value...  follows edge rules for setting base and value
+  void incBase(float m){
+    base = clip(m + base);
+    modulate(); // calculate new output value
+  }
+
+
+
+  //! = operator sets the BASE, and value, keeps mod the same...  follows edge rules for setting base and value
+  modableF& operator=(const float b) {
+    base = clip(b);
+    modulate(); // sets value = base + mod
+    return *this;
+  }
 
 };
 
-
+//! operator overload for float*modable returns float x value, does not follow edge rules
+float operator*(const float &a, const modableF &b){
+  return b.getValue()*a;
+}
 

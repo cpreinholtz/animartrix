@@ -123,27 +123,6 @@ class ANIMartRIX {
 
 public:
 
-  float spread_x, spread_y, spread_z, xmin, xmax, ymin, ymax, zmin, zmax, center_x, center_y, center_z, maxD;
-
-  #define radial_filter_radius 12.0;      // 23.0 on 32x32, use 11 for 16x16, for mapping, try like 130% of your max radias
-
-  CRGB* buffer; 
-  bool  serpentine;
-
-  modableF gHue;
-
-  //TODO set sizes
-  float polar_theta[NUM_LEDS];        // look-up table for polar angles
-  float spherical_phi[NUM_LEDS];
-  float distance[NUM_LEDS];           // look-up table for polar distances TODO
-
-  unsigned long a, b, c;                  // for time measurements
-  float global_scale = 1.0;
-  float global_bpm = 115.0;
-
-  uint16_t BeatsPerMinute; //u8.8 fixed point
-
-  float show1, show2, show3, show4, show5, show6, show7, show8, show9, show0;
 
   ANIMartRIX() {}
 
@@ -151,25 +130,54 @@ public:
     this->init(data);
   }
 
-  ANIMartRIX(struct CRGB *data, float scale){  //use num leds as width, and set height to 1, serpintine false
-    this->init(data, scale);
-  }
+  // mapping numbers
+  float spread_x, spread_y, spread_z, xmin, xmax, ymin, ymax, zmin, zmax, center_x, center_y, center_z, maxD;
 
-      
+  #define radial_filter_radius 12.0;      // 23.0 on 32x32, use 11 for 16x16, for mapping, try like 130% of your max radias todo make this scale with spread
 
-  void init(struct CRGB *data, float scale = 1.0) {
+  //TODO set sizes better, not just using a define?
+  float polar_theta[NUM_LEDS];        // look-up table for polar angles
+  float spherical_phi[NUM_LEDS];
+  float distance[NUM_LEDS];           // look-up table for polar distances TODO
+
+  //misc 
+  CRGB* buffer; 
+  unsigned long a, b, c;                  // for time measurements
+  float show1, show2, show3, show4, show5, show6, show7, show8, show9, show0;
+
+  // modables for external modulation
+  modableF gHue; //todo name globa hue?
+  modableF global_intensity; //todo name globa hue?
+  modableF global_scale_x;
+  modableF global_scale_y;
+  modableF global_scale_z;
+
+  float global_bpm = 115.0; // todo why do i have two of these?
+  uint16_t BeatsPerMinute; //u8.8 fixed point
+
+  //!initialize this object
+  //scale, smaller numbers = zoom in = larger blobs
+  void init(struct CRGB *data) {
     this->buffer = data;
-    this->serpentine = serpentine;
-    setBpm(82.0);
-    setGlobalScale(scale);
+
+
     render_spherical_lookup_table();
+
+    //init modables    
+    setBpm(82.0);
     gHue.edge = edgeWrap;
+
+    global_intensity.max = 255.0;
+    global_intensity = 60.0;
+
+
+
   }
 
-  void setGlobalScale(float setTo){
-    if (setTo <=0) setTo = 0.0000001;
-    global_scale = setTo;
-  }
+  //void setGlobalScale(float setTo){
+  //  if (setTo <=0) setTo = 0.0000001;
+  //  global_scale = setTo;
+  //}
 
   // Dynamic darkening methods:
 
@@ -357,9 +365,9 @@ public:
 
     // convert **SPHERICAL** coordinates back to cartesian ones
     //this is really the only difference from base class
-    float newx = (animation.offset_x + animation.center_x - (animation.dist * sinf(animation.anglephi) * cosf(animation.angle))) * animation.scale_x * global_scale;
-    float newy = (animation.offset_y + animation.center_y - (animation.dist * sinf(animation.anglephi) * sinf(animation.angle))) * animation.scale_y * global_scale;
-    float newz = (animation.offset_z + animation.center_z - (animation.dist * cosf(animation.anglephi))) * animation.scale_z * global_scale;
+    float newx = (animation.offset_x + animation.center_x - (animation.dist * sinf(animation.anglephi) * cosf(animation.angle))) * animation.scale_x * global_scale_x;
+    float newy = (animation.offset_y + animation.center_y - (animation.dist * sinf(animation.anglephi) * sinf(animation.angle))) * animation.scale_y * global_scale_y;
+    float newz = (animation.offset_z + animation.center_z - (animation.dist * cosf(animation.anglephi))) * animation.scale_z * global_scale_z;
 
     // render noisevalue at this new cartesian point
     //uint16_t raw_noise_field_value =inoise16(newx, newy, newz);
@@ -392,12 +400,12 @@ public:
 
     //min and max mapping used for finding center
     for (int n = 1; n < (int) NUM_LEDS; n++) {
-      if(ledMap[n][xind] > xmin) xmin = ledMap[n][xind];
-      if(ledMap[n][xind] < xmax) xmax = ledMap[n][xind];
-      if(ledMap[n][yind] > ymin) ymin = ledMap[n][yind];
-      if(ledMap[n][yind] < ymax) ymax = ledMap[n][yind];
-      if(ledMap[n][zind] > zmin) zmin = ledMap[n][zind];
-      if(ledMap[n][zind] < zmax) zmax = ledMap[n][zind];
+      if(ledMap[n][xind] < xmin) xmin = ledMap[n][xind];
+      if(ledMap[n][xind] > xmax) xmax = ledMap[n][xind];
+      if(ledMap[n][yind] < ymin) ymin = ledMap[n][yind];
+      if(ledMap[n][yind] > ymax) ymax = ledMap[n][yind];
+      if(ledMap[n][zind] < zmin) zmin = ledMap[n][zind];
+      if(ledMap[n][zind] > zmax) zmax = ledMap[n][zind];
     }
     spread_x = xmax-xmin;
     spread_y = ymax-ymin;
@@ -419,48 +427,60 @@ public:
         float dz = ledMap[n][zind] - center_z;
         
         distance[n] = sqrt(pow(dx, 2) + pow(dy, 2) + pow(dz, 2));
-        polar_theta[n] = atan2f(dy,dx); //todo these extra indecies are wasted
+        polar_theta[n] = atan2f(dy,dx);
         spherical_phi[n] = acosf(dz / distance[n]);
 
         if (maxD < distance[n]) maxD = distance[n];
+        /*
         Serial.print("x: ");Serial.println(dx);
         Serial.print("y: ");Serial.println(dy);
         Serial.print("z: ");Serial.println(dz); 
 
-        Serial.print("d: ");Serial.println(distance[n]); // note this index must match what you gave the base class template,  I'm using Y
+        Serial.print("d: ");Serial.println(distance[n]);
         Serial.print("t: ");Serial.println(polar_theta[n]);
         Serial.print("p: ");Serial.println(spherical_phi[n]); Serial.println();
+        */
+
         
         
     }
     Serial.print("max mapped distance: "); Serial.println(maxD);
     Serial.print("reccomended radias filter: "); Serial.println(maxD*1.3);
+
+
+    Serial.print("x spread: ");Serial.println(spread_x);
+    Serial.print("y spread: ");Serial.println(spread_y);
+    Serial.print("z spread: ");Serial.println(spread_z); Serial.println();
+
+
+    float max_spread = 1.0/max(max(spread_x,spread_y),spread_z)*7.0;
+    global_scale_x = 1.0/ max_spread*15.0;
+    global_scale_y = 1.0/ max_spread*15.0;
+    global_scale_z = 1.0/ max_spread*15.0;
+
+
+    Serial.print("gscalx: ");
+    Serial.println(global_scale_x.getBase());
+    Serial.print("gscaly: ");
+    Serial.println(global_scale_y.getBase());
+    Serial.print("gscalz: ");
+    Serial.println(global_scale_z.getBase());
   }
 
 
 
   /////////////////////////////////////////////////////////////////////////
-  //Utilities, map, sanity check
+  //Color setting Utilities, map, sanity check
   /////////////////////////////////////////////////////////////////////////
+  
 
-  // float mapping maintaining 32 bit precision
-  // we keep values with high resolution for potential later usage
-
-  float map_float(float x, float in_min, float in_max, float out_min, float out_max) { 
-    
-    float result = (x-in_min) * (out_max-out_min) / (in_max-in_min) + out_min;
-    if (result < out_min) result = out_min;
-    if( result > out_max) result = out_max;
-
-    return result; 
-  }
 
 
 
   // Avoid any possible color flicker by forcing the raw RGB values to be 0-255.
   // This enables to play freely with random equations for the colormapping
   // without causing flicker by accidentally missing the valid target range.
-
+  /*
   rgbF rgb_sanity_check(rgbF &pixel) {
 
         // rescue data if possible, return absolute value
@@ -474,21 +494,16 @@ public:
         if (pixel.b  > 255)  pixel.b = 255;
 
         return pixel;
-  }
+  }*/
 
-  float color_sanity_check(float &color) {
-        // discard everything above the valid 8 bit colordepth 0-255 range
-        if (color   > 255)   color = 255;
-        return color;
-  }
 
   uint8_t float_to_uint8_t(float color){
     if (color < 0.0) color = 0.0; // todo check behavioor of this??? 
-    color = color_sanity_check(color);
+    else if (color   > 255)   color = 255;
     return ((uint8_t) color);
   }
 
-
+/*
   hsiF hsi_sanity_check(hsiF &pixel) {
 
       // rescue data if possible, return absolute value
@@ -499,11 +514,9 @@ public:
         if (pixel.s > 1.0) pixel.h = 1.0;
         if (pixel.i  > 255)  pixel.i = 255;
       return pixel;
-  }
+  }*/
 
-  CRGB setPixelColor(rgbF pixel) {
-    return CRGB(round(pixel.r), round(pixel.g), round(pixel.b));
-  }
+
 
   hsiF CHSV2Hsi(CHSV c){
     hsiF p;
@@ -521,23 +534,51 @@ public:
     return rgbf;
   }
 
-  rgbF hue_shift(rgbF rgb){
-      //hsiF hsi = CHSV2Hsi(rgb2hsv_approximate(setPixelColor(rgb)));    
-      //if (gHue.base == 0.0) return rgb;
-      hsiF hsi = Rgb2Hsi(rgb);
-      hsi.h = gHue.modulate(hsi.h);
+
+
+  //! hue shift given hsiF, return rgbF.  sanity checks performed in Hsi2Rgb
+  rgbF hue_shift(hsiF hsi){
+      hsi.h = gHue.modulate(hsi.h);  //todo PROTECT THIS
       return Hsi2Rgb(hsi);
   }
-  CRGB hue_shiftb(CRGB rgb){
-      return setPixelColor(hue_shift(CRGB2Rgb(rgb)));
+  //! hue shift given rgbF, convert to hsiF, perform shift, return rgbF.  sanity checks performed in Rgb2Hsi and Hsi2Rgb
+  rgbF hue_shift(rgbF rgb){
+      return hue_shift(Rgb2Hsi(rgb));
   }
+
+  //!todo, this one is no good??, cant use set pixel color because of the double intensity thing???
+  rgbF hue_shift(CRGB rgb){
+      return hue_shift(CRGB2Rgb(rgb));
+  }
+
 
 
 
 
 
   ///////////////////////////////////////////////////////////////////////
-  //timings
+  //master setting of color
+  //!setPixelColor takes in rgbF pixel, performs hue shift, multiplies by global intensity, and returns rounded resut as integer CRGB
+  CRGB setPixelColor(hsiF phsi) {
+    rgbF p = hue_shift(phsi);
+    return CRGB(round(p.r*global_intensity), round(p.g*global_intensity), round(p.b*global_intensity));
+  }  
+
+  CRGB setPixelColor(rgbF p) {
+    p = hue_shift(p);
+    return CRGB(round(p.r*global_intensity), round(p.g*global_intensity), round(p.b*global_intensity));
+  }
+
+  //! take in uint8_t color, perform color from pallet and hue shift
+  CRGB setPixelColor(uint8_t color) {
+    CRGB pCRGB = ColorFromPalette(currentPalette, color);
+    rgbF p = hue_shift(pCRGB);
+    return CRGB(round(p.r*global_intensity), round(p.g*global_intensity), round(p.b*global_intensity));
+  }
+
+
+  ///////////////////////////////////////////////////////////////////////
+  //timings / debug outputs
 
   void get_ready() {  // wait until new buffer is ready, measure time
     // TODO: make callback
@@ -633,7 +674,7 @@ public:
     }
   }
 
-  void demoBpm2()
+  void demoBpm2()// todo remove this its hideous
   {
     static uint8_t bhue = 0;
     EVERY_N_MILLISECONDS( 20 ) { bhue++; } // slowly cycle the "base color" through the rainbow
@@ -677,14 +718,10 @@ public:
       animation.offset_z   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation, 1.0);
-      pixel_hsi.h    = gHue.modulate(show1);
-      pixel_hsi.s = 1.0;
-      
+      pixel_hsi.h    = (show1);
+      pixel_hsi.s = 1.0;      
       pixel_hsi.i = 255;
-      pixel_hsi = hsi_sanity_check(pixel_hsi);
-      pixel = Hsi2Rgb(pixel_hsi);
-      pixel = rgb_sanity_check(pixel);
-      buffer[n] = setPixelColor(pixel);
+      buffer[n] = setPixelColor(pixel_hsi);
     }
 
     
@@ -718,19 +755,12 @@ public:
       animation.low_limit  = 0;
       show1                = render_value(animation, 1.0);
 
-      pixel_hsi.h    = gHue.modulate(show1);
+      pixel_hsi.h    = (show1);
       pixel_hsi.s = 1.0;
-      pixel_hsi.i = 255;
-
-    
-      pixel_hsi = hsi_sanity_check(pixel_hsi);
-
-      pixel = Hsi2Rgb(pixel_hsi);
-      pixel = rgb_sanity_check(pixel);
-
+      pixel_hsi.i = 255;   
 
       
-      buffer[n] = setPixelColor(pixel);
+      buffer[n] = setPixelColor(pixel_hsi);
     }
   }
 
@@ -787,27 +817,14 @@ public:
 
 
 
-        pixel_hsi.i = 255;//6.0/255.0 *show1 * radial_filter;
-        pixel_hsi.s = 1;
+
 
         float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
         d=fmodf(d,maxD);
-        pixel_hsi.h = gHue.modulate(map_float(d, -maxD/2, maxD/2, 0, 1));
-
-        pixel_hsi = hsi_sanity_check(pixel_hsi);
-
-        pixel = Hsi2Rgb(pixel_hsi);
-        
-        //pixel.r   = 3*show1 * radial_filter;
-        //pixel.g=0;
-        //pixel.b=0;
-
-        //pixel.g = show2 * radial_filter / 2;
-        //pixel.b  = show3 * radial_filter / 4;
-
-
-        pixel = rgb_sanity_check(pixel);
-        buffer[n] = setPixelColor(pixel);
+        pixel_hsi.h = (map_float(d, -maxD/2, maxD/2, 0, 1));        
+        pixel_hsi.i = 255;//6.0/255.0 *show1 * radial_filter;
+        pixel_hsi.s = 1;
+        buffer[n] = setPixelColor(pixel_hsi);
       }
    
   }
@@ -872,22 +889,8 @@ public:
 
         float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
         d=fmodf(d,maxD/2);
-        pixel_hsi.h = gHue.modulate(map_float(d, -maxD/2, maxD/2, 0, 1));
-
-        pixel_hsi = hsi_sanity_check(pixel_hsi);
-
-        pixel = Hsi2Rgb(pixel_hsi);
-        
-        //pixel.r   = 3*show1 * radial_filter;
-        //pixel.g=0;
-        //pixel.b=0;
-
-        //pixel.g = show2 * radial_filter / 2;
-        //pixel.b  = show3 * radial_filter / 4;
-
-
-        pixel = rgb_sanity_check(pixel);
-        buffer[n] = setPixelColor(pixel);
+        pixel_hsi.h = (map_float(d, -maxD/2, maxD/2, 0, 1));
+        buffer[n] = setPixelColor(pixel_hsi);
       }
    
   }
@@ -962,34 +965,8 @@ public:
       pixel_hsi.i = 255;//6.0/255.0 *show1 * radial_filter;
       pixel_hsi.s = 1;
 
-      pixel_hsi = hsi_sanity_check(pixel_hsi);
 
-      pixel = Hsi2Rgb(pixel_hsi);
-      
-      pixel = hue_shift(rgb_sanity_check(pixel));
-      //if (minD < .2) 
-      buffer[n] = setPixelColor(pixel);
-      //else buffer[n] += setPixelColor(pixel);
-      EVERY_N_MILLISECONDS(1000){
-        Serial.print("pixel_hsi.h\t");Serial.print(pixel_hsi.h);
-        Serial.print("\tpixel_hsi.s\t");Serial.print(pixel_hsi.s);
-        Serial.print("\tpixel_hsi.i\t");Serial.println(pixel_hsi.i);
-        Serial.print("pixel.r\t");Serial.print(pixel.r);
-        Serial.print("\tpixel.b\t");Serial.print(pixel.b);
-        Serial.print("\tpixel.g\t");Serial.println(pixel.g);
-
-
-        /*
-        Serial.println("spheres[s].mRadias;");
-        for (int s = 0; s <num_spheres; s++) {
-          Serial.print(spheres[s].mRadias);
-          Serial.print("\t");
-        }
-        Serial.println("");
-        */
-      }
-      
-      //buffer[n] = setPixelColor(pixel);
+      buffer[n] = setPixelColor(pixel_hsi);
     }
   }
 
@@ -1051,7 +1028,6 @@ public:
         pixel.g = show3 / 2;
         pixel.b  = 0; //todo
 
-        pixel = hue_shift(rgb_sanity_check(pixel));
 
         buffer[n] = setPixelColor(pixel);
       }
@@ -1112,7 +1088,6 @@ public:
         pixel.g = show2 * radial_filter / 2;
         pixel.b  = show3 * radial_filter / 4;
 
-        pixel = hue_shift(rgb_sanity_check(pixel));
 
         buffer[n] = setPixelColor(pixel);
       }
@@ -1161,7 +1136,6 @@ public:
       pixel.g = 0;
       pixel.b  = show2;
 
-      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1213,7 +1187,6 @@ public:
       pixel.g = show2;
       pixel.b  = 0;
 
-      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1271,7 +1244,6 @@ public:
       pixel.g = show2;
       pixel.b  = 0; // todo
 
-      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1337,7 +1309,7 @@ public:
       pixel.g = show3 * distance[n] / 10;
       pixel.b  = (show2 + show4) / 2;
 
-      pixel = hue_shift(rgb_sanity_check(pixel));
+ 
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1401,8 +1373,6 @@ public:
       pixel.g = show3 * distance[n] / 10;
       pixel.b  = (show2 + show4) / 2;
 
-
-      pixel = hue_shift(rgb_sanity_check(pixel));
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1477,8 +1447,6 @@ public:
         pixel.b = 0;
       }
 
-      pixel = hue_shift(rgb_sanity_check(pixel));
-
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -1539,7 +1507,7 @@ public:
       pixel.g = 0.1*radial*(show2-show3);
       pixel.b = 4;//3*move.noise_angle[1]; //todohue
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1590,7 +1558,7 @@ public:
 
       }
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1642,7 +1610,7 @@ public:
 
       }
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
 
       buffer[n] = setPixelColor(pixel);
     }
@@ -1710,7 +1678,7 @@ public:
       pixel.g = show3*show4/255;
       pixel.b  = 0;// todo to dark
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -1771,7 +1739,7 @@ public:
       pixel.g = f*(show1-show2);
       pixel.b  = f*(show3-show1);
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
    
@@ -1835,7 +1803,7 @@ public:
       pixel.g = f*(show1-show2);
       pixel.b  = f*(show3-show1);
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -1886,7 +1854,7 @@ public:
       pixel.g   = radial* 0.3* (show2-show4);
       pixel.b = 15;
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
  
@@ -1929,7 +1897,7 @@ public:
       pixel.b = 15; 
       
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -1970,7 +1938,7 @@ public:
       pixel.b   = 40-show1;
       pixel.g = 15; 
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -2025,7 +1993,7 @@ public:
       pixel.b   = radial * (show1 - show3) / 5;
       
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -2078,7 +2046,7 @@ public:
       pixel.b   = radial * show3;
       
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -2132,7 +2100,7 @@ public:
      
       
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
     
@@ -2185,7 +2153,7 @@ public:
       pixel.g  = radial * (show2-show1);
       pixel.b   = radial * (show3-show2);
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -2237,7 +2205,7 @@ public:
       pixel.g  = radial * (show2+show1)*0.5;
       pixel.b   = radial * (show3+show2)*0.5;
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -2291,7 +2259,7 @@ public:
       pixel.g  = radial * (show2+show1)*0.5 ;//* ledMap[n][yind]/spread_y;
       pixel.b   = radial * (show3+show2)*0.5 ;//* ledMap[n][xind]/spread_x;
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
   }
@@ -2345,7 +2313,7 @@ public:
       pixel.g  = radial * (show2+show1)*0.5 ;//* ledMap[n][yind]/spread_y;
       pixel.b   = radial * (show3+show2)*0.5 ;//* ledMap[n][xind]/spread_x;
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
    
       buffer[n] = setPixelColor(pixel);
     }
@@ -2418,7 +2386,7 @@ public:
       pixel.g  = show2-show5;
       pixel.b   = 10+show3-show2+show1;
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -2500,7 +2468,7 @@ public:
       pixel.g  = show3+show4;
       pixel.b   = show5;
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       buffer[n] = setPixelColor(pixel);
     }
     //show_frame();
@@ -2563,7 +2531,7 @@ public:
         pixel.g  = show2;
         pixel.b   = show3;
        
-        pixel = hue_shift(rgb_sanity_check(pixel));
+
         
         buffer[n] = setPixelColor(pixel);
       }
@@ -2655,7 +2623,7 @@ public:
       pixel.g  = show3;
       pixel.b   = show5;
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -2712,7 +2680,7 @@ public:
       pixel.g  = 0;
       pixel.b   = colordodge(show2, show1);
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
 
@@ -2808,7 +2776,7 @@ public:
       pixel.g  = radial * colordodge(show2,show5);
       pixel.b   = radial * screen(show3,show6);
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -2909,7 +2877,7 @@ public:
       pixel.g  = 0;
       pixel.b   = radial * show9;
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -2984,7 +2952,7 @@ public:
       pixel.g  = 0;
       pixel.b   = show6; // todo this one is SOOOO cool but too monochrome
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3066,7 +3034,7 @@ public:
       pixel.g  = 0;
       pixel.b   = show6 * radial; // todo again too monochrome
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3144,7 +3112,7 @@ public:
       pixel.g  = (show5-50)+(show6/16);
       pixel.b   = show6;
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3231,7 +3199,7 @@ public:
       pixel.g  = 0.3*radial*show6;//(radial*(show1))*0.3f;
       pixel.b   = radial*show5;
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3316,7 +3284,7 @@ public:
       pixel.g  = 0.3*radial*show6;//(radial*(show1))*0.3f;
       pixel.b   = radial*show5;
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3414,7 +3382,7 @@ public:
       pixel.b   = show5 * radial; // todo flickering.... attemting to slow by 10/2 (deleted 0 in osc added *2 in master timing)
       pixel.r    = (1*show1 + 1*show2) - show7/2; 
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3515,7 +3483,7 @@ public:
       pixel.g  = 0.5*(show6);
 
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3566,7 +3534,7 @@ public:
       //12-10/10,  12-1/10,  brighter in center
      
       uint8_t color = float_to_uint8_t(show1 * radial);
-      buffer[n] = hue_shiftb(ColorFromPalette( currentPalette, color));
+      buffer[n] = setPixelColor(color);
     }
   }
 
@@ -3621,8 +3589,9 @@ public:
      
       pixel.r    = show1;
       pixel.b   = show2;
+      pixel.g   = 0; //todo
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3709,7 +3678,7 @@ public:
       
      
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3796,11 +3765,12 @@ public:
       
       pixel.b    = (0.3*show6+0.7*show7)*radial;
       pixel.r     = pixel.b-40;
+
       
       
      
      
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3837,7 +3807,7 @@ public:
       show1                = render_value(animation);
 
       uint8_t color = float_to_uint8_t(show1);
-      buffer[n] = ColorFromPalette( currentPalette, color);
+      buffer[n] = setPixelColor( color);
     }
   }
 
@@ -3875,7 +3845,7 @@ public:
       pixel.g  = show1 - 80;
       pixel.b   = show1 - 150;
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3915,7 +3885,7 @@ public:
       pixel.g  = show1 - 80;
       pixel.b   = show1 - 150;
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -3992,7 +3962,7 @@ public:
       //pixel.g  = show1 - 80;
       //pixel.b   = show1 - 150;
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -4028,8 +3998,8 @@ public:
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      uint8_t color = float_to_uint8_t(show1);
-      buffer[n] = ColorFromPalette( currentPalette, color); // todo why is this soo much brighter than all others?  also very black?
+      uint8_t color = float_to_uint8_t(show1); //todo no hue shift
+      buffer[n] = setPixelColor( color); // todo why is this soo much brighter than all others?  also very black?
 
     }
   }
@@ -4092,7 +4062,7 @@ public:
       pixel.b   = 0;
       
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -4157,7 +4127,7 @@ public:
       
       
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -4247,7 +4217,7 @@ public:
       
       
       
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
       
       buffer[n] = setPixelColor(pixel);
     }
@@ -4287,8 +4257,8 @@ public:
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      uint8_t color = float_to_uint8_t(show1);
-      buffer[n] = ColorFromPalette( currentPalette, color); // todo hue shift????  todo, these all seem WWWAAAAY brighter than others
+      uint8_t color = float_to_uint8_t(show1); // todo no hue shift
+      buffer[n] = setPixelColor( color); // todo hue shift????  todo, these all seem WWWAAAAY brighter than others
 
     }
   }
@@ -4328,7 +4298,7 @@ public:
       show1                = render_value(animation);
 
       uint8_t color = float_to_uint8_t(100*show1);
-      buffer[n] = ColorFromPalette( currentPalette, color);
+      buffer[n] = setPixelColor( color);
 
     }
   }
@@ -4401,9 +4371,9 @@ public:
       animation.low_limit  = 0;
       show3                = render_value(animation);
 
-      show4 = colordodge(show1, show2);
+      //show4 = colordodge(show1, show2);
 
-      float rad = sinf(PI/2+distance[n]/14); // better radial filter?!
+      //float rad = sinf(PI/2+distance[n]/14); // better radial filter?!
 
       
       /*
@@ -4411,17 +4381,14 @@ public:
       pixel.g  = show1 * 0.3;
       pixel.b   = show2-show1;
       */
-      
-       CHSV(rad * ((show1 + show2) + show3), 255, 255);
-      
-      
-      
-      
-      pixel = hue_shift(rgb_sanity_check(pixel));
 
       byte a = millis()/100;
+      pixel_hsi.s = 1.0;
+      pixel_hsi.i = 255;
+      pixel_hsi.h = (a + show1 + show2) + show3;
+
       
-      buffer[n] = CRGB( CHSV(((a + show1 + show2) + show3), 255, 255));
+      buffer[n] = setPixelColor(pixel_hsi);
     }
   }
 
@@ -4476,7 +4443,7 @@ public:
       pixel.g = show2 / 4;
       pixel.b  = show3 / 4;
 
-      pixel = hue_shift(rgb_sanity_check(pixel));
+
 
       buffer[n] = setPixelColor(pixel);
     }
