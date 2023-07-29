@@ -54,7 +54,7 @@ class FIR {
 public:
 
   float signal; //lowpass fir 
-  static const int nSamples = 19; // THIS is how you tune the filter!!!!!! // moving average with this many inputs  20 seems to work ok at 192 FPS
+  static const int nSamples = 8; // THIS is how you tune the filter!!!!!! // moving average with this many inputs  20 seems to work ok at 192 FPS
   int thisSample;
   float sum;
   float samples[nSamples];
@@ -121,7 +121,7 @@ class ANIMaudio {
 public:
 
 
-  bool verbose = false;
+  bool verbose = true;
   float global_bpm = 115.0;
   float energy_level = 0.0;
 

@@ -2,7 +2,8 @@
 
 bugfixes
   use every n millis for decay intensity
-  audio figure out how to smooth out the signal better  
+  audio figure out how to smooth out the signal better
+    NEED TO POLL FASTER!!!!!!! (WITHOUT INTERUPTS!!!!) make function calls inside render loop?
     --try sampling multiple times during update?  make a callbalck / interupt for more regular sampling?
   bpms
     make a "lock" signal, increment when you get a periodic beat, decrement otherwise

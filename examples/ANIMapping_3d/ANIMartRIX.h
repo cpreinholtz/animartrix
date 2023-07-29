@@ -144,6 +144,11 @@ public:
   CRGB* buffer; 
   unsigned long a, b, c;                  // for time measurements
   float show1, show2, show3, show4, show5, show6, show7, show8, show9, show0;
+  const int audioPin = 19;
+  volatile float audioSum = 0;
+  volatile float audioSamples = 0;
+
+
 
   // modables for external modulation
   modableF gHue; //todo name globa hue?
@@ -277,7 +282,7 @@ public:
   //Oscilators
   /////////////////////////////////////////////////////////////////////////
   void calculate_oscillators(oscillators &timings) { 
-
+    tightLoop();
     double runtime = millis() * timings.master_speed;  // global anaimation speed gives the frequency in millis of the ramp to increase by 1
 
     for (int i = 0; i < num_oscillators; i++) {
@@ -305,6 +310,55 @@ public:
   //LIB8STATIC uint16_t beatsin88( accum88 beats_per_minute_88, uint16_t lowest = 0, uint16_t highest = 65535,  uint32_t timebase = 0, uint16_t phase_offset = 0);
   }
 
+  const unsigned long periodMicrosTightLoop = 1000000 / 40000; //5KHZ sample should be fine
+  unsigned long lastMicrosTightLoop = 0;
+
+  //! perform audioPolling and other houskeeping
+  void tightLoop(){
+    unsigned long thisMicros = micros();
+    static int cnt =0;
+    if (thisMicros-lastMicrosTightLoop > periodMicrosTightLoop){
+      
+      /*cnt ++;
+      if(cnt>50){
+        cnt=0;
+        if (thisMicros-lastMicrosTightLoop > periodMicrosTightLoop * 2) {
+          Serial.print("too slow: ");
+          Serial.print(thisMicros-lastMicrosTightLoop);
+          Serial.print(" >> ");
+          Serial.println(periodMicrosTightLoop);
+        } else {
+          Serial.print("just right: ");
+          Serial.print(thisMicros-lastMicrosTightLoop);
+          Serial.print(" >> ");
+          Serial.println(periodMicrosTightLoop);
+        }
+      }*/
+
+      lastMicrosTightLoop = thisMicros;
+      tightLoopISR();
+    }
+  }
+
+    //! perform audioPolling and other houskeeping
+  void tightLoopISR(){
+      audioSum = audioSum + analogRead(audioPin);
+      audioSamples ++;
+  }
+
+  //! perform audioPolling, clear sum and samples
+  float pollAudio(){
+    if (audioSamples > 0){
+      float ret = audioSum / audioSamples;
+      audioSum = 0;
+      audioSamples = 0;
+      return ret;
+    } else {
+      audioSum = 0;
+      audioSamples = 0;
+      return 0;
+    }
+  }
 
 
   float bpmToSpeedMillis(float bpm){
@@ -362,6 +416,7 @@ public:
 
   float render_value(render_parameters &animation, float scaleHigh = 255.0) {
     //EVERY_N_SECONDS(1){Serial.println("derrived class render");}
+    tightLoop();
 
     // convert **SPHERICAL** coordinates back to cartesian ones
     //this is really the only difference from base class
@@ -564,17 +619,20 @@ public:
   //master setting of color
   //!setPixelColor takes in rgbF pixel, performs hue shift, multiplies by global intensity, and returns rounded resut as integer CRGB
   CRGB setPixelColor(hsiF phsi) {
+    tightLoop();
     rgbF p = hue_shift(phsi);
     return CRGB(round(p.r*global_intensity), round(p.g*global_intensity), round(p.b*global_intensity));
   }  
 
   CRGB setPixelColor(rgbF p) {
+    tightLoop();
     p = hue_shift(p);
     return CRGB(round(p.r*global_intensity), round(p.g*global_intensity), round(p.b*global_intensity));
   }
 
   //! take in uint8_t color, perform color from pallet and hue shift
   CRGB setPixelColor(uint8_t color) {
+    tightLoop();
     CRGB pCRGB = ColorFromPalette(currentPalette, color);
     rgbF p = hue_shift(pCRGB);
     return CRGB(round(p.r*global_intensity), round(p.g*global_intensity), round(p.b*global_intensity));
@@ -587,6 +645,7 @@ public:
   void get_ready() {  // wait until new buffer is ready, measure time
     // TODO: make callback
     markStartOfRender();
+    tightLoop();
     // while(backgroundLayer.isSwapPending());
     // b = micros();
   }
@@ -3517,6 +3576,7 @@ public:
 
     
     for (int n = 0; n < NUM_LEDS; n++) {
+      tightLoop();
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
       float s = 1 +  move.sine[6]*0.8;

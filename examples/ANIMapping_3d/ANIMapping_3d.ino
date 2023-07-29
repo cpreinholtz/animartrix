@@ -17,7 +17,7 @@ License CC BY-NC 3.0
 
 */
 
-#define NUM_LEDS  150                       // how many LED total,  must be defined before ANIMapping
+#define NUM_LEDS  4                       // how many LED total,  must be defined before ANIMapping
 
 #include <FastLED.h>
 #include "ANIMartRIX.h" //TODO make <> when you copy files back to the right directory
@@ -36,7 +36,7 @@ float ledMap[NUM_LEDS][3] = {
     { 7.25 , 0, 9},
     { 7.25 , 0, 5.5},
     { 7.5 , 0, 1.5},
-
+/*
     { 10 , 0, 0},
     { 11 , 0, 4},
     { 10.5 , 0, 7.5},
@@ -213,7 +213,7 @@ float ledMap[NUM_LEDS][3] = {
     { 2, 0, 8},
     { 1.75, 0, 4},
     { 2.25, 0, 0},
-    { 4.5, 0, 4},   ///// 150
+    { 4.5, 0, 4},   ///// 150*/
 };
 
 
@@ -427,37 +427,31 @@ void randomPattern(){
 }
 
 
+
+
+
+//******************************************************************************************************************
+
+
+
 void showCurrentPattern(){
+  audio.update(art.pollAudio());
+
+  art.tightLoop();
   gPatterns[currentPattern].pattern();
+  
   art.markStartOfShow();
+  art.tightLoop();
+
   FastLED.show();
+
+  art.tightLoop();
   art.markEndOfShow();
 }
 
 
 
 
-//******************************************************************************************************************
-volatile float tinterruptCounter=0;  //for counting interrupt
-volatile float tsum =0;
-//TEENSY
-IntervalTimer myTimer;
-//ESP 32
-void tTime(){
-  tinterruptCounter++;
-  tsum += analogRead(audio.audioPin);
-}
-
-volatile int interruptCounter=0;  //for counting interrupt
-/*
-hw_timer_t * timer = NULL;      //H/W timer defining (Pointer to the Structure)
-portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
-
-void IRAM_ATTR onTimer() {      //Defining Inerrupt function with IRAM_ATTR for faster access
- portENTER_CRITICAL_ISR(&timerMux);
- interruptCounter++;
- portEXIT_CRITICAL_ISR(&timerMux);
-}*/
 
 
 
@@ -478,16 +472,6 @@ void setup() {
   //art.setGlobalScale(0.5); 
 
 
-  //TEENSY
-  myTimer.begin(tTime, 1000000/5000);  //  1000000/20000 to run every 20khz
-  myTimer.priority(255);// lowst prio
-
-
-  //ESP
-  //divider at 400 gives 8e6/4e2 = 20khz
-  //timer= timerBegin(0, 400, true); //timer, divider value to the clock frequency i.e. 80MHz., Flag indicates the counter shall count UP(true) or Count DOWN(false)
-
-
 
 }
 
@@ -503,51 +487,9 @@ bool hueDrift = false;
 int cnt = 32;
 
 void loop() {
-  
-  /*EVERY_N_MILLIS(500) {
-    Serial.print("tinterruptCounter: ");
-    Serial.print(tinterruptCounter);
-    Serial.print("tsum: ");
-    Serial.print(tsum);
-    //Serial.print(", interruptCounter: ");
-    //Serial.println(interruptCounter);
-  }*/
-
-  //audio stuff
-  //by averaging audio signals at 20KHz we should eliminate most signals above 2* loop frequency
-  noInterrupts();  
-  float sum = tsum;
-  float div  = tinterruptCounter;
-  tsum = 0;
-  tinterruptCounter = 0;
-  interrupts();
-  
-
-  if (div >0 ) audio.update(sum/div); // in order for this to work, loop speed must be faster than the frequency you are looking for
-  else audio.update(0);
-  //audio.update();
 
 
-
-  //int i=0;
-
-  if (hueDrift) art.gHue.incBase(.0003); // todo make this scale with FPS
-
-  if (audio.beat_detected && musicReactive) {
-    art.global_intensity.modulate(audio.abs_signal);//todo make this proportional to ratio, not abs_signal?
-    //Serial.print("beat");
-  } else {
-    art.global_intensity.incMod(-.005); //todo make this proportional to FPS, this controls decay rate
-  }
-  //Serial.println("");
-
-
-  //brt = (int)(map_float(audio.getLp()*audio.getLp(),0,1.0,min_brt,max_brt));
-  //brt=64;
-
-
-  //led output
-  showCurrentPattern();
+    //int i=0;
 
   //changing paterns
   if (play){
@@ -555,12 +497,35 @@ void loop() {
       else {EVERY_N_SECONDS(30) incrementPattern();}
   }
 
-
   // report
   if(verbose){
-    EVERY_N_MILLIS(500) art.report_performance();   // check serial monitor for report 
+    EVERY_N_MILLIS(500) {
+      art.report_performance();   // check serial monitor for report 
+      /*
+      Serial.print("tsum: ");
+      Serial.print(art.audioSum);
+      Serial.print("tsam: ");
+      Serial.println(art.audioSamples);
+      */
+    }
   }
-  
+
+
+
+
+
+//*******************************************************************************************************************
+  EVERY_N_MILLIS(5) {
+
+    if (hueDrift) art.gHue.incBase(.0003); // todo make this scale with FPS, put into show current patter to make immune to FPS changes
+    if (audio.beat_detected && musicReactive) art.global_intensity.modulate(audio.abs_signal);//todo make this proportional to ratio, not abs_signal?
+    else art.global_intensity.incMod(-.005); //todo make this proportional to FPS, this controls decay rate
+
+    showCurrentPattern(); // 200 FPS max
+  }
+//*******************************************************************************************************************
+
+
 
 
   // testing interface, user input
@@ -570,18 +535,22 @@ void loop() {
 
     if (incomingByte == 'd'){
       verbose = not verbose;
+      Serial.print("Setting top verbose shift to"); Serial.println(verbose);
     } else if(incomingByte == 'P'){
       play = not play;    
+      Serial.print("Setting play to"); Serial.println(play);
     } else if(incomingByte == 'c'){
       incrementPalette();
     } else if (incomingByte == 'n'){
       incrementPattern();
     } else if (incomingByte == 'm'){
       musicReactive = not musicReactive;
+      Serial.print("Setting musicReactive shift to"); Serial.println(musicReactive);
     } else if (incomingByte == 'b'){
       incrementPattern(-1); 
     } else if (incomingByte == 'p'){
       audio.verbose = not audio.verbose;
+      Serial.print("Setting audio.verbose shift to"); Serial.println(audio.verbose);
     } else if (incomingByte == 'g'){
       int i = Serial.parseInt();
       clearPattern();
@@ -589,13 +558,16 @@ void loop() {
     } else if (incomingByte == 'v'){
       float i = Serial.parseFloat();
       audio.iir_volume.setWeight(float(i));
+      Serial.print("Setting audio.iir_volume. to"); Serial.println(audio.iir_volume.iir_weight);
     } else if (incomingByte == 'l'){
       float i = Serial.parseFloat();
       audio.iir_lowpass.setWeight(float(i));
+      Serial.print("Setting audio.iir_lowpass. to"); Serial.println(audio.iir_lowpass.iir_weight);
     } else if (incomingByte == 'B'){
       clearPattern();
     } else if (incomingByte == 'z'){
       hueDrift = not hueDrift;
+      Serial.print("Setting hueDrift to"); Serial.println(hueDrift);
     } else if (incomingByte == 'h'){
       art.gHue.incBase(.1);
       Serial.print("Setting hue shift to"); Serial.println(art.gHue.getBase());
@@ -605,20 +577,14 @@ void loop() {
     } else if (incomingByte == 'r'){
       doRandom = not doRandom;
       if (doRandom && play==false) play = true;
+      Serial.print("Setting doRandom to"); Serial.println(doRandom);
+      Serial.print("Setting play to"); Serial.println(play);
     }
 
     if(verbose){
       // say what you got:
       Serial.print("I received: ");
       Serial.println(incomingByte, DEC);
-
-
-      Serial.print("verbose: ");
-      Serial.println(verbose);
-      Serial.print("play: ");
-      Serial.println(play);
-      Serial.print("doRandom: ");
-      Serial.println(doRandom);
     }
     
 
