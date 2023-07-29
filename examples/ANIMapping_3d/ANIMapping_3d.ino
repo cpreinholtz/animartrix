@@ -442,28 +442,19 @@ void showCurrentPattern(){
 
 void setup() {
 
-  art.global_intensity.min = 32.0;
-  art.global_intensity.max = 128.0;
-  art.global_intensity = art.global_intensity.min;
+  art.global_intensity.min = 0.1;//MUST be >0
+  art.global_intensity.max = 1.0;//MUST be <=1
+  art.global_intensity = (art.global_intensity.min);
+
   // FastLED.addLeds<NEOPIXEL, 13>(leds, NUM_LED);
   
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
   FastLED.addLeds<WS2811, 2, GRB>(leds, NUM_LEDS);
   FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA] 
-  FastLED.setBrightness(128); // this is OVERWRITTEN!!!!!! see art.global_intensity  //todo set to 255 in final production???
+  FastLED.setBrightness(255); // this is OVERWRITTEN!!!!!! see art.global_intensity  //todo set to 255 in final production???
   Serial.begin(115200);                 // check serial monitor for current fps count
   //art.setGlobalScale(0.5); 
 
-#ifdef TEST
-  //pinMode(17,OUTPUT);
-  //digitalWrite(17,HIGH); //for my testing only
-
-
-#endif
- 
- // fill_rainbow(leds, NUM_LED, 0);
-  //fill_solid(leds, NUM_LED, CRGB::Green);
-  //FastLED.show();
 
 }
 
@@ -474,14 +465,9 @@ void setup() {
 bool verbose = false;
 bool play = false;
 bool doRandom = true;
-
-
-
-
-
+bool musicReactive = false;
+bool hueDrift = false;
 int cnt = 32;
-
-
 
 void loop() {
 
@@ -489,19 +475,20 @@ void loop() {
   audio.update();
   //int i=0;
 
+  if (hueDrift) art.gHue.incBase(.0003); // todo make this scale with FPS
 
-  if (audio.beat_detected) {
-    //art.global_intensity.modulate(map_float(audio.abs_signal, -.2, .8, 0, art.global_intensity.max - art.global_intensity.min)); // todo test minimums???
+  if (audio.beat_detected && musicReactive) {
+    art.global_intensity.modulate(audio.abs_signal);//todo make this proportional to ratio, not abs_signal?
     //Serial.print("beat");
   } else {
-    //art.global_intensity.incMod(-.5); //todo make this proportional to FPS, this controls decay rate
+    art.global_intensity.incMod(-.005); //todo make this proportional to FPS, this controls decay rate
   }
   //Serial.println("");
 
 
   //brt = (int)(map_float(audio.getLp()*audio.getLp(),0,1.0,min_brt,max_brt));
   //brt=64;
-  FastLED.setBrightness(64);
+
 
   //led output
   showCurrentPattern();
@@ -531,6 +518,8 @@ void loop() {
       incrementPalette();
     } else if (incomingByte == 'n'){
       incrementPattern();
+    } else if (incomingByte == 'm'){
+      musicReactive = not musicReactive;
     } else if (incomingByte == 'b'){
       incrementPattern(-1); 
     } else if (incomingByte == 'p'){
@@ -547,6 +536,8 @@ void loop() {
       audio.iir_lowpass.setWeight(float(i));
     } else if (incomingByte == 'B'){
       clearPattern();
+    } else if (incomingByte == 'z'){
+      hueDrift = not hueDrift;
     } else if (incomingByte == 'h'){
       art.gHue.incBase(.1);
       Serial.print("Setting hue shift to"); Serial.println(art.gHue.getBase());

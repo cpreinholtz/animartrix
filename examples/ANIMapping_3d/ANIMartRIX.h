@@ -167,8 +167,8 @@ public:
     setBpm(82.0);
     gHue.edge = edgeWrap;
 
-    global_intensity.max = 255.0;
-    global_intensity = 60.0;
+    //global_intensity.max = 255.0;
+    global_intensity = 0.5; //default
 
 
 
@@ -453,10 +453,14 @@ public:
     Serial.print("z spread: ");Serial.println(spread_z); Serial.println();
 
 
-    float max_spread = 1.0/max(max(spread_x,spread_y),spread_z)*7.0;
-    global_scale_x = 1.0/ max_spread*15.0;
-    global_scale_y = 1.0/ max_spread*15.0;
-    global_scale_z = 1.0/ max_spread*15.0;
+    float max_spread = max(max(spread_x,spread_y),spread_z);
+    global_scale_x.max = 4;
+    global_scale_y.max = 4;
+    global_scale_z.max = 4;
+
+    global_scale_x = 1.0/ max_spread*7.0; // this should end up ~1
+    global_scale_y = 1.0/ max_spread*7.0; //todo make these scale with pixel spacing
+    global_scale_z = 1.0/ max_spread*7.0;
 
 
     Serial.print("gscalx: ");
@@ -499,7 +503,7 @@ public:
 
   uint8_t float_to_uint8_t(float color){
     if (color < 0.0) color = 0.0; // todo check behavioor of this??? 
-    else if (color   > 255)   color = 255;
+    else if (color   > 255)   color = 255; // TODO added this in and now things look more boring???
     return ((uint8_t) color);
   }
 
@@ -3533,7 +3537,7 @@ public:
       float radial = (radius-distance[n])/distance[n];
       //12-10/10,  12-1/10,  brighter in center
      
-      uint8_t color = float_to_uint8_t(show1 * radial);
+      uint8_t color = float_to_uint8_t(show1 * radial); //todo see if top clip messed this up?
       buffer[n] = setPixelColor(color);
     }
   }
@@ -4263,7 +4267,7 @@ public:
     }
   }
 
-  void SPARKLE_EDGES_MOD9() { 
+  void SPARKLE_EDGES_MOD9() {  //TODO why did this break???
 
     get_ready();
 
@@ -4297,7 +4301,7 @@ public:
       animation.low_limit  = 0;
       show1                = render_value(animation);
 
-      uint8_t color = float_to_uint8_t(100*show1);
+      uint8_t color = round(100*show1);
       buffer[n] = setPixelColor( color);
 
     }
@@ -4394,7 +4398,7 @@ public:
 
 
 
-  void Rings() {
+  void Rings() {// todo scale
 
     get_ready(); 
     

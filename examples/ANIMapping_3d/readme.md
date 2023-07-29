@@ -25,6 +25,7 @@ bugfixes
 
 
 features
+  make pixel spacing a part of scaling???
   make moodables able to have multiple inputs, for now CANNOT modulate ghue because it is being modulated inside hue shift
   audio create more settings for different modulators
   audio play with mic gain
