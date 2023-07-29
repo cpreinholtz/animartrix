@@ -282,7 +282,6 @@ public:
   //Oscilators
   /////////////////////////////////////////////////////////////////////////
   void calculate_oscillators(oscillators &timings) { 
-    tightLoop();
     double runtime = millis() * timings.master_speed;  // global anaimation speed gives the frequency in millis of the ramp to increase by 1
 
     for (int i = 0; i < num_oscillators; i++) {
@@ -312,7 +311,7 @@ public:
 
   const unsigned long periodMicrosTightLoop = 1000000 / 40000; //5KHZ sample should be fine
   unsigned long lastMicrosTightLoop = 0;
-
+  //TODO maybe OBE???
   //! perform audioPolling and other houskeeping
   void tightLoop(){
     unsigned long thisMicros = micros();
@@ -416,7 +415,6 @@ public:
 
   float render_value(render_parameters &animation, float scaleHigh = 255.0) {
     //EVERY_N_SECONDS(1){Serial.println("derrived class render");}
-    tightLoop();
 
     // convert **SPHERICAL** coordinates back to cartesian ones
     //this is really the only difference from base class
@@ -619,20 +617,17 @@ public:
   //master setting of color
   //!setPixelColor takes in rgbF pixel, performs hue shift, multiplies by global intensity, and returns rounded resut as integer CRGB
   CRGB setPixelColor(hsiF phsi) {
-    tightLoop();
     rgbF p = hue_shift(phsi);
     return CRGB(round(p.r*global_intensity), round(p.g*global_intensity), round(p.b*global_intensity));
   }  
 
   CRGB setPixelColor(rgbF p) {
-    tightLoop();
     p = hue_shift(p);
     return CRGB(round(p.r*global_intensity), round(p.g*global_intensity), round(p.b*global_intensity));
   }
 
   //! take in uint8_t color, perform color from pallet and hue shift
   CRGB setPixelColor(uint8_t color) {
-    tightLoop();
     CRGB pCRGB = ColorFromPalette(currentPalette, color);
     rgbF p = hue_shift(pCRGB);
     return CRGB(round(p.r*global_intensity), round(p.g*global_intensity), round(p.b*global_intensity));
@@ -645,7 +640,6 @@ public:
   void get_ready() {  // wait until new buffer is ready, measure time
     // TODO: make callback
     markStartOfRender();
-    tightLoop();
     // while(backgroundLayer.isSwapPending());
     // b = micros();
   }
@@ -3576,7 +3570,6 @@ public:
 
     
     for (int n = 0; n < NUM_LEDS; n++) {
-      tightLoop();
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
       float s = 1 +  move.sine[6]*0.8;

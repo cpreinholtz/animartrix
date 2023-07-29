@@ -17,12 +17,11 @@ License CC BY-NC 3.0
 
 */
 
-#define NUM_LEDS  4                       // how many LED total,  must be defined before ANIMapping
+#define NUM_LEDS  150                       // how many LED total,  must be defined before ANIMapping
 
 #include <FastLED.h>
 #include "ANIMartRIX.h" //TODO make <> when you copy files back to the right directory
 #include "ANIMaudio.h" //TODO make <> when you copy files back to the right directory
-
 
 //******************************************************************************************************************
 //float ledMap[NUM_LEDS][3];
@@ -36,7 +35,7 @@ float ledMap[NUM_LEDS][3] = {
     { 7.25 , 0, 9},
     { 7.25 , 0, 5.5},
     { 7.5 , 0, 1.5},
-/*
+
     { 10 , 0, 0},
     { 11 , 0, 4},
     { 10.5 , 0, 7.5},
@@ -213,7 +212,7 @@ float ledMap[NUM_LEDS][3] = {
     { 2, 0, 8},
     { 1.75, 0, 4},
     { 2.25, 0, 0},
-    { 4.5, 0, 4},   ///// 150*/
+    { 4.5, 0, 4},   ///// 150
 };
 
 
@@ -435,22 +434,29 @@ void randomPattern(){
 
 
 void showCurrentPattern(){
-  audio.update(art.pollAudio());
-
-  art.tightLoop();
-  gPatterns[currentPattern].pattern();
-  
+  gPatterns[currentPattern].pattern();  
   art.markStartOfShow();
-  art.tightLoop();
-
   FastLED.show();
-
-  art.tightLoop();
   art.markEndOfShow();
 }
 
 
+//******************************************************************************************************************
+#include <Audio.h>
 
+// GUItool: begin automatically generated code
+AudioInputI2S            i2s1;           //xy=698,360
+AudioRecordQueue         queue1;         //xy=1144,352
+AudioAnalyzeRMS          rms1;           //xy=1144,445
+AudioAnalyzeFFT256       fft256_1;       //xy=1152,492
+AudioAnalyzePeak         peak1;          //xy=1166,392
+AudioAmplifier           amp1;           //xy=470,93
+AudioConnection          patchCord0(i2s1, 0, amp1, 0);
+AudioConnection          patchCord1(amp1, 0, queue1, 0);
+AudioConnection          patchCord2(amp1, 0, peak1, 0);
+AudioConnection          patchCord3(amp1, 0, rms1, 0);
+AudioConnection          patchCord4(amp1, 0, fft256_1, 0);
+// GUItool: end automatically generated code
 
 
 
@@ -459,9 +465,10 @@ void showCurrentPattern(){
 void setup() {
 
   art.global_intensity.min = 0.1;//MUST be >0
-  art.global_intensity.max = 1.0;//MUST be <=1
-  art.global_intensity = (art.global_intensity.min);
-
+  art.global_intensity.max = 0.7;//MUST be <=1
+  //art.global_intensity.modulate(art.global_intensity.min);
+  art.global_intensity = (art.global_intensity.min); //sets the base to min
+  art.global_intensity.modulate(0);  //sets mod to 0
   // FastLED.addLeds<NEOPIXEL, 13>(leds, NUM_LED);
   
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
@@ -471,6 +478,10 @@ void setup() {
   Serial.begin(115200);                 // check serial monitor for current fps count
   //art.setGlobalScale(0.5); 
 
+  fft256_1.averageTogether(2); //runs at 300Hz+, lets slow that down to ~ 200 hz
+  AudioMemory(50);
+  //filter1.frequency(30); // filter out DC & extremely low frequencies
+  amp1.gain(8.5);        // amplify sign to useful range
 
 
 }
@@ -480,23 +491,19 @@ void setup() {
 
 
 bool verbose = false;
+bool verbose2 = false;
 bool play = false;
 bool doRandom = true;
-bool musicReactive = false;
+bool musicReactive = true;
 bool hueDrift = false;
 int cnt = 32;
 
 void loop() {
-
-
-    //int i=0;
-
   //changing paterns
   if (play){
       if (doRandom) {EVERY_N_SECONDS(30) randomPattern();}
       else {EVERY_N_SECONDS(30) incrementPattern();}
   }
-
   // report
   if(verbose){
     EVERY_N_MILLIS(500) {
@@ -510,24 +517,55 @@ void loop() {
     }
   }
 
-
-
-
-
 //*******************************************************************************************************************
   EVERY_N_MILLIS(5) {
 
     if (hueDrift) art.gHue.incBase(.0003); // todo make this scale with FPS, put into show current patter to make immune to FPS changes
-    if (audio.beat_detected && musicReactive) art.global_intensity.modulate(audio.abs_signal);//todo make this proportional to ratio, not abs_signal?
-    else art.global_intensity.incMod(-.005); //todo make this proportional to FPS, this controls decay rate
 
     showCurrentPattern(); // 200 FPS max
+
+
+    //audio.update(art.pollAudio());
+
+     if (fft256_1.available()) {
+        float b0 = fft256_1.read(0);
+        if (b0 > 0){
+          audio.updateScaled(b0); // see examples > teensy > audio > hardware testing > microphones
+          //if (audio.beat_detected && musicReactive) art.global_intensity.incBase(audio.abs_signal);//todo make this proportional to ratio, not abs_signal?
+          if (audio.beat_detected && musicReactive) {
+            art.global_intensity.incBase(audio.abs_signal*5);//todo make this proportional to ratio, not abs_signal?
+            Serial.println("beat");
+          }
+          else {
+            float diff = art.global_intensity.getBase()-art.global_intensity.min; // find current base level from minimum
+            if (diff >0) art.global_intensity.incBase(diff*-.05); //todo make this proportional to FPS, this controls decay rate
+          }
+        }
+
+
+        if (verbose2) {
+          EVERY_N_MILLIS(500){
+            // each time new FFT data is available
+            // print 20 bins to the Arduino Serial Monitor
+            Serial.print("FFT: ");
+            for (int i = 0; i < 20; i++) {
+              float n = fft256_1.read(i);
+              if (n >= 0.001) {
+                Serial.print(n, 3);
+                Serial.print(" ");
+              } else {
+                Serial.print("  --  "); // don't print "0.000"
+              }
+            }
+            Serial.println();
+          
+          }          
+        }
+        
+    }
+
   }
 //*******************************************************************************************************************
-
-
-
-
   // testing interface, user input
   if (Serial.available() > 0) {
     // read the incoming byte:
@@ -536,6 +574,9 @@ void loop() {
     if (incomingByte == 'd'){
       verbose = not verbose;
       Serial.print("Setting top verbose shift to"); Serial.println(verbose);
+    } else if (incomingByte == 'D'){
+      verbose2 = not verbose2;
+      Serial.print("Setting top verbose2 shift to"); Serial.println(verbose2);
     } else if(incomingByte == 'P'){
       play = not play;    
       Serial.print("Setting play to"); Serial.println(play);
@@ -580,16 +621,7 @@ void loop() {
       Serial.print("Setting doRandom to"); Serial.println(doRandom);
       Serial.print("Setting play to"); Serial.println(play);
     }
-
-    if(verbose){
-      // say what you got:
-      Serial.print("I received: ");
-      Serial.println(incomingByte, DEC);
-    }
-    
-
-
-
   }
+
 
 } 

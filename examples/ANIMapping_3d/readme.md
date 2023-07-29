@@ -20,6 +20,9 @@ bugfixes
 
   try setting a slightly slower IIR average when we get a peak manually to disable double peaks?
 
+  try setting BIN as a modable?
+  scaling (darkening) gets weird at high volume
+
 
 
 
@@ -37,8 +40,9 @@ features
 
 modables
   fractaly--intger?-- controls number of spirals, can mult with existing setup, use FLOOR if cutting off oddly 
-  intensity--0 to 255--
+  --intensity--0 to 255--
   speed
+  --scale
 
 
 
@@ -199,5 +203,21 @@ perfect dont touch
   Center_Field so fing cool
 
 
+      /*
+      //put this delta into the buffer
+      bpm_deltas[bpm_current_sample] = delta;
 
+      //bpm_deltas is a round robin buffer, increment bpm_current_sample index and wrap around if needed
+      bpm_current_sample ++;
+      if (bpm_current_sample >= bpm_num_samples) bpm_current_sample = 0;
+
+      //sort then for median
+      //selectionSort(bpm_deltas, bpm_sorted_deltas, bpm_num_samples);
+      //todo really this isnt so good, because many 8th notes will skew the quarter notes,  
+      //really you should somehow detect if samples are multiples of one another within some margin, 
+      //and throw out the smaller ones, that should leave you with only quarters?
+      //honestly the whole bpm thing is totally uneeded anyways
+      //bpm_median_delta = bpm_sorted_deltas[bpm_median_sample];
+      bpm = 60000/bpm_median_delta;// to convert millis per beat to bpm, invert to get beats per milli, then multiply by 60000 millis per 1 second
+      */
 
