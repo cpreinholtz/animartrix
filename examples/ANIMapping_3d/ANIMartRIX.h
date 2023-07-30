@@ -172,8 +172,7 @@ public:
     setBpm(82.0);
     gHue.edge = edgeWrap;
 
-    //global_intensity.max = 255.0;
-    global_intensity = 0.5; //default
+    global_intensity = 0.5; //default, should be overwritten in top level
 
 
 
@@ -315,10 +314,11 @@ public:
   //! perform audioPolling and other houskeeping
   void tightLoop(){
     unsigned long thisMicros = micros();
-    static int cnt =0;
+    
     if (thisMicros-lastMicrosTightLoop > periodMicrosTightLoop){
       
-      /*cnt ++;
+      /*static int cnt =0;
+      cnt ++;
       if(cnt>50){
         cnt=0;
         if (thisMicros-lastMicrosTightLoop > periodMicrosTightLoop * 2) {
@@ -507,9 +507,9 @@ public:
 
 
     float max_spread = max(max(spread_x,spread_y),spread_z);
-    global_scale_x.max = 4;
-    global_scale_y.max = 4;
-    global_scale_z.max = 4;
+    global_scale_x.setMinMax(0.25, 2.0); //todo scale with size etc???
+    global_scale_y.setMinMax(0.25, 2.0);
+    global_scale_z.setMinMax(0.25, 2.0);
 
     global_scale_x = 1.0/ max_spread*7.0; // this should end up ~1
     global_scale_y = 1.0/ max_spread*7.0; //todo make these scale with pixel spacing
@@ -595,7 +595,7 @@ public:
 
   //! hue shift given hsiF, return rgbF.  sanity checks performed in Hsi2Rgb
   rgbF hue_shift(hsiF hsi){
-      hsi.h = gHue.modulate(hsi.h);  //todo PROTECT THIS
+      hsi.h = hsi.h+gHue;  //todo PROTECT THIS
       return Hsi2Rgb(hsi);
   }
   //! hue shift given rgbF, convert to hsiF, perform shift, return rgbF.  sanity checks performed in Rgb2Hsi and Hsi2Rgb

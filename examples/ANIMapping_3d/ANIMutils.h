@@ -215,69 +215,59 @@ float mirror_float(float x, float side_distance, int n_sides=2, float start_at =
 //1 output signal VALUE, value = BASE + MOD, but is clipped to the bounds of MAX and MIN
 class modableF {  
 private:
+  float min = 0.0;
+  float max = 1.0;
 
   float base = 0.0;//!this is the base input signal
-  float mod = 0.0;//!this is the modulation sorce input signal
-  float value = 0.0;//!this is base+mod output
+ 
+
 
  
-float clip(float v) const{
+public:
+  modEdge edge = edgeClip;
+
+  //getters///////////////////////////
+  float getBase() const{return base;}
+  float getOffset() const{return base - min;}
+
+  //const///////////////////////////
+  float clip(float v) const{
     if (edge == edgeClip) v =  constrain_float(v, min, max);//edgeClip = clipped like an op-amp hitting the rails
     else if (edge == edgeWrap) v = (fmodf(v - min, max - min) + min); //edgeWrap = sawtooth
     else v = mirror_float(v,max-min, 2, min); //edgeMirror = triangle //float mirror_float(float x, float side_distance, int n_sides=2, float start_at = 0.0){
     return v;
   }
- 
-public:
-  modEdge edge = edgeClip;
-  float min = 0.0;
-  float max = 1.0;
 
-  float getBase() const{return base;}
-  float getMod()const {return mod;}
-  float getValue()const{return value;}
-
-
-
-
-  //!add input m to base and return result after clipping
-
-  //! get VALUE, value = base + mod result after clipping
-  float modulate(){
-    value = clip(mod + base);//todo multiplying modable?
-    return value;
+  //SETTERS///////////////////////////
+  void setMinMax(float mn, float mx) {
+    min = mn;
+    max = mx;
+    if (max <= min) Serial.println("dude, max should probably be > min");
+    base = clip(base); //just in case user set min max out of range of where base was
   }
 
-  //! set MOD input, recalculate VALUE output, return value... follows edge rules for result but not mod
-  float modulate(float m){
-    mod = m;
-    return modulate();
-  }
-
-  //!increment the MOD by this ammount, recalculate VALUE output, return value...  follows edge rules for result but not mod
-  float incMod(float m){
-    return modulate(mod+m);
-  }
-
-  //!increment the BASE by this ammount, recalculate VALUE output, return value...  follows edge rules for setting base and value
-  void incBase(float m){
-    base = clip(m + base);
-    modulate(); // calculate new output value
-  }
-
-
-
-  //! = operator sets the BASE, and value, keeps mod the same...  follows edge rules for setting base and value
+  //! operator= sets the BASE, and value, keeps mod the same...  follows edge rules for setting base and value
   modableF& operator=(const float b) {
     base = clip(b);
-    modulate(); // sets value = base + mod
+    return *this;
+  }
+
+  //! operator+= sets the BASE, and value, keeps mod the same...  follows edge rules for setting base and value
+  modableF& operator+=(const float b) {
+    base = clip(base + b);
     return *this;
   }
 
 };
 
-//! operator overload for float*modable returns float x value, does not follow edge rules
+////ARITHMATIC OPERATIONS///////////////////////////
+//! operator* [float = float *modable] returns float x value, does NOT follow edge rules
 float operator*(const float &a, const modableF &b){
-  return b.getValue()*a;
+  return b.getBase()*a;
+}
+
+//! operator+ [float = float + modable] returns float x value, does follow edge rules
+float operator+(const float &a, const modableF &b){
+  return b.clip(b.getBase()+a);
 }
 

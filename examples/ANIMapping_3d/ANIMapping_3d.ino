@@ -464,11 +464,7 @@ AudioConnection          patchCord4(amp1, 0, fft256_1, 0);
 //******************************************************************************************************************
 void setup() {
 
-  art.global_intensity.min = 0.2;//MUST be >0
-  art.global_intensity.max = 1.0;//MUST be <=1
-  //art.global_intensity.modulate(art.global_intensity.min);
-  art.global_intensity = (art.global_intensity.min); //sets the base to min
-  art.global_intensity.modulate(0);  //sets mod to 0
+  art.global_intensity.setMinMax(0.2, 0.8);//MIN MUST be >0// MAX MUST be <=1
   // FastLED.addLeds<NEOPIXEL, 13>(leds, NUM_LED);
   
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
@@ -520,7 +516,7 @@ void loop() {
 //*******************************************************************************************************************
   EVERY_N_MILLIS(5) {
 
-    if (hueDrift) art.gHue.incBase(.0003); // todo make this scale with FPS, put into show current patter to make immune to FPS changes
+    if (hueDrift) art.gHue += .0003; // todo make this scale with FPS, put into show current patter to make immune to FPS changes
 
     showCurrentPattern(); // 200 FPS max
 
@@ -531,14 +527,13 @@ void loop() {
         float b0 = fft256_1.read(0);
         if (b0 > 0){
           audio.updateScaled(b0); // see examples > teensy > audio > hardware testing > microphones
-          //if (audio.beat_detected && musicReactive) art.global_intensity.incBase(audio.abs_signal);//todo make this proportional to ratio, not abs_signal?
           if (audio.beat_detected && musicReactive) {
-            art.global_intensity.incBase(audio.abs_signal*5);//todo make this proportional to ratio, not abs_signal?
+            art.global_intensity += audio.abs_signal*5;//todo make this proportional to ratio, not abs_signal?
             Serial.println("beat");
           }
           else {
-            float diff = art.global_intensity.getBase()-art.global_intensity.min; // find current base level from minimum
-            if (diff >0) art.global_intensity.incBase(diff*-.05); //todo make this proportional to FPS, this controls decay rate
+            float diff = art.global_intensity.getOffset(); // find current base level from minimum
+            if (diff >0) art.global_intensity += diff*-.05;// subtract out a decay proportional to offset //todo make this proportional to FPS, this controls decay rate
           }
         }
 
@@ -610,7 +605,7 @@ void loop() {
       hueDrift = not hueDrift;
       Serial.print("Setting hueDrift to"); Serial.println(hueDrift);
     } else if (incomingByte == 'h'){
-      art.gHue.incBase(.1);
+      art.gHue += .1;
       Serial.print("Setting hue shift to"); Serial.println(art.gHue.getBase());
     } else if (incomingByte == 'H'){
       art.gHue = 0;
