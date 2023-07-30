@@ -1,5 +1,8 @@
 
 
+
+WHY GENERATED PATTERNS ARE SO DARK????
+
 bugfixes
   use every n millis for decay intensity
   audio figure out how to smooth out the signal better

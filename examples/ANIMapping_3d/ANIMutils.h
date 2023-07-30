@@ -229,6 +229,7 @@ public:
   //getters///////////////////////////
   float getBase() const{return base;}
   float getOffset() const{return base - min;}
+  float getSpread() const { return max-min;}
 
   //const///////////////////////////
   float clip(float v) const{
@@ -244,6 +245,10 @@ public:
     max = mx;
     if (max <= min) Serial.println("dude, max should probably be > min");
     base = clip(base); //just in case user set min max out of range of where base was
+  }
+
+  void setBaseToMiddle(){
+    base = min + getSpread()/2;
   }
 
   //! operator= sets the BASE, and value, keeps mod the same...  follows edge rules for setting base and value

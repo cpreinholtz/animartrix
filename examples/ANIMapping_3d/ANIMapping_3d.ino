@@ -494,6 +494,8 @@ bool musicReactive = true;
 bool hueDrift = false;
 int cnt = 32;
 
+modableF* audioModBeatDestPtr = &art.global_intensity;
+
 void loop() {
   //changing paterns
   if (play){
@@ -528,12 +530,15 @@ void loop() {
         if (b0 > 0){
           audio.updateScaled(b0); // see examples > teensy > audio > hardware testing > microphones
           if (audio.beat_detected && musicReactive) {
-            art.global_intensity += audio.abs_signal*5;//todo make this proportional to ratio, not abs_signal?
+            //art.global_intensity += audio.abs_signal*5;//todo make this proportional to ratio, not abs_signal?
+            *audioModBeatDestPtr += audio.abs_signal*5;//todo make this proportional to ratio, not abs_signal?
             Serial.println("beat");
           }
           else {
-            float diff = art.global_intensity.getOffset(); // find current base level from minimum
-            if (diff >0) art.global_intensity += diff*-.05;// subtract out a decay proportional to offset //todo make this proportional to FPS, this controls decay rate
+            //float diff = art.global_intensity.getOffset(); // find current base level from minimum
+            //if (diff >0) art.global_intensity += diff*-.05;// subtract out a decay proportional to offset //todo make this proportional to FPS, this controls decay rate
+            float diff = audioModBeatDestPtr->getOffset();
+            if (diff >0) *audioModBeatDestPtr += diff*-.05;//todo make this proportional to ratio, not abs_signal?
           }
         }
 
@@ -575,6 +580,14 @@ void loop() {
     } else if(incomingByte == 'P'){
       play = not play;    
       Serial.print("Setting play to"); Serial.println(play);
+    } else if(incomingByte == 'a'){
+      int i = Serial.parseInt();
+      audioModBeatDestPtr->setBaseToMiddle();
+      if (i==1) audioModBeatDestPtr = &art.global_intensity;
+      if (i==2) audioModBeatDestPtr = &art.global_scale_x;
+      if (i==3) audioModBeatDestPtr = &art.global_scale_y;
+      if (i==4) audioModBeatDestPtr = &art.global_scale_z;
+      if (i==5) audioModBeatDestPtr = &art.gHue;
     } else if(incomingByte == 'c'){
       incrementPalette();
     } else if (incomingByte == 'n'){
