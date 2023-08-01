@@ -121,7 +121,7 @@ class ANIMaudio {
 public:
 
 
-  bool verbose = true;
+  bool verbose = false;
   float global_bpm = 115.0;
   float energy_level = 0.0;
 
@@ -152,8 +152,9 @@ public:
   const float beat_volume_min = 0.5/20.0; //must hit moving average * multiplier to be considered a beat
   const float beat_hysteresis = beat_multiplier_min * 0.5;
   float hyst_count; 
-  int beat_debounce_count;
 
+
+  int beat_debounce_count;
   static const int bpm_num_samples = 21; // use odd to prevent DC offset
   static const int bpm_median_sample = bpm_num_samples/2;
   int bpm_current_sample = 0; //round robbin index, increments from 0 to bpm_num_samples-1 and wraps around
@@ -191,7 +192,6 @@ public:
     beat_detected = false;
     beat_detected_dbg = false;
     beat_last = 0;
-    beat_debounce_count = 0;
     for (int i = 0; i < bpm_num_samples; i++) { bpm_deltas[i] = 500; }
     bpm = 120;
 
@@ -201,14 +201,7 @@ public:
   void debug(){
         
     EVERY_N_MILLIS(50) if (verbose){
-      //Serial.print(" audio.raw_signal: ");
-      //Serial.print(audio.raw_signal);
-      //Serial.print(",");
 
-      //Serial.print(" audio.scaled_signal: ");
-      //Serial.print(audio.scaled_signal);
-      //Serial.print(",");
-      
       Serial.print("ref:");
       Serial.print(beat_multiplier_min);
       Serial.print(",");
@@ -217,28 +210,9 @@ public:
       Serial.print(abs_signal);
       Serial.print(",");
 
-      /*
-      Serial.print("iir_vol_weight:");
-      Serial.print(iir_volume.iir_weight);
-      Serial.print(",");
-
-      Serial.print("iir_lowpass_weight:");
-      Serial.print(iir_lowpass.iir_weight);
-      Serial.print(",");
-      */
-      
-
       Serial.print("iir_volume:");
       Serial.print(iir_volume.signal);
       Serial.print(",");
-/*
-      Serial.print("iir_lowpass:");
-      Serial.print(iir_lowpass.signal);
-      Serial.print(",");
-*//*
-      Serial.print("Fir_lowpass:");
-      Serial.print(lp.signal);
-      Serial.print(",");*/
 
       Serial.print("hyst_count:");
       Serial.print(hyst_count);
@@ -289,7 +263,7 @@ public:
     } else {
       //add hysterisis to beat thingy
       if (abs_signal < iir_volume.signal * beat_hysteresis ) {
-        if  (hyst_count < 2.0) hyst_count = hyst_count + .1;
+        if  (hyst_count < 2.0 ) hyst_count = hyst_count + .1;
         if (hyst_count > 0.6) beat_armed = true; /// set armed HERE if hysterisis conditions satisfied  // 6 llops at ratio < hyst
       }
       beat_detected = false;

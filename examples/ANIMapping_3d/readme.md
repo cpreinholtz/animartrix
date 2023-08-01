@@ -32,6 +32,21 @@ bugfixes
 
 
 features
+
+
+  lfo, -1 to 1, sine, tri, random, ramp, saw, etc
+  env 0 to 1, intended to be MULTIPLIED with a signal
+
+  modulation MULTIPLY two signals together
+  mixing ADD two signals together
+
+
+  wrap(lfo ramp +  1*envelope) = hue
+  clip(1*envelope) = intensity
+
+
+
+
   make pixel spacing a part of scaling???
   make moodables able to have multiple inputs, for now CANNOT modulate ghue because it is being modulated inside hue shift
   audio create more settings for different modulators

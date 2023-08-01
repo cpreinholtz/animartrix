@@ -48,6 +48,16 @@ typedef enum {
   edgeMirror
 } modEdge;
 
+typedef enum {
+  envTriangle,
+  envExponential
+} envelopShape;
+
+typedef enum {
+  stateIdle,
+  stateAttack,
+  stateDecay,  
+} envelopState;
 
 ////////////////////////////////////////////////////////////////////////////
 // floating point utilities
@@ -210,45 +220,209 @@ float mirror_float(float x, float side_distance, int n_sides=2, float start_at =
 }
 
 
-//! moddable class has 2 control signals, MAX and MIN, these control VALUE output clipping and BASE level
-//2 input signals BASE and MOD.  BASE is constrained to remain in the bounds of MAX and MIN, MOD is not constrained
-//1 output signal VALUE, value = BASE + MOD, but is clipped to the bounds of MAX and MIN
+
+
+//! evelope class
+class envelopeF {  
+public:
+  envelopShape shape = envExponential;
+  bool verbose = false;
+private:
+
+  float low = 0.0;
+  float high = 1.0;
+
+  float attackMillis = 400.0; // in millis
+  float decayMillis = 400.0; // in millis
+  unsigned long start_millis = 0;
+  float elapsedMillis = 200;
+
+  float signal = 0.0;//!this is the base input signal
+  float start_signal = 0.0;
+  int state = stateIdle;
+  
+
+
+
+
+  void updateState(){
+    if (state == stateAttack){ 
+      elapsedMillis = millis() - start_millis;
+      if (elapsedMillis >attackMillis) state = stateDecay;
+    } else if (state == stateDecay) {
+      elapsedMillis = millis() - start_millis - attackMillis;
+      if (elapsedMillis > decayMillis) state = stateIdle;
+    } else {
+      //dont care
+    } 
+  }
+
+  void updateTriangle(){
+    if (state == stateAttack){ 
+      // attack phase, signal varies from start_signal to high while elapsedMillis <= attackMillis
+      //float x = elapsedMillis;
+      //float m = (high-start_signal)/attackMillis;//rise/ run
+      //float b = start_signal;
+      //y = mx +b
+      signal = min(elapsedMillis/attackMillis * (high-start_signal)+start_signal, high); 
+    } else if (state == stateDecay) {
+      // decay phase, signal varies from high to low while elapsedMillis > attackMillis
+      signal = max(elapsedMillis/decayMillis * (low-high) + high, low);
+    } else {
+      signal = low;
+      state = stateIdle;
+    }
+  }
+
+  void updateExponential(){
+    if (state == stateAttack){ 
+      // attack phase, signal varies from start_signal to high while elapsedMillis <= attackMillis
+      float tau = attackMillis / 5;
+      signal = start_signal + (high-start_signal) * (1 - exp(-elapsedMillis/tau));
+    } else if (state == stateDecay) {
+      // decay phase, signal varies from high to low while elapsedMillis > attackMillis
+      float tau = decayMillis / 5;
+      signal = high + (low-high) * (1 - exp(-elapsedMillis/tau));
+    } else {
+      signal = low;
+      state = stateIdle;
+    }
+  }  
+  void debug(){        
+    EVERY_N_MILLIS(50) if (verbose){
+      Serial.print("elapsedSeconds:");
+      Serial.print(elapsedMillis/1000);
+      Serial.print(",");
+      Serial.print("state:");
+      Serial.print(state);
+      Serial.print(",");
+      Serial.print("signal:");
+      Serial.print(signal);
+      Serial.print(",");
+      Serial.print("start_signal:");
+      Serial.print(start_signal);
+      Serial.print(",");
+      Serial.print("high:");
+      Serial.print(high);
+      Serial.print(",");
+      Serial.print("low:");
+      Serial.print(low);
+      Serial.print(",");
+
+      Serial.print("ref:");
+      Serial.print(3);      
+      Serial.println();
+    }
+  }
+
+public:
+
+  float getSignal() const {
+    return signal;
+  }
+
+  void clear(){
+    state = stateIdle;
+    signal = 0.0;
+  }
+
+  void setAttackDecay(float aMillis, float dMillis){
+     attackMillis = max(aMillis,0);
+     decayMillis = max(dMillis,0);
+  }
+
+  void setMax(float m){
+     high=m;
+     if( high <= low) Serial.println("dude, max should probably be > low in evelope setMax");
+  }
+
+  //! start a new envelop
+  void trigger(){
+    start_millis = millis();
+    start_signal = signal;
+    state = stateAttack;
+  }
+
+  void update(){
+    updateState();
+    //todo make a switch for modes triangle, exponential, etc
+    if (shape == envTriangle ) updateTriangle();
+    else if (shape == envExponential ) updateExponential();
+    debug();
+  }
+
+
+};
+
+
+
+
+
+//! moddable class has 2 control signals, high and low, these control VALUE output clipping and BASE level
+//2 input signals BASE and MOD.  BASE is constrained to remain in the bounds of high and low, MOD is not constrained
+//1 output signal VALUE, value = BASE + MOD, but is clipped to the bounds of high and low
 class modableF {  
 private:
-  float min = 0.0;
-  float max = 1.0;
+  float low = 0.0;
+  float high = 1.0;
 
   float base = 0.0;//!this is the base input signal
- 
+
+
 
 
  
 public:
   modEdge edge = edgeClip;
-
+  envelopeF envelope;
   //getters///////////////////////////
   float getBase() const{return base;}
-  float getOffset() const{return base - min;}
-  float getSpread() const { return max-min;}
+  float getEnvelope() const{return clip(base+envelope.getSignal());}
+  float getOffset() const{return base - low;}
+  float getSpread() const { return high-low;}
+  float getSpace() const { return high-base-envelope.getSignal();}
 
-  //const///////////////////////////
+  //utility functions///////////////////////////
   float clip(float v) const{
-    if (edge == edgeClip) v =  constrain_float(v, min, max);//edgeClip = clipped like an op-amp hitting the rails
-    else if (edge == edgeWrap) v = (fmodf(v - min, max - min) + min); //edgeWrap = sawtooth
-    else v = mirror_float(v,max-min, 2, min); //edgeMirror = triangle //float mirror_float(float x, float side_distance, int n_sides=2, float start_at = 0.0){
+    if (edge == edgeClip) v =  constrain_float(v, low, high);//edgeClip = clipped like an op-amp hitting the rails
+    else if (edge == edgeWrap) v = (fmodf(v - low, high - low) + low); //edgeWrap = sawtooth
+    else v = mirror_float(v,high-low, 2, low); //edgeMirror = triangle //float mirror_float(float x, float side_distance, int n_sides=2, float start_at = 0.0){
     return v;
   }
 
+
+  //! input: value number ideally from 0/1 that we use to set envelope maximum proportional to the space we 
+  void trigger(float value){
+      if( edge == edgeClip) envelope.setMax( getSpace() * value); // if we are clipping, get the ammount of space from max-base we have left, make env proportional to that
+      else {
+        base += envelope.getSignal();
+        envelope.clear();
+        envelope.setMax( getSpread() *value);// not clipping, get the total spread max-min, make env proportional to that
+      }
+      envelope.trigger();
+  }
+
+
+  //! update the envelope
+  void update(){
+    envelope.update();
+  }
+
+
   //SETTERS///////////////////////////
   void setMinMax(float mn, float mx) {
-    min = mn;
-    max = mx;
-    if (max <= min) Serial.println("dude, max should probably be > min");
+    low = mn;
+    high = mx;
+    if (high <= low) Serial.println("dude, max should probably be > min");
     base = clip(base); //just in case user set min max out of range of where base was
   }
 
   void setBaseToMiddle(){
-    base = min + getSpread()/2;
+    base = low + getSpread()/2;
+  }
+
+  void setBaseToMin(){
+    base = low;
   }
 
   //! operator= sets the BASE, and value, keeps mod the same...  follows edge rules for setting base and value
@@ -268,11 +442,13 @@ public:
 ////ARITHMATIC OPERATIONS///////////////////////////
 //! operator* [float = float *modable] returns float x value, does NOT follow edge rules
 float operator*(const float &a, const modableF &b){
-  return b.getBase()*a;
+  return (b.getEnvelope())*a;
 }
 
-//! operator+ [float = float + modable] returns float x value, does follow edge rules
+//! operator+ [float = float + modable] returns float x, does follow edge rules
 float operator+(const float &a, const modableF &b){
-  return b.clip(b.getBase()+a);
+  return b.clip(b.getEnvelope()+a);
 }
+
+
 

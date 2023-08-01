@@ -169,11 +169,48 @@ public:
     render_spherical_lookup_table();
 
     //init modables    
-    setBpm(82.0);
+    setBpm(82.0); //todo remove BPM references
+
+    global_scale_x.setMinMax(0.25, 1.2); //todo scale with size etc???
+    global_scale_y.setMinMax(0.25, 1.2);
+    global_scale_z.setMinMax(0.25, 1.2);
+
+    float max_spread = max(max(spread_x,spread_y),spread_z);
+    global_scale_x = 1.0/ max_spread*7.0; // this should end up ~1
+    global_scale_y = 1.0/ max_spread*7.0; //todo make these scale with pixel spacing
+    global_scale_z = 1.0/ max_spread*7.0;
+
+    global_scale_x.envelope.shape = envTriangle;
+    global_scale_y.envelope.shape = envTriangle;       
+    global_scale_z.envelope.shape = envTriangle; 
+
+    global_scale_x.envelope.setAttackDecay(100,100);
+    global_scale_z.envelope.setAttackDecay(100,100);
+    global_scale_z.envelope.setAttackDecay(100,100);
+
+        //
+
+    Serial.print("gscalx: ");
+    Serial.println(global_scale_x.getBase());
+    Serial.print("gscaly: ");
+    Serial.println(global_scale_y.getBase());
+    Serial.print("gscalz: ");
+    Serial.println(global_scale_z.getBase());
+
+
+    //global_scale handled in render_spherical_lookup_table
     gHue.edge = edgeWrap;
+    //gHue.envelope.setMax(1.0);// todo test out - min max....
+    gHue.envelope.setAttackDecay(10,2000);
+    gHue.envelope.setMax(0.1);
+    gHue.envelope.shape = envExponential;
 
-    global_intensity = 0.5; //default, should be overwritten in top level
 
+    //global_intensity; //default, should be overwritten in top level
+    //global_intensity.envelope.setMinMax(1.0);
+    global_intensity.envelope.setAttackDecay(10,400);
+    global_intensity.envelope.shape = envExponential;
+    //global_intensity.envelope.shape = envTriangle;
 
 
   }
@@ -505,23 +542,6 @@ public:
     Serial.print("y spread: ");Serial.println(spread_y);
     Serial.print("z spread: ");Serial.println(spread_z); Serial.println();
 
-
-    float max_spread = max(max(spread_x,spread_y),spread_z);
-    global_scale_x.setMinMax(0.25, 2.0); //todo scale with size etc???
-    global_scale_y.setMinMax(0.25, 2.0);
-    global_scale_z.setMinMax(0.25, 2.0);
-
-    global_scale_x = 1.0/ max_spread*7.0; // this should end up ~1
-    global_scale_y = 1.0/ max_spread*7.0; //todo make these scale with pixel spacing
-    global_scale_z = 1.0/ max_spread*7.0;
-
-
-    Serial.print("gscalx: ");
-    Serial.println(global_scale_x.getBase());
-    Serial.print("gscaly: ");
-    Serial.println(global_scale_y.getBase());
-    Serial.print("gscalz: ");
-    Serial.println(global_scale_z.getBase());
   }
 
 
