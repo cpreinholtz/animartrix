@@ -15,7 +15,7 @@ This code is licensed under a Creative Commons Attribution
 License CC BY-NC 3.0
 
 */
-
+#pragma once
 #include "ANIMutils.h"
 
 

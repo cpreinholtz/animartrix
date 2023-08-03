@@ -1,5 +1,12 @@
 
 
+IMU
+ESP audio
+motor drivers
+
+temperature cutoff???
+
+
 
 WHY GENERATED PATTERNS ARE SO DARK????
 
@@ -32,6 +39,9 @@ bugfixes
 
 
 features
+
+
+  bpm is not actuall modabble!!!! its absolute not relative
 
 
   lfo, -1 to 1, sine, tri, random, ramp, saw, etc

@@ -24,10 +24,11 @@ License CC BY-NC 3.0
 //#define TEENSY_A true
 //#define ESP_A false
 
-#define USE_A true
+#define USE_A false
+#define USE_I true
 
 #if USE_A
-#include <Audio.h>
+//#include <Audio.h>
 AudioInputI2S            i2s1;           //xy=698,360
 AudioAnalyzeFFT256       fft256_1;       //xy=1152,492
 AudioAmplifier           amp1;           //xy=470,93
@@ -43,6 +44,9 @@ AudioConnection          patchCord2(amp1, 0, fft256_1, 0);
 //#include <FastLED.h>
 #include "ANIMartRIX.h" //TODO make <> when you copy files back to the right directory
 #include "ANIMaudio.h" //TODO make <> when you copy files back to the right directory
+#if USE_I
+#include "ANIMimu.h" //TODO make <> when you copy files back to the right directory
+#endif
 
 //******************************************************************************************************************
 //float ledMap[NUM_LEDS][3];
@@ -244,7 +248,9 @@ float ledMap[NUM_LEDS][3] = {
 CRGB leds[NUM_LEDS];               // framebuffer
 ANIMartRIX art(leds);  //led buffer, global scale
 ANIMaudio audio;  //
-
+#if USE_I
+ANIMimu imu;
+#endif
 
 
 
@@ -319,10 +325,10 @@ void Rotating_Blob(){art.Rotating_Blob();}
 void Rings(){art.Rings();}
 
 
+void PlaneCounterRotation1(){art.PlaneCounterRotation1();}
 void PlaneRotation1(){art.PlaneRotation1();}
 void GrowingSpheres(){art.GrowingSpheres();}
 void Chasing_Spirals_Hsi(){art.Chasing_Spirals_Hsi();}
-void demoBpm(){art.demoBpm();}
 void Module_Experiment11_Hsi(){art.Module_Experiment11_Hsi();}
 void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
@@ -331,8 +337,8 @@ PatternAndNameList gPatterns = {
   {Complex_Kaleido_5,"Complex_Kaleido_5"},
   {GrowingSpheres, "GrowingSpheres"},
   {PlaneRotation1, "PlaneRotation1"},
+  {PlaneCounterRotation1, "PlaneCounterRotation1"},
   {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
-  //{demoBpm, "demoBpm"}, //ugly
   {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},
   {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},
 
@@ -465,9 +471,11 @@ void showCurrentPattern(){
 //******************************************************************************************************************
 
 modableF* audioModBeatDestPtr = &art.global_intensity;
+modableF dummy_mod;
 
 //******************************************************************************************************************
 void setup() {
+  Serial.begin(115200);                 // check serial monitor for current fps count
 
   art.global_intensity.setMinMax(0.2, 0.8);//MIN MUST be >0// MAX MUST be <=1
   //art.global_intensity.setBaseToMiddle();
@@ -480,7 +488,7 @@ void setup() {
   FastLED.addLeds<WS2811, 2, GRB>(leds, NUM_LEDS);
   FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA] 
   FastLED.setBrightness(255); // this is OVERWRITTEN!!!!!! see art.global_intensity  //todo set to 255 in final production???
-  Serial.begin(115200);                 // check serial monitor for current fps count
+
   //art.setGlobalScale(0.5); 
 
 #if USE_A
@@ -488,6 +496,13 @@ void setup() {
   AudioMemory(50);
   //filter1.frequency(30); // filter out DC & extremely low frequencies
   amp1.gain(8.5);        // amplify sign to useful range
+#endif
+
+#if USE_I
+  while(1){
+    if (imu.begin()) 
+      break;
+  }
 #endif
 
 
@@ -530,11 +545,20 @@ void loop() {
   EVERY_N_MILLIS(5) {
     if (hueDrift) art.gHue += .0003; // todo make this scale with FPS, put into show current patter to make immune to FPS changes
     showCurrentPattern(); // 200 FPS max
+
+#if USE_I
+    imu.update();
+    art.upVector = imu.filteredPosition;
+#endif
+
     audioModBeatDestPtr->update();
     //audio.update(art.pollAudio());
+
+      //EVERY_N_MILLIS(5) Serial.p
+
+
 #if USE_A
-      //EVERY_N_MILLIS(5) Serial.println("trying audio");
-      if (fft256_1.available()) {
+    if (fft256_1.available()) {
         //EVERY_N_MILLIS(5) Serial.println("fft audio");
         float b0 = fft256_1.read(0);
         audio.updateScaled(b0);
@@ -547,7 +571,7 @@ void loop() {
       } // fft available
 #else
       EVERY_N_MILLIS(1000) {
-        audioModBeatDestPtr->trigger(.9);//todo make this proportional to ratio, not abs_signal?
+        //audioModBeatDestPtr->trigger(.9);//todo make this proportional to ratio, not abs_signal?
         //Serial.println("beat");
       }
 #endif
@@ -575,6 +599,8 @@ void loop() {
       if (i==3) audioModBeatDestPtr = &art.global_scale_y;
       if (i==4) audioModBeatDestPtr = &art.global_scale_z;
       if (i==5) audioModBeatDestPtr = &art.gHue;
+      if (i==6) audioModBeatDestPtr = &art.global_bpm;
+      if (i==7) audioModBeatDestPtr = &dummy_mod;
     } else if(incomingByte == 'c'){
       incrementPalette();
     } else if (incomingByte == 'n'){

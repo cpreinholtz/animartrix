@@ -25,7 +25,7 @@ This code is licensed under a Creative Commons Attribution
 License CC BY-NC 3.0
 
 */
-
+#pragma once
 //#include <SmartMatrix.h>
 #include <FastLED.h>
 #include "custom_palettes.h"
@@ -87,8 +87,9 @@ struct oscillators {
 oscillators timings;             // all speed settings in one place
 
 struct modulators {  
-
+  unsigned long lastMillis=0;
   float ramp[num_oscillators];        // returns 0 to FLT_MAX
+  float ramp_no_offset[num_oscillators];        // returns 0 to FLT_MAX
   float saw[num_oscillators];        // returns 0 to 2*PI
   float tri[num_oscillators];        // returns 0 to PI double frequency
   float sine[num_oscillators];   // returns -1 to 1 in a sin waveform
@@ -147,6 +148,7 @@ public:
   const int audioPin = 19;
   volatile float audioSum = 0;
   volatile float audioSamples = 0;
+  Vector3d upVector;
 
 
 
@@ -157,8 +159,7 @@ public:
   modableF global_scale_y;
   modableF global_scale_z;
 
-  float global_bpm = 115.0; // todo why do i have two of these?
-  uint16_t BeatsPerMinute; //u8.8 fixed point
+  modableF global_bpm; // todo why do i have two of these?
 
   //!initialize this object
   //scale, smaller numbers = zoom in = larger blobs
@@ -169,7 +170,6 @@ public:
     render_spherical_lookup_table();
 
     //init modables    
-    setBpm(82.0); //todo remove BPM references
 
     global_scale_x.setMinMax(0.25, 1.2); //todo scale with size etc???
     global_scale_y.setMinMax(0.25, 1.2);
@@ -213,6 +213,14 @@ public:
     //global_intensity.envelope.shape = envTriangle;
 
 
+    global_bpm.setMinMax(60, 200);
+    global_bpm.envelope.setMax(50);
+    global_bpm.envelope.setAttackDecay(10,2000);
+    global_bpm.envelope.shape = envTriangle;
+    global_bpm = 115.0;
+
+    Serial.println("global_bpm");
+    Serial.println(global_bpm.getBase());
   }
 
   //void setGlobalScale(float setTo){
@@ -318,11 +326,14 @@ public:
   //Oscilators
   /////////////////////////////////////////////////////////////////////////
   void calculate_oscillators(oscillators &timings) { 
-    double runtime = millis() * timings.master_speed;  // global anaimation speed gives the frequency in millis of the ramp to increase by 1
-
+    unsigned long thisMillis = millis();
+    double runtime = (thisMillis - move.lastMillis) * timings.master_speed;  // global anaimation speed gives the frequency in millis of the ramp to increase by 1
+    move.lastMillis = thisMillis;
     for (int i = 0; i < num_oscillators; i++) {
       
-      move.ramp[i]      = (runtime + timings.offset[i]) * timings.ratio[i];     // continously rising offsets, returns              0 to max_float, infinite ramp
+      move.ramp_no_offset[i]      = move.ramp_no_offset[i] +  runtime * timings.ratio[i];     // continously rising offsets, returns              0 to max_float, infinite ramp
+
+      move.ramp[i]      = move.ramp_no_offset[i] + timings.offset[i] * timings.ratio[i];     // continously rising offsets, returns              0 + offset to max_float + offset, infinite ramp
       
       move.saw[i]      = fmodf(move.ramp[i], 2 * PI);                        // angle offsets for continous rotation, returns    0 to 2 * PI, sawtooth
 
@@ -344,6 +355,7 @@ public:
   //beat88( accum88 beats_per_minute_88, uint32_t timebase = 0)
   //LIB8STATIC uint16_t beatsin88( accum88 beats_per_minute_88, uint16_t lowest = 0, uint16_t highest = 65535,  uint32_t timebase = 0, uint16_t phase_offset = 0);
   }
+
 
   const unsigned long periodMicrosTightLoop = 1000000 / 40000; //5KHZ sample should be fine
   unsigned long lastMicrosTightLoop = 0;
@@ -397,7 +409,7 @@ public:
   }
 
 
-  float bpmToSpeedMillis(float bpm){
+  float bpmToSpeedMillis(modableF& bpm) const{
     //double runtime = millis() * timings.master_speed;  // global anaimation speed gives the frequency in millis of the ramp to increase by 1 per millisecond
     //so if master speed is 1000, ramp increases 1000 times per millisecond
     //if master speed is .1, it takes 10 millis to increase by ones
@@ -407,7 +419,8 @@ public:
 
     //(b/m) * (1m/ 60000ms) would give bpms
     //but I'm really interested in the time it takes to increase by 2*PI, so lets set "beat" to 2PI instead of 1
-    return bpm/9549.29658551; //2PI*bpm/60000 gives the frequency in millis of the ramp to increase by 2PI
+    return bpm.getEnvelope()/9549.29658551; //2PI*bpm/60000 gives the frequency in millis of the ramp to increase by 2PI
+    //return bpm;
   }
 
 
@@ -437,6 +450,7 @@ public:
     timings.offset[7] = 700;
     timings.offset[8] = 800;
     timings.offset[9] = 900;
+    //set_osc_offset();
 
     calculate_oscillators(timings);  
   }
@@ -726,42 +740,6 @@ public:
   /////////////////////////////////////////////////////////////////////////////////////////////////////
   // Effects, written for animapping...
 
-  void setBpm(float bpm){
-    if (bpm > 255.0) bpm = 255.0;
-    else if (bpm < 0.0) bpm = 0.0;
-
-    Serial.println("desired BeatsPerMinute: ");
-    Serial.println(bpm);
-    bpm = bpm*256.0;
-    Serial.println("scaled BeatsPerMinute fixed point: ");
-    Serial.println(bpm);
-    BeatsPerMinute = (uint16_t) bpm; //u8.8 fixed point
-    Serial.println("BeatsPerMinute: ");
-    Serial.println(BeatsPerMinute);
-  }
-
-  void demoBpm() // todo remove this its hideous
-  {
-    static uint8_t bhue = 0;
-    EVERY_N_MILLISECONDS( 20 ) { bhue++; } // slowly cycle the "base color" through the rainbow
-    CRGBPalette16 palette = HeatColors_p    ;
-    uint16_t beat = beatsin88( BeatsPerMinute, 64, 255);
-    for( int i = 0; i < NUM_LEDS; i++) { //9948
-      buffer[i] = ColorFromPalette(palette, bhue+(i*2), beat-bhue+(i*10));
-    }
-  }
-
-  void demoBpm2()// todo remove this its hideous
-  {
-    static uint8_t bhue = 0;
-    EVERY_N_MILLISECONDS( 20 ) { bhue++; } // slowly cycle the "base color" through the rainbow
-    CRGBPalette16 palette = PartyColors_p;
-    uint8_t beat = beatsin8( 62, 64, 255);
-    for( int i = 0; i < NUM_LEDS; i++) { //9948
-      buffer[i] = ColorFromPalette(palette, bhue+(i*2), beat-bhue+(i*10));
-    }
-  }
-
 
   void Module_Experiment11_Hsi() { //todo brightness
     get_ready();
@@ -972,7 +950,43 @@ public:
    
   }
 
+  void PlaneCounterRotation1() {
 
+    get_ready(); 
+    static Plane3d myPlane;
+
+    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // speed ratios for the oscillators
+    timings.ratio[0] = 0.05;         // higher values = faster transitions
+    timings.ratio[1] = 0.025;
+    timings.ratio[2] = 0.033;
+    
+    timings.offset[1] = 10;
+    timings.offset[2] = 20;
+    timings.offset[3] = 30;
+   
+    calculate_oscillators(timings);     // get linear movers and oscillators going
+
+    myPlane.setNormal(upVector);
+    myPlane.setRefpoint(center_x+spread_x*move.sine[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.sine[2]/2.0, center_z);
+    myPlane.setRefpoint(center_x, center_y, center_z);
+    
+      for (int n = 0; n < NUM_LEDS; n++) {
+
+        pixel_hsi.i = 255;//6.0/255.0 *show1 * radial_filter;
+        pixel_hsi.s = 1;
+
+        float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
+        //d=fmodf(d,maxD/2);
+        if (d < 0 ){
+          pixel_hsi.i = 0;
+        } else {
+          pixel_hsi.h = (map_float(d, -maxD/2, maxD/2, 0, 1));
+          pixel_hsi.h = 0;
+        }
+        buffer[n] = setPixelColor(pixel_hsi);
+      }
+   
+  }
 
 
   void GrowingSpheres() { ///REALLLY cool sparklesssss
