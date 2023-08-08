@@ -7,28 +7,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-
 # .........................................
 # 30 leds per meter, convert to inches per led.
 # .........................................
 
 spacing = 1/30*39.3701
-spacing = 4
 
-# .........................................
-#
-# .........................................
 def calcRings(nPixels , radias , offset, fixed, xy):
   rings = []
 
   for nPixels , radias , offset, fixed, xy in zip(nPixels , radias , offset, fixed, xy):  
     ring = np.zeros([nPixels,3])
     deltaRadians = spacing / radias
-    print(deltaRadians)
+    #print(deltaRadians)
     for pixel in range(nPixels):
       angle = offset + pixel*deltaRadians
-      print(angle)
+      #print(angle)
       if xy:
         x = radias * np.cos(angle)
         y = radias * np.sin(angle)
@@ -43,20 +37,19 @@ def calcRings(nPixels , radias , offset, fixed, xy):
 
 
 
-
-
 # .........................................
 #actual values
 # .........................................
 
 
-radias = [12, 15, 15, 12, 12, 15, 15, 12] # radias of each ring in inches
-#nPixels = [8,8,8,8,8,8,8]
+radias = [27.25/2, 36.25/2, 36.25/2, 27.25/2, 27.25/2, 36.25/2, 36.25/2, 27.25/2] # radias of each ring in inches
+#Pixels = [70,80,80,70,70,80,80,70]
 nPixels = (np.floor(np.array(radias)*2*np.pi/spacing)).astype(int)
+nCirc = np.array(radias)*2*np.pi
 offset_angle = np.array([30, 50, 0 ,0, 0, 0, 0, 0])
 
 offset = offset_angle * np.pi / 180
-fixed = [-10, -5, 5, 10, -10, -5, 5 ,10]
+fixed = [-15, -8, 8, 15, -15, -8, 8 ,15]
 xy = [1,1,1,1,0,0,0,0]
 
 rings = calcRings(nPixels , radias , offset, fixed, xy);
@@ -65,11 +58,35 @@ rings = calcRings(nPixels , radias , offset, fixed, xy);
 # .........................................
 # print it
 # .........................................
-print(rings)
+#print(rings)
+print("// generated via python")
+print("// total circumference inches: ", np.sum(nCirc))
+print("const int nRings = ",np.size(nPixels),"; // number of rings, use this for assigning to pins")
+print("#define NUM_LEDS ",np.sum(nPixels))
+print("//const int nMaxPixels =",np.max(nPixels))
+
+print("const int nPixelsPerRing [",np.size(nPixels),"][3] = { //number of pixels per ring, used to mapto buffers and pins later")
+delim = ""
+for cnt,ring in enumerate(rings):  
+  print(delim, nPixels[cnt])
+  delim = ","
+print("};")
 
 
+print("float ledMap [",np.sum(nPixels),"] = { // { x,y,z} pixel map")
+for cnt,ring in enumerate(rings):
+  print("//ring: ", cnt, " nPixels this ring:", nPixels[cnt] )
+  for i in ring:
+    print("  {", i[0], ", ", i[1],", ", i[2],"},")
+print("};")
 
+print("//just printing constants again to prevent scrolling")
+print("// total circumference inches: ", np.sum(nCirc))
+print("//const int nRings = ",np.size(nPixels),"; // number of rings, use this for assigning to pins")
+print("//#define NUM_LEDS ",np.sum(nPixels))
+print("//const int nMaxPixels = ",np.max(nPixels))
 
+print("// end generated via python")
 # .........................................
 #plot it
 # .........................................
@@ -81,7 +98,7 @@ ax.set_zlabel('Z Label')
 
 for cnt,ring in enumerate(rings):
     ax.scatter(ring[:, 0], ring[:, 1], ring[:, 2])
-    print(cnt)
+    #print(cnt)
 ax.set_aspect('equal')
 
 

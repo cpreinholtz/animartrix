@@ -72,6 +72,7 @@ public:
 
   ANIMimu() {
     this->init();
+    
   }
 
   void init() {
@@ -161,9 +162,9 @@ public:
       deltaUpdateSeconds = ((float) (millis() - lastUpdateMillis))/1000.0;
       lastUpdateMillis = millis();
 
-
+      //some elements of this brough to you by:
+      //others I just made up, and look at that, it works alright
       //todo https://www.youtube.com/watch?v=0rlvvYgmTvI
-      //https://www.mathworks.com/help/fusion/ug/Estimating-Orientation-Using-Inertial-Sensor-Fusion-and-MPU-9250.html;jsessionid=9938735d9bc2285ad4f23e5ca508?s_eid=PSM_15028
 
       //set the acc
       accRaw.set((accel.acceleration.x), (accel.acceleration.y), (-accel.acceleration.z)); // scale acc by -9.8 to get the "down" vector in G's
