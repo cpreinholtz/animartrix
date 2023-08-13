@@ -13,12 +13,14 @@ import matplotlib.pyplot as plt
 
 spacing = 1/30*39.3701
 
-def calcRings(nPixels , radias , offset, fixed, xy):
+def calcRings(nPixels , radias , offset, fixed, xy, invert):
   rings = []
 
-  for nPixels , radias , offset, fixed, xy in zip(nPixels , radias , offset, fixed, xy):  
+  for nPixels , radias , offset, fixed, xy, invert in zip(nPixels , radias , offset, fixed, xy, invert):  
     ring = np.zeros([nPixels,3])
     deltaRadians = spacing / radias
+    if invert: 
+      deltaRadians = - deltaRadians
     #print(deltaRadians)
     for pixel in range(nPixels):
       angle = offset + pixel*deltaRadians
@@ -46,13 +48,14 @@ radias = [27.25/2, 36.25/2, 36.25/2, 27.25/2, 27.25/2, 36.25/2, 36.25/2, 27.25/2
 #Pixels = [70,80,80,70,70,80,80,70]
 nPixels = (np.floor(np.array(radias)*2*np.pi/spacing)).astype(int)
 nCirc = np.array(radias)*2*np.pi
-offset_angle = np.array([30, 50, 0 ,0, 0, 0, 0, 0])
+offset_angle = np.array([0, 0, 0 ,0, 180, 180, 180, 180])
 
 offset = offset_angle * np.pi / 180
 fixed = [-15, -8, 8, 15, -15, -8, 8 ,15]
-xy = [1,1,1,1,0,0,0,0]
+xy = [1,1,0,0,1,1,0,0]
+invert = [1,1,1,1,0,0,0,0]
 
-rings = calcRings(nPixels , radias , offset, fixed, xy);
+rings = calcRings(nPixels , radias , offset, fixed, xy, invert);
 
 
 # .........................................
@@ -65,7 +68,7 @@ print("const int nRings = ",np.size(nPixels),"; // number of rings, use this for
 print("#define NUM_LEDS ",np.sum(nPixels))
 print("//const int nMaxPixels =",np.max(nPixels))
 
-print("const int nPixelsPerRing [",np.size(nPixels),"][3] = { //number of pixels per ring, used to mapto buffers and pins later")
+print("const int nPixelsPerRing [",np.size(nPixels),"] = { //number of pixels per ring, used to mapto buffers and pins later")
 delim = ""
 for cnt,ring in enumerate(rings):  
   print(delim, nPixels[cnt])
@@ -73,11 +76,15 @@ for cnt,ring in enumerate(rings):
 print("};")
 
 
-print("float ledMap [",np.sum(nPixels),"] = { // { x,y,z} pixel map")
+print("float ledMap [",np.sum(nPixels),"][3] = { // { x,y,z} pixel map")
+last = nPixels-1
 for cnt,ring in enumerate(rings):
   print("//ring: ", cnt, " nPixels this ring:", nPixels[cnt] )
   for i in ring:
-    print("  {", i[0], ", ", i[1],", ", i[2],"},")
+    if cnt < last:
+      print("  {", i[0], ", ", i[1],", ", i[2],"},")
+    else:
+      print("  {", i[0], ", ", i[1],", ", i[2],"}")
 print("};")
 
 print("//just printing constants again to prevent scrolling")
@@ -102,7 +109,7 @@ for cnt,ring in enumerate(rings):
 ax.set_aspect('equal')
 
 
-plt.show()
+#plt.show()
 
 
 

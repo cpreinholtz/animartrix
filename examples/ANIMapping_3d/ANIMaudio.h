@@ -148,8 +148,8 @@ public:
   float beat_last;
   bool beat_armed = true;
   const float beat_delta_min = 120; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
-  const float beat_multiplier_min = 2.0; //must hit moving average * multiplier to be considered a beat
-  const float beat_volume_min = 0.5/20.0; //must hit moving average * multiplier to be considered a beat
+  const float beat_multiplier_min = 1.8; //must hit moving average * multiplier to be considered a beat
+  const float beat_volume_min = 0.00; //must hit moving average * multiplier to be considered a beat
   const float beat_hysteresis = beat_multiplier_min * 0.5;
   float hyst_count; 
 

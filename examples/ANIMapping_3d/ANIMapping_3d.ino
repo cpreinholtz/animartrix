@@ -37,12 +37,12 @@ License CC BY-NC 3.0
 //#define TEENSY_A true
 //#define ESP_A false
 
-#define USE_A false
+#define USE_A true
 #define USE_I true
 
 #if USE_A
-//#include <Audio.h>
-AudioInputI2S            i2s1;           //xy=698,360
+#include <Audio.h>
+AudioInputI2S2            i2s1;           //xy=698,360
 AudioAnalyzeFFT256       fft256_1;       //xy=1152,492
 AudioAmplifier           amp1;           //xy=470,93
 AudioConnection          patchCord0(i2s1, 0, amp1, 0);
@@ -158,7 +158,7 @@ void Module_Experiment11_Hsi(){art.Module_Experiment11_Hsi();}
 void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
 PatternAndNameList gPatterns = {
-
+  {Caleido1,"Caleido1"}, 
   {Complex_Kaleido_5,"Complex_Kaleido_5"},
   {GrowingSpheres, "GrowingSpheres"},
   {PlaneRotation1, "PlaneRotation1"},
@@ -283,6 +283,17 @@ void randomPattern(){
 
 //******************************************************************************************************************
 #if ART_WAG
+//////////////////////////// delete me
+#define RED    0x000000
+#define GREEN  0x001600
+#define BLUE   0x000016
+#define YELLOW 0x000000
+#define PINK   0x120009
+#define ORANGE 0x100400
+#define WHITE  0x101010
+int testNum =0;
+
+
 void copyBuffer(){
   int thisPixel = 0;
   for (int ring = 0 ; ring < nRings; ring++){
@@ -292,6 +303,30 @@ void copyBuffer(){
       thisPixel++;
     }
   }
+
+/*
+    //////////////////////////// delete me
+  for (int i = 0; i < ledsPerStrip * numPins; i ++){
+    int color = 0;
+    if (i < testNum) color = RED;
+    else if( i == testNum) color = GREEN;
+    else color = YELLOW;
+    //oleds.setPixel(i, color);
+  }
+
+  // this should show the NEXT pixel as green
+  for (int ring = 0 ; ring < nRings; ring++){
+    for (int pixel = 0; pixel < nPixelsPerRing[ring]; pixel++){
+      int color = ORANGE;
+      if (pixel+ring*ledsPerStrip == testNum){
+        color = BLUE;        
+      }
+      //oleds.setPixel(pixel+ring*ledsPerStrip+1, color);
+    }
+  }*/
+  /////////////////////////// delete me
+
+
   oleds.show();
 }
 #endif
@@ -320,7 +355,7 @@ modableF dummy_mod;
 void setup() {
   Serial.begin(115200);                 // check serial monitor for current fps count
 
-  art.global_intensity.setMinMax(0.2, 0.8);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.2, 0.4);//MIN MUST be >0// MAX MUST be <=1
   //art.global_intensity.setBaseToMiddle();
   //art.global_scale_x.setBaseToMiddle();
   //art.global_scale_y.setBaseToMiddle();
@@ -329,7 +364,7 @@ void setup() {
   
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
   FastLED.addLeds<WS2811, 2, GRB>(leds, NUM_LEDS);
-  FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA] 
+  //FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA]  todo
   FastLED.setBrightness(255); // this is OVERWRITTEN!!!!!! see art.global_intensity  //todo set to 255 in final production???
 
   //art.setGlobalScale(0.5); 
@@ -366,10 +401,10 @@ void setup() {
 
 bool verbose = false;
 bool verbose2 = false;
-bool play = false;
+bool play = true;
 bool doRandom = true;
 bool musicReactive = true;
-bool hueDrift = false;
+bool hueDrift = true;
 int cnt = 32;
 
 
@@ -415,6 +450,7 @@ void loop() {
         float b0 = fft256_1.read(0);
         audio.updateScaled(b0);
         if (audio.beat_detected && musicReactive) {
+          Serial.println("beat");
           //art.global_intensity += audio.abs_signal*5;//todo make this proportional to ratio, not abs_signal?
           //*audioModBeatDestPtr += audio.abs_signal*5;//todo make this proportional to ratio, not abs_signal?
           audioModBeatDestPtr->trigger(audio.abs_signal*5);//todo make this proportional to ratio, not abs_signal?
@@ -476,6 +512,10 @@ void loop() {
       float i = Serial.parseFloat();
       audio.iir_volume.setWeight(float(i));
       Serial.print("Setting audio.iir_volume. to"); Serial.println(audio.iir_volume.iir_weight);
+    } 
+    else if (incomingByte == 't'){
+      testNum = Serial.parseInt();
+      Serial.print("Setting testNum to"); Serial.println(testNum);
     } else if (incomingByte == 'l'){
       float i = Serial.parseFloat();
       audio.iir_lowpass.setWeight(float(i));
