@@ -50,7 +50,7 @@ License CC BY-NC 3.0
   #define yind 2
 #endif
 #ifndef zind
-  #define zind 1
+  //#define zind 1
 #endif
 extern float ledMap[NUM_LEDS][3]; //TODO, make this better...
 
@@ -134,7 +134,7 @@ public:
   // mapping numbers
   float spread_x, spread_y, spread_z, xmin, xmax, ymin, ymax, zmin, zmax, center_x, center_y, center_z, maxD;
 
-  #define radial_filter_radius 12.0;      // 23.0 on 32x32, use 11 for 16x16, for mapping, try like 130% of your max radias todo make this scale with spread
+  float radial_filter_radius = 12.0;      // 23.0 on 32x32, use 11 for 16x16, for mapping, try like 130% of your max radias todo make this scale with spread
 
   //TODO set sizes better, not just using a define?
   float polar_theta[NUM_LEDS];        // look-up table for polar angles
@@ -548,6 +548,8 @@ public:
         
         
     }
+    radial_filter_radius = maxD * 1.3;
+
     Serial.print("max mapped distance: "); Serial.println(maxD);
     Serial.print("reccomended radias filter: "); Serial.println(maxD*1.3);
 
@@ -608,14 +610,14 @@ public:
   }*/
 
 
-
+/*
   hsiF CHSV2Hsi(CHSV c){
     hsiF p;
     p.h = ((float)c.h)/255.0;
     p.s = ((float)c.s)/255.0;
     p.i = ((float)c.v);
     return p;
-  }
+  }*/
 
   rgbF CRGB2Rgb(CRGB rgb){
     rgbF rgbf;
@@ -741,6 +743,111 @@ public:
   // Effects, written for animapping...
 
 
+  void TestMap() { // todo rename, brighness
+    get_ready();     
+    calculate_oscillators(timings);     // get linear movers and oscillators going
+      for (int n = 0; n < NUM_LEDS; n++) {
+        pixel_hsi.i = 0;
+        pixel_hsi.h = 0;
+
+        if (ledMap[n][xind] > 0 && ledMap[n][yind] > 0){
+          pixel_hsi.i = 17;//6.0/255.0 *show1 * radial_filter; //todo fix all these
+          
+        }       
+        /* 
+        else if (ledMap[n][xind] > 0){
+          pixel_hsi.i = 4;//6.0/255.0 *show1 * radial_filter; //todo fix all these
+          pixel_hsi.h = .3;
+        }
+        else if (ledMap[n][yind] > 0){
+          pixel_hsi.i = 4;//6.0/255.0 *show1 * radial_filter; //todo fix all these
+          pixel_hsi.h = .6;
+        }
+
+        else if (ledMap[n][zind] > 0){
+          pixel_hsi.i = 10;//6.0/255.0 *show1 * radial_filter; //todo fix all these
+          pixel_hsi.h = .8;
+        }
+  */
+        else{
+          pixel_hsi.i = 10;//6.0/255.0 *show1 * radial_filter; //todo fix all these
+          pixel_hsi.h = .5;
+        }
+
+        pixel_hsi.s = 1;
+        
+        buffer[n] = setPixelColor(pixel_hsi);
+      }   
+  }
+
+
+  void Chasing_Spirals_Hsi() { // todo rename, brighness
+
+    get_ready(); 
+    static Plane3d myPlane;
+
+    timings.master_speed = bpmToSpeedMillis(global_bpm)/5;// was: 0.01;    // speed ratios for the oscillators
+    timings.ratio[0] = .5;         // higher values = faster transitions
+    timings.ratio[1] = 0.25;
+    timings.ratio[2] = 1/3;
+    
+    timings.offset[1] = 10;
+    timings.offset[2] = 20;
+    timings.offset[3] = 30;
+
+
+    
+    calculate_oscillators(timings);     // get linear movers and oscillators going
+
+
+
+    //myPlane.yaw(.001 * move.noise_angle[1]);
+    myPlane.setRefpoint(center_x+spread_x*move.sine[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.sine[2]*move.noise_angle[1]/2.0, center_z);
+    
+      for (int n = 0; n < NUM_LEDS; n++) {
+        animation.anglephi   = spherical_phi[n]; //todo, move this later
+        // describe and render animation layers
+        animation.angle      = polar_theta[n];//4 * polar_theta[n] +  move.saw[0] ;//- distance[n]/3;
+        animation.dist       = distance[n];
+        animation.scale_y    = 0.1;
+        animation.scale_x    = 0.1;
+        animation.scale_z    = 0.1;
+        animation.offset_x   = move.ramp[0];
+        animation.offset_y   = 0;
+        animation.offset_z   = 0;
+        //float show1          = render_value(animation);
+
+        animation.angle      = 3 * polar_theta[n] +  move.saw[1] - distance[n]/3;
+        animation.dist       = distance[n];
+        animation.offset_x   = move.ramp[1];
+        //float show2          = render_value(animation);
+
+        animation.angle      = 3 * polar_theta[n] +  move.saw[2] - distance[n]/3;
+        animation.dist       = distance[n];
+        animation.offset_x   = move.ramp[2];
+        //float show3          = render_value(animation);
+
+        // colormapping
+        //float radius = radial_filter_radius;
+        //float radial_filter = (radius - distance[n]) / radius;
+
+
+
+
+
+        float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
+        //d=fmodf(d,maxD);
+        pixel_hsi.h = (map_float(d, -maxD/2, maxD/2, 0, 1));        
+        pixel_hsi.i = 64;//6.0/255.0 *show1 * radial_filter; //todo fix all these
+        pixel_hsi.s = 1;
+        buffer[n] = setPixelColor(pixel_hsi);
+      }
+   
+  }
+
+
+
+
   void Module_Experiment11_Hsi() { //todo brightness
     get_ready();
 
@@ -819,70 +926,6 @@ public:
     }
   }
 
-
-  void Chasing_Spirals_Hsi() { // todo rename, brighness
-
-    get_ready(); 
-    static Plane3d myPlane;
-
-    timings.master_speed = bpmToSpeedMillis(global_bpm)/2;// was: 0.01;    // speed ratios for the oscillators
-    timings.ratio[0] = .5;         // higher values = faster transitions
-    timings.ratio[1] = 0.25;
-    timings.ratio[2] = 1/3;
-    
-    timings.offset[1] = 10;
-    timings.offset[2] = 20;
-    timings.offset[3] = 30;
-
-
-    
-    calculate_oscillators(timings);     // get linear movers and oscillators going
-
-
-
-    myPlane.yaw(.001 * move.noise_angle[1]);
-    myPlane.setRefpoint(center_x+spread_x*move.sine[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.sine[2]*move.noise_angle[1]/2.0, center_z);
-    
-      for (int n = 0; n < NUM_LEDS; n++) {
-        animation.anglephi   = spherical_phi[n]; //todo, move this later
-        // describe and render animation layers
-        animation.angle      = polar_theta[n];//4 * polar_theta[n] +  move.saw[0] ;//- distance[n]/3;
-        animation.dist       = distance[n];
-        animation.scale_y    = 0.1;
-        animation.scale_x    = 0.1;
-        animation.scale_z    = 0.1;
-        animation.offset_x   = move.ramp[0];
-        animation.offset_y   = 0;
-        animation.offset_z   = 0;
-        //float show1          = render_value(animation);
-
-        animation.angle      = 3 * polar_theta[n] +  move.saw[1] - distance[n]/3;
-        animation.dist       = distance[n];
-        animation.offset_x   = move.ramp[1];
-        //float show2          = render_value(animation);
-
-        animation.angle      = 3 * polar_theta[n] +  move.saw[2] - distance[n]/3;
-        animation.dist       = distance[n];
-        animation.offset_x   = move.ramp[2];
-        //float show3          = render_value(animation);
-
-        // colormapping
-        //float radius = radial_filter_radius;
-        //float radial_filter = (radius - distance[n]) / radius;
-
-
-
-
-
-        float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
-        d=fmodf(d,maxD);
-        pixel_hsi.h = (map_float(d, -maxD/2, maxD/2, 0, 1));        
-        pixel_hsi.i = 255;//6.0/255.0 *show1 * radial_filter;
-        pixel_hsi.s = 1;
-        buffer[n] = setPixelColor(pixel_hsi);
-      }
-   
-  }
 
 
 

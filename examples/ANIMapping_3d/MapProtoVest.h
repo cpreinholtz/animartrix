@@ -18,6 +18,15 @@ License CC BY-NC 3.0
 
 #pragma once
 #define ART_PROTO_VEST true
+#ifndef xind
+  #define xind 0
+#endif
+#ifndef yind
+  #define yind 2
+#endif
+#ifndef zind
+  #define zind 1
+#endif
 
 
 #define NUM_LEDS 150

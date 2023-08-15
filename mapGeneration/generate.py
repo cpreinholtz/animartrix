@@ -18,9 +18,9 @@ spacing = 1.34 #1/30*39.3701
 def calcRing(radias, offset_rad, skip, full, fixed):
   ring = []
   deltaRadians = spacing / radias
-  for pixel in range(86):
+  for pixel in range(90):
     angle = offset_rad + pixel*deltaRadians
-    if pixel in skip or pixel * deltaRadians > 2 * np.pi or pixel * deltaRadians < -2 * np.pi :
+    if pixel in skip or pixel * deltaRadians > 2.1 * np.pi or pixel * deltaRadians < -2.1 * np.pi :
       continue
     ncos = radias * np.cos(angle)
     nsin = radias * np.sin(angle)
@@ -60,7 +60,7 @@ def calcRings():
   #############################################
   ########## ring 3 big, left, partial
   radias = -bigr # + radias for  full left
-  offset_rad = .144  * np.pi*2 + np.pi
+  offset_rad = .134  * np.pi*2 + np.pi
 
   sz = [5,10,5,6,6,5,10,5,6,6]
   skip = []
@@ -81,7 +81,7 @@ def calcRings():
   #############################################
   ########## ring 3 litte, left, partial
   radias = -littler # + radias for  full left
-  offset_rad = .09  * np.pi*2 + np.pi
+  offset_rad = .065  * np.pi*2 + np.pi
   sz = [10,8,8,10,8,8]
   skip = []
   idx=0
@@ -99,8 +99,8 @@ def calcRings():
 
   #############################################
   ########## ring 4 little, right, full
-  radias = littler # + radias for  full left
-  offset_rad = .37  * np.pi *2 + np.pi
+  radias = -littler # + radias for  full left
+  offset_rad = .34  * np.pi *2
   skip = []
   full = True
   fixed = -15
@@ -110,8 +110,8 @@ def calcRings():
 
   #############################################
   ########## ring 5 big, right, full
-  radias = bigr # + radias for  full left
-  offset_rad = .40  * np.pi*2 + np.pi
+  radias = -bigr # + radias for  full left
+  offset_rad = .388  * np.pi*2 
   skip = []
   full = True
   fixed = -8
@@ -122,9 +122,9 @@ def calcRings():
 
   #############################################
   ########## ring 3 big, right, partial
-  radias = bigr # + radias for  full left
-  offset_rad = 0.16  * np.pi*2 + np.pi
-  sz = [6,6,5,10,5,6,6,5,10,5]
+  radias = -bigr # + radias for  full left
+  offset_rad = 0.13  * np.pi*2
+  sz = [5,10,5,6,6,5,10,5,6,6]
   skip = []
   idx=0
   for s in sz:
@@ -140,9 +140,9 @@ def calcRings():
 
   #############################################
   ########## ring 3 litte, right, partial
-  radias = littler # + radias for  full left
-  offset_rad = 0.1  * np.pi*2 + np.pi
-  sz = [8,8,11,8,8,11]
+  radias = -littler # + radias for  full left
+  offset_rad = 0.07  * np.pi*2 
+  sz =  [10,8,8,10,8,8]
   skip = []
   idx=0
   for s in sz:
@@ -191,7 +191,7 @@ str+= "// generated via python\n"
 
 str+= "const int nRings = {}; // number of rings, use this for assigning to pins\n".format(nRings)
 str+= "#define NUM_LEDS {}\n".format(nPixelsFinal)
-str+= "//const int nMaxPixels ={}\n".format(np.max(np.array(nPixelsPerRing)))
+str+= "const int nMaxPixels = {};\n".format(np.max(np.array(nPixelsPerRing)))
 
 
 str+= "//number of pixels per ring, used to mapto buffers and pins later\n"

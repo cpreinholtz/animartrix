@@ -37,11 +37,12 @@ License CC BY-NC 3.0
 //#define TEENSY_A true
 //#define ESP_A false
 
-#define USE_A true
-#define USE_I true
+#define USE_A false
+#define USE_I false
 
 #if USE_A
-#include <Audio.h>
+//#include <Audio.h>
+include this^&@
 AudioInputI2S2            i2s1;           //xy=698,360
 AudioAnalyzeFFT256       fft256_1;       //xy=1152,492
 AudioAmplifier           amp1;           //xy=470,93
@@ -93,7 +94,7 @@ typedef PatternAndName PatternAndNameList[];
 int currentPattern = 0;
 
 
-
+void TestMap(){art.TestMap();}
 void Module_Experiment10(){art.Module_Experiment10();}
 void Module_Experiment9(){art.Module_Experiment9();}
 void SPARKLE_EDGES_MOD9(){art.SPARKLE_EDGES_MOD9();}
@@ -158,12 +159,15 @@ void Module_Experiment11_Hsi(){art.Module_Experiment11_Hsi();}
 void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
 PatternAndNameList gPatterns = {
+  {SM9,"SM9"},
+  {TestMap, "TestMap"},
+  {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
   {Caleido1,"Caleido1"}, 
   {Complex_Kaleido_5,"Complex_Kaleido_5"},
   {GrowingSpheres, "GrowingSpheres"},
   {PlaneRotation1, "PlaneRotation1"},
   {PlaneCounterRotation1, "PlaneCounterRotation1"},
-  {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
+  
   {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},
   {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},
 
@@ -190,7 +194,7 @@ PatternAndNameList gPatterns = {
   {Complex_Kaleido, "Complex_Kaleido"},
   
   {SM10,"SM10"},
-  {SM9,"SM9"},
+
   {SM8,"SM8"},//fun strobe
   //{SM7,"SM7"}, //todo why is this commented out?
   {SM6,"SM6"},
@@ -299,14 +303,14 @@ void copyBuffer(){
   for (int ring = 0 ; ring < nRings; ring++){
     for (int pixel = 0; pixel < nPixelsPerRing[ring]; pixel++){
       int color = (((int)leds[thisPixel].r)<<16) | (((int)leds[thisPixel].g)<<8)| (((int)leds[thisPixel].b));
-      oleds.setPixel(pixel+ring*ledsPerStrip, color);
+      oleds.setPixel(pixel+ring*nMaxPixels, color);
       thisPixel++;
     }
   }
 
 /*
     //////////////////////////// delete me
-  for (int i = 0; i < ledsPerStrip * numPins; i ++){
+  for (int i = 0; i < nMaxPixels * numPins; i ++){
     int color = 0;
     if (i < testNum) color = RED;
     else if( i == testNum) color = GREEN;
@@ -318,10 +322,10 @@ void copyBuffer(){
   for (int ring = 0 ; ring < nRings; ring++){
     for (int pixel = 0; pixel < nPixelsPerRing[ring]; pixel++){
       int color = ORANGE;
-      if (pixel+ring*ledsPerStrip == testNum){
+      if (pixel+ring*nMaxPixels == testNum){
         color = BLUE;        
       }
-      //oleds.setPixel(pixel+ring*ledsPerStrip+1, color);
+      //oleds.setPixel(pixel+ring*nMaxPixels+1, color);
     }
   }*/
   /////////////////////////// delete me
@@ -386,8 +390,8 @@ void setup() {
 #if ART_WAG
   oleds.begin();
   for (int ring = 0 ; ring < nRings; ring++){
-    if (nPixelsPerRing[ring] > ledsPerStrip) {
-      Serial.println("need to increase ledsPerStrip to match max(nPixelsPerRing) in MapWag.h") ;
+    if (nPixelsPerRing[ring] > nMaxPixels) {
+      Serial.println("need to increase nMaxPixels to match max(nPixelsPerRing) in MapWag.h") ;
       while(1) delay(10);
     }
   }
@@ -401,10 +405,10 @@ void setup() {
 
 bool verbose = false;
 bool verbose2 = false;
-bool play = true;
+bool play = false;
 bool doRandom = true;
 bool musicReactive = true;
-bool hueDrift = true;
+bool hueDrift = false;
 int cnt = 32;
 
 
