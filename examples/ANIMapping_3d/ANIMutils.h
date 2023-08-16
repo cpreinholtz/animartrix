@@ -85,6 +85,12 @@ float absf(float x) {
   else return x;
 }
 
+/*
+float max(float a, float b){
+  if (a>b) return a;
+  else return b;
+}
+*/
 
 
 
@@ -327,8 +333,9 @@ public:
   }
 
   void setAttackDecay(float aMillis, float dMillis){
-     attackMillis = max(aMillis,0);
-     decayMillis = max(dMillis,0);
+     float m = 0.0;
+     attackMillis = max(aMillis, m);
+     decayMillis = max(dMillis,m);
   }
 
   void setMax(float m){

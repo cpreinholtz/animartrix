@@ -19,7 +19,7 @@ License CC BY-NC 3.0
 
 //!!!! ONLY INCLUDE ONE MAP
 #define ART_WAG false
-#include "MapWag.h"
+//#include "MapWag.h"
 
 #define ART_K_VEST false
 //#include "MapKVest.h"
@@ -28,7 +28,7 @@ License CC BY-NC 3.0
 //#include "MapCVest.h"
 
 #define ART_PROTO_VEST false
-//#include "MapProtoVest.h"
+#include "MapProtoVest.h"
 //!!!! ONLY INCLUDE ONE MAP
 
 
@@ -37,10 +37,11 @@ License CC BY-NC 3.0
 //#define TEENSY_A true
 //#define ESP_A false
 
-#define USE_A false
+#define USE_A true
 #define USE_I false
 
 #if USE_A
+#if ART_WAG
 //#include <Audio.h>
 include this^&@
 AudioInputI2S2            i2s1;           //xy=698,360
@@ -49,7 +50,9 @@ AudioAmplifier           amp1;           //xy=470,93
 AudioConnection          patchCord0(i2s1, 0, amp1, 0);
 AudioConnection          patchCord2(amp1, 0, fft256_1, 0);
 #else
+//esp archictecture using fft
 
+#endif
 #endif
 
 
@@ -160,7 +163,7 @@ void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
 PatternAndNameList gPatterns = {
   {SM9,"SM9"},
-  {TestMap, "TestMap"},
+  //{TestMap, "TestMap"},
   {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
   {Caleido1,"Caleido1"}, 
   {Complex_Kaleido_5,"Complex_Kaleido_5"},
@@ -335,19 +338,7 @@ void copyBuffer(){
 }
 #endif
 
-void showCurrentPattern(){
-  gPatterns[currentPattern].pattern();  
-  art.markStartOfShow();
 
-#if ART_PROTO_VEST or ART_K_VEST or ART_C_VEST
-    FastLED.show();
-#endif
-#if ART_WAG
-  copyBuffer();
-#endif
-  
-  art.markEndOfShow();
-}
 
 
 //******************************************************************************************************************
@@ -359,25 +350,35 @@ modableF dummy_mod;
 void setup() {
   Serial.begin(115200);                 // check serial monitor for current fps count
 
-  art.global_intensity.setMinMax(0.2, 0.4);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
   //art.global_intensity.setBaseToMiddle();
   //art.global_scale_x.setBaseToMiddle();
   //art.global_scale_y.setBaseToMiddle();
   //art.global_scale_z.setBaseToMiddle();
   //art.gHue.setBaseToMiddle();
-  
+#if ART_WAG
+
+#else
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
-  FastLED.addLeds<WS2811, 2, GRB>(leds, NUM_LEDS);
+  FastLED.addLeds<WS2811, LED_PIN, GRB>(leds, NUM_LEDS);
   //FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA]  todo
   FastLED.setBrightness(255); // this is OVERWRITTEN!!!!!! see art.global_intensity  //todo set to 255 in final production???
+#endif
 
   //art.setGlobalScale(0.5); 
 
 #if USE_A
+#if ART_WAG
   fft256_1.averageTogether(2); //runs at 300Hz+, lets slow that down to ~ 200 hz
   AudioMemory(50);
   //filter1.frequency(30); // filter out DC & extremely low frequencies
   amp1.gain(8.5);        // amplify sign to useful range
+#else
+  audio.beat_multiplier_min = 2.4;
+  audio.hyst_arm = 0.2;
+  audio.beat_volume_min = 0.2;
+  audio.iir_volume.setWeight(0.973);
+#endif
 #endif
 
 #if USE_I
@@ -405,13 +406,35 @@ void setup() {
 
 bool verbose = false;
 bool verbose2 = false;
-bool play = false;
+bool play = true;
 bool doRandom = true;
 bool musicReactive = true;
-bool hueDrift = false;
+bool hueDrift = true;
 int cnt = 32;
 
+void showCurrentPattern(){
+  gPatterns[currentPattern].pattern();  
+  art.markStartOfShow();
+#if USE_A
+#if ART_WAG
+#else
+    audio.update();
+    if (audio.beat_detected && musicReactive) {
+      Serial.println("beat");
+      audioModBeatDestPtr->trigger(audio.abs_signal*5);//todo make this proportional to ratio, not abs_signal?
+    } // beat
+#endif
+#endif
 
+#if ART_PROTO_VEST or ART_K_VEST or ART_C_VEST
+    FastLED.show();
+#endif
+#if ART_WAG
+  copyBuffer();
+#endif
+  
+  art.markEndOfShow();
+}
 
 void loop() {
   //changing paterns
@@ -423,18 +446,12 @@ void loop() {
   if(verbose){
     EVERY_N_MILLIS(500) {
       art.report_performance();   // check serial monitor for report 
-      /*
-      Serial.print("tsum: ");
-      Serial.print(art.audioSum);
-      Serial.print("tsam: ");
-      Serial.println(art.audioSamples);
-      */
     }
   }
 
 //*******************************************************************************************************************
   EVERY_N_MILLIS(5) {
-    if (hueDrift) art.gHue += .0003; // todo make this scale with FPS, put into show current patter to make immune to FPS changes
+    if (hueDrift) art.gHue += .0001; // todo make this scale with FPS, put into show current patter to make immune to FPS changes
     showCurrentPattern(); // 200 FPS max
 
 #if USE_I
@@ -442,13 +459,9 @@ void loop() {
     art.upVector = imu.filteredPosition;
 #endif
 
-    audioModBeatDestPtr->update();
-    //audio.update(art.pollAudio());
-
-      //EVERY_N_MILLIS(5) Serial.p
-
 
 #if USE_A
+#if ART_WAG
     if (fft256_1.available()) {
         //EVERY_N_MILLIS(5) Serial.println("fft audio");
         float b0 = fft256_1.read(0);
@@ -462,11 +475,14 @@ void loop() {
         } // beat
       } // fft available
 #else
-      EVERY_N_MILLIS(1000) {
-        //audioModBeatDestPtr->trigger(.9);//todo make this proportional to ratio, not abs_signal?
-        //Serial.println("beat");
-      }
+    audio.update();
+    if (audio.beat_detected && musicReactive) {
+      Serial.println("beat");
+      audioModBeatDestPtr->trigger(audio.abs_signal*5);//todo make this proportional to ratio, not abs_signal?
+    } // beat
 #endif
+#endif
+    audioModBeatDestPtr->update();
   } // EVERY_N_MILLIS(5)
 //*******************************************************************************************************************
   // testing interface, user input
@@ -505,7 +521,10 @@ void loop() {
     } else if (incomingByte == 'p'){
       audio.verbose = not audio.verbose;
       Serial.print("Setting audio.verbose shift to"); Serial.println(audio.verbose);
-    } else if (incomingByte == 'o'){
+    } else if (incomingByte == '['){
+      audio.verbose2 = not audio.verbose2;
+      Serial.print("Setting audio.verbose shift to"); Serial.println(audio.verbose2);
+    }else if (incomingByte == 'o'){
       audioModBeatDestPtr->envelope.verbose = not audioModBeatDestPtr->envelope.verbose;
       Serial.print("Setting amod.verbose shift to"); Serial.println(audioModBeatDestPtr->envelope.verbose);
     } else if (incomingByte == 'g'){
@@ -517,10 +536,7 @@ void loop() {
       audio.iir_volume.setWeight(float(i));
       Serial.print("Setting audio.iir_volume. to"); Serial.println(audio.iir_volume.iir_weight);
     } 
-    else if (incomingByte == 't'){
-      testNum = Serial.parseInt();
-      Serial.print("Setting testNum to"); Serial.println(testNum);
-    } else if (incomingByte == 'l'){
+    else if (incomingByte == 'l'){
       float i = Serial.parseFloat();
       audio.iir_lowpass.setWeight(float(i));
       Serial.print("Setting audio.iir_lowpass. to"); Serial.println(audio.iir_lowpass.iir_weight);

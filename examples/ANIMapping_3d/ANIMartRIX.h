@@ -91,9 +91,9 @@ struct modulators {
   float ramp[num_oscillators];        // returns 0 to FLT_MAX
   float ramp_no_offset[num_oscillators];        // returns 0 to FLT_MAX
   float saw[num_oscillators];        // returns 0 to 2*PI
-  float tri[num_oscillators];        // returns 0 to PI double frequency
+  //float tri[num_oscillators];        // returns 0 to PI double frequency
   float sine[num_oscillators];   // returns -1 to 1 in a sin waveform
-  float noise_angle[num_oscillators];   // returns 0 to 2*PI        
+  float noise_angle[num_oscillators];   // returns 0 to 2*PI
 };
 
 modulators move;                 // all oscillator based movers and shifters at one place
@@ -337,7 +337,7 @@ public:
       
       move.saw[i]      = fmodf(move.ramp[i], 2 * PI);                        // angle offsets for continous rotation, returns    0 to 2 * PI, sawtooth
 
-      move.tri[i]      = fabsf(move.saw[i] - PI);                        // angle offsets for continous rotation, returns    PI to 0 to PI, triangle double frequency
+      //move.tri[i]      = fabsf(move.saw[i] - PI);                        // angle offsets for continous rotation, returns    PI to 0 to PI, triangle double frequency
       
       move.sine[i] = sinf(move.saw[i]);                                 // directional offsets or factors, returns         -1 to 1, sin
       
@@ -354,58 +354,6 @@ public:
   //beat 88// sawtooth
   //beat88( accum88 beats_per_minute_88, uint32_t timebase = 0)
   //LIB8STATIC uint16_t beatsin88( accum88 beats_per_minute_88, uint16_t lowest = 0, uint16_t highest = 65535,  uint32_t timebase = 0, uint16_t phase_offset = 0);
-  }
-
-
-  const unsigned long periodMicrosTightLoop = 1000000 / 40000; //5KHZ sample should be fine
-  unsigned long lastMicrosTightLoop = 0;
-  //TODO maybe OBE???
-  //! perform audioPolling and other houskeeping
-  void tightLoop(){
-    unsigned long thisMicros = micros();
-    
-    if (thisMicros-lastMicrosTightLoop > periodMicrosTightLoop){
-      
-      /*static int cnt =0;
-      cnt ++;
-      if(cnt>50){
-        cnt=0;
-        if (thisMicros-lastMicrosTightLoop > periodMicrosTightLoop * 2) {
-          Serial.print("too slow: ");
-          Serial.print(thisMicros-lastMicrosTightLoop);
-          Serial.print(" >> ");
-          Serial.println(periodMicrosTightLoop);
-        } else {
-          Serial.print("just right: ");
-          Serial.print(thisMicros-lastMicrosTightLoop);
-          Serial.print(" >> ");
-          Serial.println(periodMicrosTightLoop);
-        }
-      }*/
-
-      lastMicrosTightLoop = thisMicros;
-      tightLoopISR();
-    }
-  }
-
-    //! perform audioPolling and other houskeeping
-  void tightLoopISR(){
-      audioSum = audioSum + analogRead(audioPin);
-      audioSamples ++;
-  }
-
-  //! perform audioPolling, clear sum and samples
-  float pollAudio(){
-    if (audioSamples > 0){
-      float ret = audioSum / audioSamples;
-      audioSum = 0;
-      audioSamples = 0;
-      return ret;
-    } else {
-      audioSum = 0;
-      audioSamples = 0;
-      return 0;
-    }
   }
 
 
@@ -636,12 +584,14 @@ public:
   }
   //! hue shift given rgbF, convert to hsiF, perform shift, return rgbF.  sanity checks performed in Rgb2Hsi and Hsi2Rgb
   rgbF hue_shift(rgbF rgb){
+      //return rgb;
       return hue_shift(Rgb2Hsi(rgb));
   }
 
   //!todo, this one is no good??, cant use set pixel color because of the double intensity thing???
   rgbF hue_shift(CRGB rgb){
-      return hue_shift(CRGB2Rgb(rgb));
+      //return CRGB2Rgb(rgb);
+      return hue_shift(CRGB2Rgb(rgb));//todo test this???
   }
 
 
@@ -712,30 +662,6 @@ public:
     Serial.print(getTotalUpdateTime()); Serial.print(" TotalUpdateTime ... ");
     Serial.print(fps); Serial.print(" fps @ ");
     Serial.print(NUM_LEDS); Serial.println(" LEDs ... "); Serial.println();
-  }
-
-  // Show the current framerate, rendered pixels per second,
-  // rendering time & time spend to push the data to the leds.
-  // in the serial monitor.
-  void report_performance2() {
-    
-    float calc  = b - a;                         // waiting time
-    float push  = c - b;                         // rendering time
-    float total = c - a;                         // time per frame
-    int fps  = 1000000 / total;                // frames per second
-    //int kpps = (fps * NUM_LEDS) / 1000;   // kilopixel per second
-
-    Serial.print(fps);                         Serial.print(" fps  ");
-    //Serial.print(kpps);                        Serial.print(" kpps @");
-    Serial.print(NUM_LEDS);                 Serial.print(" LEDs  ");  
-    Serial.print(round(total));                Serial.print(" µs per frame  waiting: ");
-    Serial.print(round((calc * 100) / total)); Serial.print("%  rendering: ");
-    Serial.print(round((push * 100) / total)); Serial.print("%  (");
-    Serial.print(round(calc));                 Serial.print(" + ");
-    Serial.print(round(push));                 Serial.print(" µs)  Core-temp: ");
-    // TODO Serial.print( tempmonGetTemp() );
-              Serial.println(" °C");
-   
   }
 
 
@@ -932,7 +858,7 @@ public:
 
   void PlaneRotation1() { ///REALLLY cool sparklesssss
 
-    get_ready(); 
+    get_ready();
     static Plane3d myPlane;
 
     timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // speed ratios for the oscillators
