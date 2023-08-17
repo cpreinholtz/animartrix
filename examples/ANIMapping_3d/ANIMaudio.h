@@ -20,8 +20,8 @@ License CC BY-NC 3.0
 #include "FFT.h"
 
 const int samples = 256;
-const float sampleFrequency = 20000.0;
-const int sampling_period_us = int(1000000*(1.0/sampleFrequency)); 
+const float sampleFrequency = 15000.0;
+const int sampling_period_us = int(1000000*(1.0/sampleFrequency));
 
 
 // Function for Selection sort, not the fastest but it is nice and simple https://www.geeksforgeeks.org/selection-sort/?ref=lbp
@@ -157,7 +157,7 @@ public:
   bool beat_detected_dbg;
   float beat_last;
   bool beat_armed = true;
-  const float beat_delta_min = 60; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
+  const float beat_delta_min = 200; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
   float beat_multiplier_min = 2.0; //must hit moving average * multiplier to be considered a beat
   float beat_volume_min = 0.005; //must hit moving average * multiplier to be considered a beat
   const float beat_hysteresis = beat_multiplier_min * 0.5;
@@ -330,14 +330,12 @@ public:
   }
 
 
-
-
 //!update by passing in nothing, assumes scaled signal is ready
   void updateScaled(){
     //take the abs value of that to get the current energy
     abs_signal = (scaled_signal >= 0.0) ? scaled_signal : - scaled_signal;
     // update filters
-    iir_volume.update(abs_signal);// todo unused
+    iir_volume.update(abs_signal);
     peakDetect();
   }
 
@@ -359,6 +357,8 @@ public:
     updateScaled();
   }*/
 
+  ////////////////////////////////////////////////////////////////////////////////
+  //this is the FFT for the vests
   float fft_input[samples];
   float fft_output[samples];
   char print_buf[300];

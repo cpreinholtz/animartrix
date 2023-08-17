@@ -17,18 +17,17 @@ License CC BY-NC 3.0
 
 */
 
-//!!!! ONLY INCLUDE ONE MAP
+//These SHOULD be overwritten accordinly in map
 #define ART_WAG false
-//#include "MapWag.h"
-
 #define ART_K_VEST false
-//#include "MapKVest.h"
-
 #define ART_C_VEST false
-//#include "MapCVest.h"
-
 #define ART_PROTO_VEST false
-#include "MapProtoVest.h"
+
+//!!!! ONLY INCLUDE ONE MAP
+//#include "MapWag.h"
+#include "MapKVest.h"
+//#include "MapCVest.h"
+//#include "MapProtoVest.h"
 //!!!! ONLY INCLUDE ONE MAP
 
 
@@ -162,8 +161,8 @@ void Module_Experiment11_Hsi(){art.Module_Experiment11_Hsi();}
 void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
 PatternAndNameList gPatterns = {
-  {SM9,"SM9"},
-  //{TestMap, "TestMap"},
+  {TestMap, "TestMap"},
+  {SM9,"SM9"},  
   {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
   {Caleido1,"Caleido1"}, 
   {Complex_Kaleido_5,"Complex_Kaleido_5"},
@@ -279,7 +278,7 @@ void incrementPattern(int inc = 1){
 }
 
 void randomPattern(){
-  currentPattern = random(gPatternCount);
+  currentPattern = random(1, gPatternCount);
   if (currentPattern >= gPatternCount) currentPattern = 0;
   Serial.print("Setting pattern to: "); Serial.print(currentPattern); Serial.print(" "); Serial.println(gPatterns[currentPattern].name);
 }
@@ -375,7 +374,7 @@ void setup() {
   amp1.gain(8.5);        // amplify sign to useful range
 #else
   audio.beat_multiplier_min = 2.4;
-  audio.hyst_arm = 0.2;
+  audio.hyst_arm = 0.1;
   audio.beat_volume_min = 0.2;
   audio.iir_volume.setWeight(0.973);
 #endif
@@ -415,16 +414,6 @@ int cnt = 32;
 void showCurrentPattern(){
   gPatterns[currentPattern].pattern();  
   art.markStartOfShow();
-#if USE_A
-#if ART_WAG
-#else
-    audio.update();
-    if (audio.beat_detected && musicReactive) {
-      Serial.println("beat");
-      audioModBeatDestPtr->trigger(audio.abs_signal*5);//todo make this proportional to ratio, not abs_signal?
-    } // beat
-#endif
-#endif
 
 #if ART_PROTO_VEST or ART_K_VEST or ART_C_VEST
     FastLED.show();
@@ -478,7 +467,7 @@ void loop() {
     audio.update();
     if (audio.beat_detected && musicReactive) {
       Serial.println("beat");
-      audioModBeatDestPtr->trigger(audio.abs_signal*5);//todo make this proportional to ratio, not abs_signal?
+      audioModBeatDestPtr->trigger(audio.sig/audio.comp/audio.beat_multiplier_min);//todo make this proportional to ratio, not abs_signal?
     } // beat
 #endif
 #endif

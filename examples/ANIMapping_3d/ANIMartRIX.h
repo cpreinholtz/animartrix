@@ -584,13 +584,11 @@ public:
   }
   //! hue shift given rgbF, convert to hsiF, perform shift, return rgbF.  sanity checks performed in Rgb2Hsi and Hsi2Rgb
   rgbF hue_shift(rgbF rgb){
-      //return rgb;
       return hue_shift(Rgb2Hsi(rgb));
   }
 
   //!todo, this one is no good??, cant use set pixel color because of the double intensity thing???
   rgbF hue_shift(CRGB rgb){
-      //return CRGB2Rgb(rgb);
       return hue_shift(CRGB2Rgb(rgb));//todo test this???
   }
 
@@ -674,12 +672,23 @@ public:
     calculate_oscillators(timings);     // get linear movers and oscillators going
       for (int n = 0; n < NUM_LEDS; n++) {
         pixel_hsi.i = 0;
-        pixel_hsi.h = 0;
+        pixel_hsi.h = 2;
 
-        if (ledMap[n][xind] > 0 && ledMap[n][yind] > 0){
-          pixel_hsi.i = 17;//6.0/255.0 *show1 * radial_filter; //todo fix all these
-          
-        }       
+        if (ledMap[n][xind] > center_x && ledMap[n][yind] > center_y){
+          pixel_hsi.h = .17;//6.0/255.0 *show1 * radial_filter; //todo fix all these
+          pixel_hsi.i = 16;
+        } 
+        
+        if (ledMap[n][xind] < center_x && ledMap[n][zind] > center_z){
+          pixel_hsi.h = .5;//6.0/255.0 *show1 * radial_filter; //todo fix all these
+          pixel_hsi.i = 16;
+        } 
+
+        if (ledMap[n][xind] < center_x && ledMap[n][yind] < center_y){
+          pixel_hsi.h = .8;//6.0/255.0 *show1 * radial_filter; //todo fix all these
+          pixel_hsi.i = 16;          
+        }
+
         /* 
         else if (ledMap[n][xind] > 0){
           pixel_hsi.i = 4;//6.0/255.0 *show1 * radial_filter; //todo fix all these
@@ -694,11 +703,12 @@ public:
           pixel_hsi.i = 10;//6.0/255.0 *show1 * radial_filter; //todo fix all these
           pixel_hsi.h = .8;
         }
-  */
+
         else{
           pixel_hsi.i = 10;//6.0/255.0 *show1 * radial_filter; //todo fix all these
           pixel_hsi.h = .5;
-        }
+        }  
+        */
 
         pixel_hsi.s = 1;
         
