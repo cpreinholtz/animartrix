@@ -19,46 +19,21 @@ License CC BY-NC 3.0
 #include "ANIMutils.h"
 #include "FFT.h"
 
+
+//used for Vest FFT only todo make define switch
 const int samples = 256;
 const float sampleFrequency = 15000.0;
 const int sampling_period_us = int(1000000*(1.0/sampleFrequency));
+const int fft_save_bins = 5;
 
 
-// Function for Selection sort, not the fastest but it is nice and simple https://www.geeksforgeeks.org/selection-sort/?ref=lbp
-//since the array is passed by reference, no output is needed and this function works directly on the "sorted_arr"
-// "arr" is left untouched
-void selectionSort(const int arr[], int sorted_arr[], const int n)
-{
-    int i, j, min_idx;
-    //copy original
-    for (i = 0; i < n - 1; i++) {
-      sorted_arr[i] = arr[i];
-    }
- 
-    // One by one move boundary of
-    // unsorted subarray
-    for (i = 0; i < n - 1; i++) {
-         // Find the minimum element in
-        // unsorted array
-        min_idx = i;
-        for (j = i + 1; j < n; j++) {
-            if (sorted_arr[j] < sorted_arr[min_idx]) min_idx = j;
-        }
-         // Swap the found minimum element
-        // with the first element
-        if (min_idx != i) {std::swap(sorted_arr[min_idx], sorted_arr[i]); // might need "using namespace std;" for this?
-
-        }
-    }
-}
- 
 
 
 class FIR {
 
 public:
 
-  float signal; //lowpass fir 
+  float signal;
   static const int nSamples = 1; // THIS is how you tune the filter!!!!!! // moving average with this many inputs  20 seems to work ok at 192 FPS
   int thisSample;
   float sum;
@@ -128,53 +103,33 @@ public:
 
   bool verbose = false;// beat detection
   bool verbose2 = false; // FFT
-  float global_bpm = 115.0;
-  float energy_level = 0.0;
 
-  float raw_signal;
-  unsigned long raw_time_ms;
-  //const float raw_min = 0;
-  //const float raw_max = 1023;
-  //const float raw_ac_couple = raw_max/2; // this needs to be the "0" level of your aplifier!!
-  float rawOffset = 2048;
-
-  const float scaled_min = -1.0;
-  const float scaled_max = 1.0;
-  float scaled_signal;
-
-  float abs_signal;
-  float signal;
   IIR iir_volume; //lowpass iir tuned to a VERY slow update time for measuring volume
-  IIR iir_lowpass; //lowpass iir tuned to a  slow update time for measuring volume bass kicks
-  IIR iir_bias; //lowpass iir tuned to a  slow update time for dc offset correction
-  FIR lp;
 
-  float sig;
-  float comp;
+  float sig; // input signal, usually FFT BIN 0
+  float comp; // 
+  float ratio;
+  float ratio_poll;
 
-
+  //use peaks to determine beats
   bool beat_detected;
-  bool beat_detected_dbg;
-  float beat_last;
-  bool beat_armed = true;
-  const float beat_delta_min = 200; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
+  bool beat_detected_poll;
+  bool beat_detected_dbg;  
   float beat_multiplier_min = 2.0; //must hit moving average * multiplier to be considered a beat
-  float beat_volume_min = 0.005; //must hit moving average * multiplier to be considered a beat
-  const float beat_hysteresis = beat_multiplier_min * 0.5;
-  float hyst_count; 
-  float hyst_arm = 0.6;
 
-  static const int bpm_num_samples = 21; // use odd to prevent DC offset
-  static const int bpm_median_sample = bpm_num_samples/2;
-  int bpm_current_sample = 0; //round robbin index, increments from 0 to bpm_num_samples-1 and wraps around
-  float bpm_deltas[bpm_num_samples]; //keep values from the latest beat intevals
-  float bpm_sorted_deltas[bpm_num_samples]; //keep values from the latest beat intevals (this list is sorted in ascending order)
-  float bpm_median_delta; //average (median) time between beats in miliseconds.  this is the period of the pulse in millis
-  float bpm; //the estimated bpm, collected by using the median.  this is the frequency of the pulse in millis
+  //detect peaks
+  unsigned long peak_last;
+  bool peak_armed = true;// implies all other conditions met (hysterisis, debounce)
+  const int peak_delta_min = 200; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
+  float peak_volume_min = 0.005; //iir_volume must be > this to be a peak
 
-  int audioPin = 19;
+  //ok so i wrote hyst kinda weird, but when a peak is detected hyst_count is set to 0, 
+  //it needs to rise above hyst_arm in order to arm the next peak,  
+  //hyst count increases by 1 only when ratio is below peak_hyst_low
+  float peak_hyst_low = 0.8; // count increases when ratio than this
+  int peak_hyst_count; //current hyst value, ranges from 0 to 20...
+  int peak_hyst_arm = 6;// arms if hyst is greater than this
 
-  bool locked = false;
 
   ANIMaudio() {
     this->init();
@@ -182,34 +137,28 @@ public:
 
   void init() {
     //raw_signal = raw_ac_couple;
-    raw_time_ms = 0;
-    scaled_signal = 0;
-    abs_signal = 0;
 
     iir_volume.setWeight(.995);
     iir_volume.setAverage(0.0);
-    //.95 works for beat detect with 1.5 mult
-    iir_lowpass.setWeight(.99999999999999); //.95 works for beat detect with 1.5 mult
-    iir_lowpass.setAverage(0.0);
-    iir_bias.setWeight(.999);
-    iir_bias.setAverage(511);
-
-    //findings 7/26
-    /*
-    volume .995 works well at 192 FPS
-      takes less than second but still dips between beats
-    */
 
     beat_detected = false;
     beat_detected_dbg = false;
-    beat_last = 0;
-    for (int i = 0; i < bpm_num_samples; i++) { bpm_deltas[i] = 500; }
-    bpm = 120;
+    peak_last = 0;
 
     this->update();
-    
   }
+
   void debug(){
+
+    //print fft bins
+    EVERY_N_MILLIS(50) if (verbose2){
+      for (int j=0; j<5;j++){
+          float m = fft_magnitude[j];
+          float f = (j+1)*sampleFrequency/samples;
+          Serial.print("f");Serial.print(int(f));Serial.print(":");Serial.print(m);Serial.print(",");
+      }
+      Serial.println("");
+    }
         
     EVERY_N_MILLIS(50) if (verbose){
 
@@ -221,8 +170,8 @@ public:
       Serial.print(comp);
       Serial.print(",");
 
-      Serial.print("hyst_count:");
-      Serial.print(hyst_count);
+      Serial.print("peak_hyst_count:");
+      Serial.print(peak_hyst_count);
       Serial.print(",");
 
       Serial.print("iirv:");
@@ -230,7 +179,7 @@ public:
       Serial.print(",");
 
       Serial.print("ratio:");
-      Serial.print(max(float(0.0),sig/comp/beat_multiplier_min));
+      Serial.print(ratio);
       Serial.print(",");
 
       Serial.print("beat:"); 
@@ -244,7 +193,7 @@ public:
 
       Serial.print("armed:"); 
       b=0;
-      if (beat_armed){
+      if (peak_armed){
         b=1;
       }
       Serial.print(b);
@@ -255,58 +204,44 @@ public:
     }
   }
 
-  int lockedCount = 0;
-  unsigned long beat_avg = 100; // millis
 
-
-  void forceBeat(){
+  void setBeat(){
     beat_detected = true;
     beat_detected_dbg = true;
-    beat_armed = false;
-    hyst_count = 0;
+    if (beat_detected_poll == false){
+      ratio_poll = ratio;
+      beat_detected_poll = true;
+    }    
+    peak_armed = false;
+    peak_hyst_count = 0;
   }
+
   void clearBeat(){
-    //add hysterisis to beat thingy
-    if (abs_signal < iir_volume.signal * beat_hysteresis ) {
-      if  (hyst_count < 2.0 ) hyst_count = hyst_count + .1;
-      if (hyst_count > hyst_arm) beat_armed = true; /// set armed HERE if hysterisis conditions satisfied  // 6 llops at ratio < hyst
+    //inc hyst_count whenever signal is below the hysteresis level
+    if (ratio < peak_hyst_low ) {
+      peak_hyst_count = peak_hyst_count + 1;
+      if (peak_hyst_count > peak_hyst_arm) peak_armed = true; /// set armed HERE if hysterisis conditions satisfied  // 6 llops at ratio < hyst
     }
     beat_detected = false;
   }
 
-  void assessLock(){
-    if (lockedCount > 10) locked = true;
-    else {
-      locked=false;
-    }
-  }
-
   void peakFound(){
-    if (lockedCount < 20) lockedCount++;
-    beat_avg = ((raw_time_ms - beat_last) + beat_avg) / 2;
-    beat_last = raw_time_ms;
-    assessLock();
-    forceBeat();
+    peak_last = millis();
+    setBeat();
   }
 
   void peakMissed(){
-    if (lockedCount >0 ) lockedCount--;
-    assessLock();
-    if (locked && raw_time_ms > beat_avg + 20){
-      forceBeat();
-      Serial.println("false beat");
-    } else {
-      clearBeat();
-    }
+    clearBeat();
   }
 
 
 
+
+  /////////////////////////////////////////////////////////////
   bool peakReady(){
-    raw_time_ms = millis();
     //beat detected if its been a while since the last beat and the current energy is much higher than the average
-    float delta = raw_time_ms - beat_last;
-    if( (beat_armed == true) && (delta > beat_delta_min) && (iir_volume.signal > beat_volume_min)){
+    unsigned long  delta = millis() - peak_last;
+    if( (peak_armed == true) && (delta > peak_delta_min) && (iir_volume.signal > peak_volume_min)){
       return true;
     }
     else { 
@@ -314,10 +249,11 @@ public:
     }
   }
 
-  void peakDetect(float a, float b){
-    sig = a;
-    comp = b;
-    if(peakReady() && a > b * beat_multiplier_min){
+  //////////////////////////////////////////
+  //given  no inputs peak dect assumses sig and comp are ready, see below for how sig and comp are set
+  void peakDetect(){    
+    ratio = sig/comp/beat_multiplier_min;
+    if(peakReady() && ratio > 1.0){
       peakFound();
     } else {
       peakMissed();
@@ -325,27 +261,13 @@ public:
     this->debug();// all roads lead to rome
   }
 
-  void peakDetect(){
-    peakDetect(abs_signal,iir_volume.signal);
-  }
-
-
-//!update by passing in nothing, assumes scaled signal is ready
-  void updateScaled(){
-    //take the abs value of that to get the current energy
-    abs_signal = (scaled_signal >= 0.0) ? scaled_signal : - scaled_signal;
-    // update filters
-    iir_volume.update(abs_signal);
+  //given one signal, use that for the IIF volume, and iir volume as comp
+  void peakDetect(float a){
+    sig = a;    
+    iir_volume.update(a);
+    comp = iir_volume.signal;
     peakDetect();
   }
-
-  //!update by passing in a scaled signal
-  void updateScaled(float audiolevel){
-    //scale from -1 to 1 and remove DC bias
-    scaled_signal = audiolevel;
-    updateScaled();    
-  }
-
 
 
   //!update by passing in a raw signal ( 0 to 1024, like an analog read)
@@ -358,73 +280,40 @@ public:
   }*/
 
   ////////////////////////////////////////////////////////////////////////////////
-  //this is the FFT for the vests
+  //this is the FFT for the vests  todo make this a define switch
   float fft_input[samples];
   float fft_output[samples];
-  char print_buf[300];
+  float fft_magnitude[fft_save_bins];
+
   fft_config_t *real_fft_plan = fft_init(samples, FFT_REAL, FFT_FORWARD, fft_input, fft_output);
 
-
-  float max_magnitude = 0;
-  float fundamental_freq = 0;
-
-
-
+  //used to scale down magnitudes
   float scaler = 2.0/samples/1000.0;
 
-  //!update by reading raw signal from pin // TODO OBE??? might be used for analog mics
+  //!update by reading raw signal from pin, perform FFT, then peak detect
   void update(){
-    EVERY_N_MILLIS(5){
-      long int t1 = micros();
-      long int total=0;
-      for(int i=0; i<samples; i++) {
-          unsigned long microseconds = micros();    //Overflows after around 70 minutes!
-          raw_signal = analogRead(A0);
-          real_fft_plan->input[i] = float(raw_signal) - rawOffset;
+    //SAMPLE 256 times in a row
+    for(int i=0; i<samples; i++) {
+        unsigned long microseconds = micros();    //Overflows after around 70 minutes!
+        real_fft_plan->input[i] = float(analogRead(A0)-2048);
 
-          while(micros() - microseconds < sampling_period_us){}
-          total += micros() - microseconds;
-      }
-
-      fft_execute(real_fft_plan);
-      int j=1;
-
-      float m = absf(real_fft_plan->output[2*j]) + absf(real_fft_plan->output[2*j+1] );
-      float f = j*sampleFrequency/samples;
-      float a = m*scaler;
-
-      float ma=0.0;
-      for ( j=1; j<5;j++){
-          ma += absf(real_fft_plan->output[2*j]) + absf(real_fft_plan->output[2*j+1]);
-      }
-      ma = ma *scaler/ 4.0;
-      iir_volume.update(ma);
-      peakDetect(a,ma);
-
-      //updateScaled(a);
-
-      if (verbose2) {
-        EVERY_N_MILLIS(100){
-          long int t2 = micros();
-          Serial.print("TimetakenMiliS:");Serial.print((t2-t1)*1.0/1000);Serial.print(",");
-          Serial.print("total:");Serial.print(total);Serial.print(",");
-
-          for ( j=0; j<5;j++){
-              m = absf(real_fft_plan->output[2*j]) + absf(real_fft_plan->output[2*j+1]);
-              f = j*sampleFrequency/samples;
-              a = m*2.0/samples/10000.0;
-              Serial.print("f");Serial.print(int(f));Serial.print(":");Serial.print(a);Serial.print(",");
-          }
-          Serial.println("");
-        }
-      }
+        while(micros() - microseconds < sampling_period_us){}
     }
+
+    //DO FFT on those samples, //TODO try using robins LIB
+    fft_execute(real_fft_plan);
+
+    //calculate amplitude for desired n bins
+    for ( int j=1; j<fft_save_bins+1;j++){
+        // get magnitude by pyth therum
+        fft_magnitude[j-1] = scaler * sqrtf((real_fft_plan->output[2*j] * real_fft_plan->output[2*j] ) + (real_fft_plan->output[2*j+1]*real_fft_plan->output[2*j+1]));
+    }
+
+    peakDetect(fft_magnitude[0]);
+      
   }
 
-  //! returns lowpass.signal, should be between 0 and 1.0
-  //float getLp(){
-  //  return iir_lowpass.signal;
-  //}
+
 
 
 

@@ -32,6 +32,7 @@ License CC BY-NC 3.0
 #include "ANIMutils.h"
 #include <plane3d.h>
 #include <sphere3d.h>
+#include "ANIMaudio.h"
 
 #define num_oscillators 10
 
@@ -160,6 +161,8 @@ public:
   modableF global_scale_z;
 
   modableF global_bpm; // todo why do i have two of these?
+
+  ANIMaudio * audio;
 
   //!initialize this object
   //scale, smaller numbers = zoom in = larger blobs
@@ -412,8 +415,11 @@ public:
   //Rendering
   /////////////////////////////////////////////////////////////////////////
 
+
+
   float render_value(render_parameters &animation, float scaleHigh = 255.0) {
-    //EVERY_N_SECONDS(1){Serial.println("derrived class render");}
+    do_often();
+
 
     // convert **SPHERICAL** coordinates back to cartesian ones
     //this is really the only difference from base class
@@ -621,11 +627,17 @@ public:
   ///////////////////////////////////////////////////////////////////////
   //timings / debug outputs
 
-  void get_ready() {  // wait until new buffer is ready, measure time
-    // TODO: make callback
+  void get_ready() {  // measure time etc
     markStartOfRender();
-    // while(backgroundLayer.isSwapPending());
-    // b = micros();
+    do_often();
+  }
+
+  void do_often(){
+#if ART_VEST and USE_AUDIO
+    EVERY_N_MILLIS(50) {
+      audio->update();//really needed to figure out more regular polling
+    }
+#endif
   }
 
   void markStartOfRender(){

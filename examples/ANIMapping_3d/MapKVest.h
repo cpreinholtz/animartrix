@@ -17,6 +17,9 @@ License CC BY-NC 3.0
 */
 #pragma once
 #define ART_K_VEST true
+
+#define ART_VEST true
+
 #ifndef xind
   #define xind 0
 #endif

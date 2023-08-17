@@ -18,6 +18,7 @@ License CC BY-NC 3.0
 
 #pragma once
 #define ART_WAG true
+#define ART_TEENSY true
 
 //******************************************************************************************************************
 //python generated

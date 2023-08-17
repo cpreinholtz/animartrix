@@ -18,10 +18,12 @@ License CC BY-NC 3.0
 */
 
 //These SHOULD be overwritten accordinly in map
+//TEENSY + IIS MIC
 #define ART_WAG false
-#define ART_K_VEST false
-#define ART_C_VEST false
-#define ART_PROTO_VEST false
+#define ART_BF false
+#define ART_TEENSY false
+//ESP + ANALOG MIC
+#define ART_VEST false
 
 //!!!! ONLY INCLUDE ONE MAP
 //#include "MapWag.h"
@@ -31,16 +33,13 @@ License CC BY-NC 3.0
 //!!!! ONLY INCLUDE ONE MAP
 
 
-///////////// only set ONE of these to true, set ALL others to false
-//#define NONE_A false
-//#define TEENSY_A true
-//#define ESP_A false
+#define USE_AUDIO true
+#define USE_IMU false
+// todo set these in map??^^
 
-#define USE_A true
-#define USE_I false
 
-#if USE_A
-#if ART_WAG
+#if USE_AUDIO
+#if ART_TEENSY
 //#include <Audio.h>
 include this^&@
 AudioInputI2S2            i2s1;           //xy=698,360
@@ -60,7 +59,7 @@ AudioConnection          patchCord2(amp1, 0, fft256_1, 0);
 //#include <FastLED.h>
 #include "ANIMartRIX.h" //TODO make <> when you copy files back to the right directory
 #include "ANIMaudio.h" //TODO make <> when you copy files back to the right directory
-#if USE_I
+#if USE_IMU
 #include "ANIMimu.h" //TODO make <> when you copy files back to the right directory
 #endif
 
@@ -76,7 +75,7 @@ CRGB leds[NUM_LEDS];               // framebuffer
 ANIMartRIX art(leds);  //led buffer, global scale
 
 ANIMaudio audio;  //
-#if USE_I
+#if USE_IMU
 ANIMimu imu;
 #endif
 
@@ -288,18 +287,7 @@ void randomPattern(){
 
 
 //******************************************************************************************************************
-#if ART_WAG
-//////////////////////////// delete me
-#define RED    0x000000
-#define GREEN  0x001600
-#define BLUE   0x000016
-#define YELLOW 0x000000
-#define PINK   0x120009
-#define ORANGE 0x100400
-#define WHITE  0x101010
-int testNum =0;
-
-
+#if ART_TEENSY
 void copyBuffer(){
   int thisPixel = 0;
   for (int ring = 0 ; ring < nRings; ring++){
@@ -309,29 +297,6 @@ void copyBuffer(){
       thisPixel++;
     }
   }
-
-/*
-    //////////////////////////// delete me
-  for (int i = 0; i < nMaxPixels * numPins; i ++){
-    int color = 0;
-    if (i < testNum) color = RED;
-    else if( i == testNum) color = GREEN;
-    else color = YELLOW;
-    //oleds.setPixel(i, color);
-  }
-
-  // this should show the NEXT pixel as green
-  for (int ring = 0 ; ring < nRings; ring++){
-    for (int pixel = 0; pixel < nPixelsPerRing[ring]; pixel++){
-      int color = ORANGE;
-      if (pixel+ring*nMaxPixels == testNum){
-        color = BLUE;        
-      }
-      //oleds.setPixel(pixel+ring*nMaxPixels+1, color);
-    }
-  }*/
-  /////////////////////////// delete me
-
 
   oleds.show();
 }
@@ -355,7 +320,7 @@ void setup() {
   //art.global_scale_y.setBaseToMiddle();
   //art.global_scale_z.setBaseToMiddle();
   //art.gHue.setBaseToMiddle();
-#if ART_WAG
+#if ART_TEENSY
 
 #else
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
@@ -366,28 +331,29 @@ void setup() {
 
   //art.setGlobalScale(0.5); 
 
-#if USE_A
-#if ART_WAG
+#if USE_AUDIO
+#if ART_TEENSY
   fft256_1.averageTogether(2); //runs at 300Hz+, lets slow that down to ~ 200 hz
   AudioMemory(50);
   //filter1.frequency(30); // filter out DC & extremely low frequencies
   amp1.gain(8.5);        // amplify sign to useful range
 #else
-  audio.beat_multiplier_min = 2.4;
-  audio.hyst_arm = 0.1;
-  audio.beat_volume_min = 0.2;
-  audio.iir_volume.setWeight(0.973);
+  audio.beat_multiplier_min = 2.0;
+  audio.peak_hyst_arm = 0.1;
+  audio.peak_volume_min = 0.4;
+  audio.iir_volume.setWeight(0.973); // my polling is 20 HZ, teensy is 150, sloooww this down
+  art.audio = & audio;
 #endif
 #endif
 
-#if USE_I
+#if USE_IMU
   while(1){
     if (imu.begin()) 
       break;
   }
 #endif
 
-#if ART_WAG
+#if ART_TEENSY
   oleds.begin();
   for (int ring = 0 ; ring < nRings; ring++){
     if (nPixelsPerRing[ring] > nMaxPixels) {
@@ -405,7 +371,7 @@ void setup() {
 
 bool verbose = false;
 bool verbose2 = false;
-bool play = true;
+bool play = false;
 bool doRandom = true;
 bool musicReactive = true;
 bool hueDrift = true;
@@ -415,10 +381,10 @@ void showCurrentPattern(){
   gPatterns[currentPattern].pattern();  
   art.markStartOfShow();
 
-#if ART_PROTO_VEST or ART_K_VEST or ART_C_VEST
+#if ART_VEST
     FastLED.show();
 #endif
-#if ART_WAG
+#if ART_TEENSY
   copyBuffer();
 #endif
   
@@ -443,31 +409,29 @@ void loop() {
     if (hueDrift) art.gHue += .0001; // todo make this scale with FPS, put into show current patter to make immune to FPS changes
     showCurrentPattern(); // 200 FPS max
 
-#if USE_I
+#if USE_IMU
     imu.update();
     art.upVector = imu.filteredPosition;
 #endif
 
 
-#if USE_A
-#if ART_WAG
+#if USE_AUDIO
+#if ART_TEENSY
     if (fft256_1.available()) {
         //EVERY_N_MILLIS(5) Serial.println("fft audio");
         float b0 = fft256_1.read(0);
-        audio.updateScaled(b0);
+        audio.peakDetect(b0);
         if (audio.beat_detected && musicReactive) {
           Serial.println("beat");
-          //art.global_intensity += audio.abs_signal*5;//todo make this proportional to ratio, not abs_signal?
-          //*audioModBeatDestPtr += audio.abs_signal*5;//todo make this proportional to ratio, not abs_signal?
-          audioModBeatDestPtr->trigger(audio.abs_signal*5);//todo make this proportional to ratio, not abs_signal?
-          //EVERY_N_MILLIS(5) Serial.println("beat audio");
+          audioModBeatDestPtr->trigger(audio.ratio/3.0);
         } // beat
       } // fft available
 #else
     audio.update();
-    if (audio.beat_detected && musicReactive) {
+    if (audio.beat_detected_poll && musicReactive) {
       Serial.println("beat");
-      audioModBeatDestPtr->trigger(audio.sig/audio.comp/audio.beat_multiplier_min);//todo make this proportional to ratio, not abs_signal?
+      audioModBeatDestPtr->trigger(audio.ratio_poll/3.0);
+      audio.beat_detected_poll = false;
     } // beat
 #endif
 #endif
@@ -524,11 +488,6 @@ void loop() {
       float i = Serial.parseFloat();
       audio.iir_volume.setWeight(float(i));
       Serial.print("Setting audio.iir_volume. to"); Serial.println(audio.iir_volume.iir_weight);
-    } 
-    else if (incomingByte == 'l'){
-      float i = Serial.parseFloat();
-      audio.iir_lowpass.setWeight(float(i));
-      Serial.print("Setting audio.iir_lowpass. to"); Serial.println(audio.iir_lowpass.iir_weight);
     } else if (incomingByte == 'B'){
       clearPattern();
     } else if (incomingByte == 'z'){

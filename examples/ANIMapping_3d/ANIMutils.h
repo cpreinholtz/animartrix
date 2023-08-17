@@ -340,7 +340,7 @@ public:
 
   void setMax(float m){
      high=m;
-     if( high <= low) Serial.println("dude, max should probably be > low in evelope setMax");
+     if( high < low) Serial.println("dude, max should probably be > low in evelope setMax");
      Serial.println(high);
   }
 
@@ -402,7 +402,7 @@ public:
   //! input: value number ideally from 0/1 that we use to set envelope maximum proportional to the space we 
   void trigger(float value){
       constrain_float(value,0,1);
-      if( edge == edgeClip) envelope.setMax( envelope.getSignal() + getSpace() * value); // if we are clipping, get the ammount of space from max-base we have left, make env proportional to that
+      if( edge == edgeClip) envelope.setMax( getSpace() * value); // if we are clipping, get the ammount of space from max-base we have left, make env proportional to that
       else {
         base += envelope.getSignal();
         envelope.clear();
