@@ -17,14 +17,15 @@ License CC BY-NC 3.0
 */
 #pragma once
 #include "ANIMutils.h"
+
+#if ART_VEST
 #include "FFT.h"
-
-
-//used for Vest FFT only todo make define switch
+//used for Vest FFT only
 const int samples = 256;
 const float sampleFrequency = 15000.0;
 const int sampling_period_us = int(1000000*(1.0/sampleFrequency));
 const int fft_save_bins = 5;
+#endif
 
 
 
@@ -112,22 +113,22 @@ public:
   float ratio_poll;
 
   //use peaks to determine beats
-  bool beat_detected;
-  bool beat_detected_poll;
-  bool beat_detected_dbg;  
+  bool beat_detected = false;
+  bool beat_detected_poll = false;
+  bool beat_detected_dbg = false;  
   float beat_multiplier_min = 2.0; //must hit moving average * multiplier to be considered a beat
 
   //detect peaks
-  unsigned long peak_last;
+  unsigned long peak_last = 0;
   bool peak_armed = true;// implies all other conditions met (hysterisis, debounce)
-  const int peak_delta_min = 200; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
+  const unsigned int peak_delta_min = 200; //essentially a debounce in miliseconds, 100 milliseconds limits to 1/16 notes @ 120 bpm
   float peak_volume_min = 0.005; //iir_volume must be > this to be a peak
 
   //ok so i wrote hyst kinda weird, but when a peak is detected hyst_count is set to 0, 
   //it needs to rise above hyst_arm in order to arm the next peak,  
   //hyst count increases by 1 only when ratio is below peak_hyst_low
   float peak_hyst_low = 0.8; // count increases when ratio than this
-  int peak_hyst_count; //current hyst value, ranges from 0 to 20...
+  int peak_hyst_count=0; //current hyst value, ranges from 0 to 20...
   int peak_hyst_arm = 6;// arms if hyst is greater than this
 
 
@@ -141,15 +142,10 @@ public:
     iir_volume.setWeight(.995);
     iir_volume.setAverage(0.0);
 
-    beat_detected = false;
-    beat_detected_dbg = false;
-    peak_last = 0;
-
-    this->update();
   }
 
   void debug(){
-
+#if ART_VEST
     //print fft bins
     EVERY_N_MILLIS(50) if (verbose2){
       for (int j=0; j<5;j++){
@@ -159,6 +155,7 @@ public:
       }
       Serial.println("");
     }
+#endif
         
     EVERY_N_MILLIS(50) if (verbose){
 
@@ -171,7 +168,8 @@ public:
       Serial.print(",");
 
       Serial.print("peak_hyst_count:");
-      Serial.print(peak_hyst_count);
+      if (peak_hyst_count < peak_hyst_arm) Serial.print(float(peak_hyst_count)/10.0);
+      else Serial.print(float(peak_hyst_arm)/10.0);
       Serial.print(",");
 
       Serial.print("iirv:");
@@ -281,9 +279,10 @@ public:
 
   ////////////////////////////////////////////////////////////////////////////////
   //this is the FFT for the vests  todo make this a define switch
+#if ART_VEST
   float fft_input[samples];
   float fft_output[samples];
-  float fft_magnitude[fft_save_bins];
+  
 
   fft_config_t *real_fft_plan = fft_init(samples, FFT_REAL, FFT_FORWARD, fft_input, fft_output);
 
@@ -310,12 +309,8 @@ public:
     }
 
     peakDetect(fft_magnitude[0]);
-      
+
   }
-
-
-
-
-
+#endif
 
 }; 

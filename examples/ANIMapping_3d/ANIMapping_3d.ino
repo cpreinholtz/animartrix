@@ -26,8 +26,8 @@ License CC BY-NC 3.0
 #define ART_VEST false
 
 //!!!! ONLY INCLUDE ONE MAP
-//#include "MapWag.h"
-#include "MapKVest.h"
+#include "MapWag.h"
+//#include "MapKVest.h"
 //#include "MapCVest.h"
 //#include "MapProtoVest.h"
 //!!!! ONLY INCLUDE ONE MAP
@@ -40,8 +40,8 @@ License CC BY-NC 3.0
 
 #if USE_AUDIO
 #if ART_TEENSY
-//#include <Audio.h>
-include this^&@
+#include <Audio.h>
+//include this^&@
 AudioInputI2S2            i2s1;           //xy=698,360
 AudioAnalyzeFFT256       fft256_1;       //xy=1152,492
 AudioAmplifier           amp1;           //xy=470,93
@@ -336,11 +336,15 @@ void setup() {
   fft256_1.averageTogether(2); //runs at 300Hz+, lets slow that down to ~ 200 hz
   AudioMemory(50);
   //filter1.frequency(30); // filter out DC & extremely low frequencies
-  amp1.gain(8.5);        // amplify sign to useful range
+  amp1.gain(85);        // amplify sign to useful range
+  audio.beat_multiplier_min = 2.0;
+  audio.peak_hyst_arm = 10;
+  audio.peak_volume_min = 0.1;  
+  audio.iir_volume.setWeight(.995);
 #else
   audio.beat_multiplier_min = 2.0;
-  audio.peak_hyst_arm = 0.1;
-  audio.peak_volume_min = 0.4;
+  audio.peak_hyst_arm = 1;
+  audio.peak_volume_min = 0.2;
   audio.iir_volume.setWeight(0.973); // my polling is 20 HZ, teensy is 150, sloooww this down
   art.audio = & audio;
 #endif
