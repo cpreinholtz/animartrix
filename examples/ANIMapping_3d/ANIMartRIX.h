@@ -186,6 +186,7 @@ public:
     this->buffer = data;
     upVector.set(0,1,0);
     render_spherical_lookup_table();
+    run_default_oscillators();
 
     //init modables  
 
@@ -193,15 +194,15 @@ public:
     
     animation.low_limit.setMinMax(-2,.5);
     animation.low_limit = 0;
-    //animation.low_limit.envelope.isLfo = true;
-    //animation.low_limit.envelope.shape = envConst;
-    //animation.low_limit.envelope.setMax(0);
+    animation.low_limit.envelope.isLfo = true;
+    animation.low_limit.envelope.shape = envConst;
+    animation.low_limit.envelope.setMax(0);
 
     animation.high_limit.setMinMax(.5,1.2);
     animation.high_limit = 1;
-    //animation.high_limit.envelope.isLfo = true;
-    //animation.high_limit.envelope.shape = envConst;
-    //animation.high_limit.envelope.setMax(0);
+    animation.high_limit.envelope.isLfo = true;
+    animation.high_limit.envelope.shape = envConst;
+    animation.high_limit.envelope.setMax(0);
 
 
 
@@ -449,16 +450,11 @@ public:
     timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.005;    // master speed
 
 #if ART_TEENSY
-    for (int i=0; i<9; i++ ){
-      timings.ratio[0] = i;
-      timings.offset[0] = 100*i;
-    }
     for (int i=10; i < num_oscillators; i++ ){
-      timings.ratio[0] = float(i)/15;
-      timings.offset[0] = 100*i;
+      timings.ratio[i] = float(i)/1000;
+      timings.offset[i] = 100*i;
     }
-
-#else
+#endif
 
     timings.ratio[0] = 1;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 2;
@@ -469,7 +465,6 @@ public:
     timings.ratio[6] = 7;
     timings.ratio[7] = 8;
     timings.ratio[8] = 9;
-    timings.ratio[9] = 10;
     timings.ratio[9] = 10;
 
     
@@ -485,7 +480,7 @@ public:
     timings.offset[9] = 900;
     //set_osc_offset();
 
-#endif
+
 
     calculate_oscillators(timings);  
   }
@@ -511,8 +506,8 @@ public:
 #if ART_TEENSY
     float newtheta = animation.angle + roll;
     float newphi = animation.anglephi + pitch; 
-    newphi = animation.anglephi;
-    newtheta = animation.angle ;
+    //newphi = animation.anglephi;
+    //newtheta = animation.angle ;
 
 
     float newx = (animation.offset_x + center_x - (animation.dist * sinf(newphi) * cosf(newtheta))) * animation.scale_x * global_scale_x;
@@ -739,9 +734,9 @@ public:
     animation.high_limit = 1;
 
 #if ART_TEENSY
-    //center_x = center_xm.getEnvelope();
-    //center_x = center_ym.getEnvelope();
-    //center_x = center_zm.getEnvelope();
+    center_x = center_xm.getEnvelope();
+    center_x = center_ym.getEnvelope();
+    center_x = center_zm.getEnvelope();
 #endif
 
 #if ART_WAG and USE_IMU

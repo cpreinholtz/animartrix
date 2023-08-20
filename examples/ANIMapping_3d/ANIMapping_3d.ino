@@ -378,8 +378,9 @@ void copyBuffer(){
 
 bool verbose = false;
 bool verbose2 = false;
-bool play = true;
+bool play = false;
 bool playAll = false;
+bool doModulation = true;
 bool doRandom = true;
 bool musicReactive = true;
 bool hueDrift = true;
@@ -519,6 +520,9 @@ void addLife(){
 
     //change hue shift
     art.gHue += .0001;
+  }
+
+  if (doModulation){
 
 #if ART_TEENSY
     int prob = 100;
@@ -526,15 +530,54 @@ void addLife(){
     //Change X / Y / Z centers
     /*
     EVERY_N_MILLIS(6642) art.center_xm.trigger(float(random(prob))/100.0);
+    art.center_xm.update();
+
     EVERY_N_MILLIS(4833) art.center_ym.trigger(float(random(prob))/100.0);
+    art.center_ym.update();
+
     EVERY_N_MILLIS(7489) art.center_ym.trigger(float(random(prob))/100.0);
+    art.center_zm.update();
 
     //set in animation, can only change envelope
     animation.low_limit.trigger( -.3 + .05 * move.noise_angle[10]);
-   
-    animation.high_limit.trigger( -.3 + .05 * move.noise_angle[11]);
-    EVERY_N_MILLIS(50)Serial.println(animation.high_limit.getEnvelope());
- */
+    */
+    animation.low_limit.trigger(.3 * (move.noise_angle[10]-PI));
+    animation.low_limit.update();
+
+    //TODO TEST THESE!!!
+    animation.high_limit.trigger( .3 * (move.noise_angle[11]-PI));
+    //animation.high_limit.trigger( move.sine[11]);
+    animation.high_limit.update();
+
+    EVERY_N_MILLIS(100){
+      Serial.println();
+      Serial.println(animation.low_limit.getEnvelope());
+      Serial.println(animation.high_limit.getEnvelope());
+      
+      /*
+
+      Serial.print("10 ramp, sine noise");
+      Serial.print(move.ramp[10]);
+      Serial.print("   ");
+      Serial.print(move.sine[10]);
+      Serial.print("   ");
+      Serial.println(move.noise_angle[10]);
+
+      Serial.print("11 ramp, sine noise");
+      Serial.print(move.ramp[11]);
+      Serial.print("   ");
+      Serial.print(move.sine[11]);
+      Serial.print("   ");
+      Serial.println(move.noise_angle[11]);
+
+      Serial.print("2 ramp, sine noise");
+      Serial.print(move.ramp[2]);
+      Serial.print("   ");
+      Serial.print(move.sine[2]);
+      Serial.print("   ");
+      Serial.println(move.noise_angle[2]);*/
+    }
+
 
 #endif
     

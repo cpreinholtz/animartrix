@@ -336,6 +336,8 @@ private:
   void updateConst(){
     if (state == stateAttack or state == stateDecay){
       signal = high;
+      //EVERY_N_MILLIS(100){ Serial.print("const set to");Serial.println(signal);}
+
     } else {
       signal = low;
       theta = 0;
@@ -411,6 +413,7 @@ public:
     start_theta = theta;
     state = stateAttack;
     wasLfo = isLfo;
+    //update();
   }
 
   void update(){
@@ -458,7 +461,8 @@ public:
   float getEnvelope() const{return clip(base+envelope.getSignal());}
   float getOffset() const{return base - low;}
   float getSpread() const { return high-low;}
-  float getSpace() const { return high-base-envelope.getSignal();}
+  float getSpace() const { return high-(base+envelope.getSignal());}
+  float getNegSpace() const { return (envelope.getSignal()+base)-low;}
 
   //utility functions///////////////////////////
   float clip(float v) const{
@@ -469,10 +473,13 @@ public:
   }
 
 
-  //! input: value number ideally from 0/1 that we use to set envelope maximum proportional to the space we 
+  //! input: value number ideally from -1/1 that we use to set envelope maximum proportional to the space we 
   void trigger(float value){
-      constrain_float(value,0,1);
-      if( edge == edgeClip) envelope.setMax( getSpace() * value); // if we are clipPIng, get the ammount of space from max-base we have left, make env proportional to that
+      constrain_float(value,-1,1);
+      if( edge == edgeClip ) {
+        if (value > 0) envelope.setMax( getSpace() * value); // if we are clipPIng, get the ammount of space from max-base we have left, make env proportional to that
+        else envelope.setMax( getNegSpace() * value); // if we are clipPIng, get the ammount of space from max-base we have left, make env proportional to that
+      }
       else {
         base += envelope.getSignal();
         envelope.clear();
