@@ -193,13 +193,13 @@ public:
 
 #if ART_TEENSY
     
-    animation.low_limit.setMinMax(-2,.5);
+    animation.low_limit.setMinMax(-2,.3);
     animation.low_limit = 0;
     animation.low_limit.envelope.isLfo = true;
     animation.low_limit.envelope.shape = envConst;
     animation.low_limit.envelope.setMax(0);
 
-    animation.high_limit.setMinMax(.5,1.2);
+    animation.high_limit.setMinMax(.6,1.2);
     animation.high_limit = 1;
     animation.high_limit.envelope.isLfo = true;
     animation.high_limit.envelope.shape = envConst;
@@ -756,8 +756,8 @@ public:
 
 #if ART_WAG and USE_IMU
   upVector.makeUnitVector();
-  roll = upVector.x*PI2;
-  pitch = upVector.y*PI;
+  roll = upVector.mX*PI2;
+  pitch = upVector.mY*PI;
 #endif
   }
 
@@ -878,7 +878,9 @@ public:
 
 
 
-    //myPlane.yaw(.001 * move.noise_angle[1]);
+    myPlane.yaw(.001 * move.noise_angle[1]);
+    myPlane.roll(.0001 * move.noise_angle[0]);
+    myPlane.pitch(.001 * move.noise_angle[2]);
 
     myPlane.setRefpoint(center_x+spread_x*move.sine[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.sine[2]*move.noise_angle[1]/2.0, center_z);
 
@@ -960,7 +962,7 @@ public:
       show1                = render_value(animation, 1.0);
       pixel_hsi.h    = (show1);
       pixel_hsi.s = 1.0;      
-      pixel_hsi.i = 255;
+      pixel_hsi.i = 64; // todo fix this
       buffer[n] = setPixelColor(pixel_hsi);
     }
 
@@ -997,7 +999,7 @@ public:
 
       pixel_hsi.h    = (show1);
       pixel_hsi.s = 1.0;
-      pixel_hsi.i = 255;   
+      pixel_hsi.i = 64;   //todo
 
       
       buffer[n] = setPixelColor(pixel_hsi);
@@ -1062,7 +1064,7 @@ public:
 
 
 
-        pixel_hsi.i = 255;//6.0/255.0 *show1 * radial_filter;
+        pixel_hsi.i = 64;//6.0/255.0 *show1 * radial_filter; //todo
         pixel_hsi.s = 1;
 
         float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
@@ -1090,22 +1092,19 @@ public:
     calculate_oscillators(timings);     // get linear movers and oscillators going
 
     myPlane.setNormal(upVector);
+
     myPlane.setRefpoint(center_x+spread_x*move.sine[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.sine[2]/2.0, center_z);
     myPlane.setRefpoint(center_x, center_y, center_z);
     
       for (int n = 0; n < NUM_LEDS; n++) {
 
-        pixel_hsi.i = 255;//6.0/255.0 *show1 * radial_filter;
+        pixel_hsi.i = 64;//6.0/255.0 *show1 * radial_filter;
         pixel_hsi.s = 1;
 
         float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
-        //d=fmodf(d,maxD/2);
-        if (d < 0 ){
-          pixel_hsi.i = 0;
-        } else {
-          pixel_hsi.h = (map_float(d, -maxD/2, maxD/2, 0, 1));
-          pixel_hsi.h = 0;
-        }
+        pixel_hsi.h = (map_float(d, -maxD/2, maxD/2, 0, 1));
+        //pixel_hsi.i = (map_float(absf(d), 0, maxD/2, 1, 0));
+
         buffer[n] = setPixelColor(pixel_hsi);
       }
    
@@ -1176,7 +1175,7 @@ public:
       pixel_hsi.h = h[mind];
       
 
-      pixel_hsi.i = 255;//6.0/255.0 *show1 * radial_filter;
+      pixel_hsi.i = 64;//6.0/255.0 *show1 * radial_filter; // todo
       pixel_hsi.s = 1;
 
 
@@ -4590,7 +4589,7 @@ public:
 
       byte a = millis()/100;
       pixel_hsi.s = 1.0;
-      pixel_hsi.i = 255;
+      pixel_hsi.i = 64; //todo
       pixel_hsi.h = (a + show1 + show2) + show3;
 
       

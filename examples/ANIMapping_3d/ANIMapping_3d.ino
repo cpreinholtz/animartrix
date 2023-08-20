@@ -34,7 +34,7 @@ License CC BY-NC 3.0
 
 
 #define USE_AUDIO true
-#define USE_IMU false
+#define USE_IMU true
 // todo set these in map??^^
 
 
@@ -163,14 +163,20 @@ void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
 PatternAndNameList gPatterns = {
   //{TestMap, "TestMap"},
+
+#if USE_IMU
+  {PlaneCounterRotation1, "PlaneCounterRotation1"},
+#endif
+  
+  {Module_Experiment1,"Module_Experiment1"},
   {SM9,"SM9"},  
   {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
   {Caleido1,"Caleido1"}, 
   {Complex_Kaleido_5,"Complex_Kaleido_5"},
   {GrowingSpheres, "GrowingSpheres"},
   {PlaneRotation1, "PlaneRotation1"},
-  //{PlaneCounterRotation1, "PlaneCounterRotation1"},
-  
+
+
   {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},
   {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},
 
@@ -186,7 +192,7 @@ PatternAndNameList gPatterns = {
   {Module_Experiment4,"Module_Experiment4"},
   {Module_Experiment3,"Module_Experiment3"},//FAV yellow blob in red
   {Module_Experiment2,"Module_Experiment2"},//FAV
-  {Module_Experiment1,"Module_Experiment1"},
+
   {Parametric_Water,"Parametric_Water"},
   {Water,"Water"},
   
@@ -382,8 +388,8 @@ void copyBuffer(){
 bool verbose = false;
 bool verbose2 = false;
 bool play = false;
-bool playAll = false;
-bool doModulation = true;
+bool playAll = true;
+bool doModulation = false;
 bool doRandom = true;
 bool musicReactive = true;
 bool hueDrift = true;
@@ -569,9 +575,8 @@ void addLife(){
         //Serial.print("center_xm:"); Serial.print(art.center_xm.getEnvelope()); Serial.print(",");
         //art.center_xm.envelope.verbose=true;
         //art.center_xm.envelope.debug();        
-
-        art.global_scale_x.envelope.verbose=true;
-        art.global_scale_x.envelope.debug();
+        //art.global_scale_x.envelope.verbose=true;
+        //art.global_scale_x.envelope.debug();
         /*
         Serial.print("center_ym:"); Serial.print(art.center_ym.getEnvelope()); Serial.print(",");
         Serial.print("center_zm:"); Serial.print(art.center_zm.getEnvelope()); Serial.print(",");

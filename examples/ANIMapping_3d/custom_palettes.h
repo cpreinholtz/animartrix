@@ -43,6 +43,7 @@ License CC BY-NC 3.0
 DEFINE_GRADIENT_PALETTE( blueie_gp ) {
   0,    0,    0,    0, //black
   80,  66,   255,  198, //aqua
+  120,    0,    0,    0, //black
   160,  118,  192,  196, //saturated purple
   255,  255,   100,  100 //redish saturated
   }; 
@@ -51,6 +52,7 @@ DEFINE_GRADIENT_PALETTE( blueie_gp ) {
 DEFINE_GRADIENT_PALETTE( gator_gp ) {
   0,    0,    0,    0, //black
   80,  255,   76,  0, //orange
+  120,    0,    0,    0, //black
   160,  255,   0,  187, //pink
   255,  203,  0,  255 }; //deep purple
 //CRGBPalette16 gator_gp = gator_gpd;
@@ -60,6 +62,7 @@ DEFINE_GRADIENT_PALETTE( scuba_gp ) {
   0,    0,    0,    0, //black
   60,  0,   130,  211, //light blue
   120,  221,   90,  162, //magenta
+  145,    0,    0,    0, //black
   180,  255,   163,  175, //salmon
   255,  243,  255,  252 }; //sat yellow / white
 //CRGBPalette16 scuba_gp = scuba_gpd;
@@ -75,6 +78,7 @@ DEFINE_GRADIENT_PALETTE( tmg_gp ) {
   0,    0,    0,    0, //black
   80,36,224, 219,// teal
   160,224,13,180, //magenta
+  200,    0,    0,    0, //black
   255,230,187,0 //gold
 };
 
@@ -82,6 +86,7 @@ DEFINE_GRADIENT_PALETTE( gop_gp ) {
   0,    0,    0,    0, //black
 80,22,224,89,//green
 160,224,135,0,//orange
+200,    0,    0,    0, //black
 255,123,22,224//purple
 };
 
@@ -96,7 +101,9 @@ DEFINE_GRADIENT_PALETTE( bpg_gp ) {
 DEFINE_GRADIENT_PALETTE( grb_gp ) {
   0,    0,    0,    0, //black
 80,11,224,109,//green
+  120,    0,    0,    0, //black
 160,11,107,224,//blue
+  200,    0,    0,    0, //black
 255,225,85,0//red
 };
 ///////////////////////////////////////////////////////////////////////
@@ -105,6 +112,7 @@ DEFINE_GRADIENT_PALETTE( pbgg_gp ) {
   0,    0,    0,    0, //black
 60,224,22,136,//pink
 120,0,86,224,//blue
+140,    0,    0,    0, //black
 180,20,224,11,//green 
 255,224,158,22//gold
 };
@@ -112,6 +120,7 @@ DEFINE_GRADIENT_PALETTE( bggo_gp ) {
   0,    0,    0,    0, //black
 60,19,0,224,//blue
 120,11,224,110,//green
+1160,    0,    0,    0, //black
 180,224,194,29,//gold
 255,224,41,22//burnt orange
 };
