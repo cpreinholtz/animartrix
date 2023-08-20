@@ -173,7 +173,7 @@ PatternAndNameList gPatterns = {
   {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
   {Caleido1,"Caleido1"}, 
   {Complex_Kaleido_5,"Complex_Kaleido_5"},
-  {GrowingSpheres, "GrowingSpheres"},
+  //{GrowingSpheres, "GrowingSpheres"},
   {PlaneRotation1, "PlaneRotation1"},
 
 
@@ -198,7 +198,7 @@ PatternAndNameList gPatterns = {
   
   {Complex_Kaleido_6,"Complex_Kaleido_6"}, ///great at 30 secs!
   {Complex_Kaleido_4,"Complex_Kaleido_4"},//good
-  {Complex_Kaleido_3, "Complex_Kaleido_3"},
+  //{Complex_Kaleido_3, "Complex_Kaleido_3"},
   {Complex_Kaleido_2,"Complex_Kaleido_2"},
   {Complex_Kaleido, "Complex_Kaleido"},
   
@@ -219,22 +219,22 @@ PatternAndNameList gPatterns = {
   {RGB_Blobs2,"RGB_Blobs2"},
   {RGB_Blobs,"RGB_Blobs"},
   {Polar_Waves,"Polar_Waves"},
-  {Slow_Fade,"Slow_Fade"},
+  //{Slow_Fade,"Slow_Fade"},
   {Zoom2, "Zoom2"}, 
   {Zoom,"Zoom"},
   {Hot_Blob,"Hot_Blob"},
   {Spiralus2,"Spiralus2"},
   {Spiralus,"Spiralus"},
   {Yves,"Yves"},
-  {Scaledemo1,"Scaledemo1"},///active and fun
-  {Scaledemo2,"Scaledemo2"},///active and fun
-  {Lava1,"Lava1"},//broken
+  //{Scaledemo1,"Scaledemo1"},///active and fun
+  //{Scaledemo2,"Scaledemo2"},///active and fun
+  {Lava1,"Lava1"},
   
   {Caleido3,"Caleido3"},
   {Caleido2,"Caleido2"},
   {Caleido1,"Caleido1"}, 
   
-  {Distance_Experiment,"Distance_Experiment"},
+  //{Distance_Experiment,"Distance_Experiment"},
   {Center_Field,"Center_Field"},
   {Waves,"Waves"},//broken
   {Chasing_Spirals,"Chasing_Spirals"},
@@ -383,18 +383,18 @@ void copyBuffer(){
 
 //******************************************************************************************************************
 
-
+bool playAll = true;
 
 bool verbose = false;
 bool verbose2 = false;
 bool play = false;
-bool playAll = true;
-bool doModulation = false;
+
+bool doModulation = true;
 bool doRandom = true;
 bool musicReactive = true;
 bool hueDrift = true;
 bool doDarkCheck = true;
-int cnt = 32;
+
 
 
 //******************************************************************************************************************
@@ -432,7 +432,7 @@ void setup() {
   amp1.gain(85);        // amplify sign to useful range
   audio.beat_multiplier_min = 2.2;
   audio.peak_hyst_arm = 10;
-  audio.peak_volume_min = 0.03;  //SET TO .1
+  audio.peak_volume_min = 0.1;  //SET TO .1
   audio.iir_volume.setWeight(.995);
 #else
   audio.beat_multiplier_min = 2.0;
@@ -523,10 +523,13 @@ void addLife(){
   //add all sorts of modulation
   if (playAll){
     //change pattern
-    EVERY_N_SECONDS(45) randomPattern();
-
+    int chg = 60;
+    EVERY_N_SECONDS(chg) {
+      randomPattern();
+      incrementPalette();
+    }
     //change music reactivity
-    EVERY_N_SECONDS(80) randomMusicMod();
+    EVERY_N_SECONDS(chg*2) randomMusicMod();
 
     //change hue shift
     art.gHue += .0001;
@@ -647,18 +650,16 @@ void updateAudio(){
       float b0 = fft256_1.read(0);
       audio.peakDetect(b0);
       if (audio.beat_detected && musicReactive) {
-        Serial.println("beat");
+        //Serial.println("beat");
         audioModBeatDestPtr->trigger(audio.ratio/3.0);
       } // beat
     } // fft available
 #else
   //audio.update();
   if (audio.beat_detected_poll && musicReactive) {
-    Serial.println("beat");
+    //Serial.println("beat");
     audioModBeatDestPtr->trigger(audio.ratio_poll);
     audio.beat_detected_poll = false;
-
-
   } // beat
 #endif
 #endif

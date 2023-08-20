@@ -207,12 +207,18 @@ public:
 
 
 
-    global_scale_x.setMinMax(1.0/ max_spread*4.0, 1.0/ max_spread*14.0); //todo scale with size etc???
-    global_scale_y.setMinMax(1.0/ max_spread*4.0, 1.0/ max_spread*14.0);
-    global_scale_z.setMinMax(1.0/ max_spread*4.0, 1.0/ max_spread*14.0);
-    global_scale_x.envelope.shape = envSine;
-    global_scale_y.envelope.shape = envSine;
-    global_scale_z.envelope.shape = envSine; 
+    global_scale_x.setMinMax(1.0/ max_spread*5.0, 1.0/ max_spread*14.0); //todo scale with size etc???
+    global_scale_y.setMinMax(1.0/ max_spread*5.0, 1.0/ max_spread*14.0);
+    global_scale_z.setMinMax(1.0/ max_spread*5.0, 1.0/ max_spread*14.0);
+    //global_scale_x.envelope.shape = envSine;
+    //global_scale_y.envelope.shape = envSine;
+    //global_scale_z.envelope.shape = envSine; 
+    //global_scale_x.envelope.setAttackDecay(50,150);
+    //global_scale_z.envelope.setAttackDecay(50,150);
+    //global_scale_z.envelope.setAttackDecay(50,150);
+    global_scale_x.envelope.shape = envExponential;
+    global_scale_y.envelope.shape = envExponential;
+    global_scale_z.envelope.shape = envExponential;
     global_scale_x.envelope.setAttackDecay(50,150);
     global_scale_z.envelope.setAttackDecay(50,150);
     global_scale_z.envelope.setAttackDecay(50,150);
