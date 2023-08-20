@@ -187,6 +187,7 @@ public:
     upVector.set(0,1,0);
     render_spherical_lookup_table();
     run_default_oscillators();
+    float max_spread = max(max(spread_x,spread_y),spread_z);
 
     //init modables  
 
@@ -206,15 +207,15 @@ public:
 
 
 
-    global_scale_x.setMinMax(0.25, 1.2); //todo scale with size etc???
-    global_scale_y.setMinMax(0.25, 1.2);
-    global_scale_z.setMinMax(0.25, 1.2);
-    global_scale_x.envelope.shape = envTriangle;
-    global_scale_y.envelope.shape = envTriangle;
-    global_scale_z.envelope.shape = envTriangle; 
-    global_scale_x.envelope.setAttackDecay(100,100);
-    global_scale_z.envelope.setAttackDecay(100,100);
-    global_scale_z.envelope.setAttackDecay(100,100);
+    global_scale_x.setMinMax(1.0/ max_spread*4.0, 1.0/ max_spread*14.0); //todo scale with size etc???
+    global_scale_y.setMinMax(1.0/ max_spread*4.0, 1.0/ max_spread*14.0);
+    global_scale_z.setMinMax(1.0/ max_spread*4.0, 1.0/ max_spread*14.0);
+    global_scale_x.envelope.shape = envSine;
+    global_scale_y.envelope.shape = envSine;
+    global_scale_z.envelope.shape = envSine; 
+    global_scale_x.envelope.setAttackDecay(50,150);
+    global_scale_z.envelope.setAttackDecay(50,150);
+    global_scale_z.envelope.setAttackDecay(50,150);
 
     gHue.edge = edgeWrap;
     //minmax default 0:1 
@@ -223,10 +224,10 @@ public:
     gHue.envelope.setMax(0.1);
     gHue.envelope.shape = envExponential;    
 
-    roll.setMinMax(0,2*PI);
+    roll.setMinMax(0,PI2);
     roll.edge = edgeWrap;
     roll.envelope.setAttackDecay(500,100);
-    roll.envelope.setMax(2*PI);
+    roll.envelope.setMax(PI2);
     roll.envelope.shape = envExponential;
 
 
@@ -249,9 +250,9 @@ public:
 
     //edgeclip fine
 
-    center_xm.envelope.setAttackDecay(2000,2000);
-    center_ym.envelope.setAttackDecay(2000,2000);
-    center_zm.envelope.setAttackDecay(2000,2000);
+    center_xm.envelope.setAttackDecay(10000,30000);
+    center_ym.envelope.setAttackDecay(10000,30000);
+    center_zm.envelope.setAttackDecay(10000,30000);
 
     center_xm.envelope.setMax(xmax);
     center_ym.envelope.setMax(ymax);
@@ -266,8 +267,6 @@ public:
 
 #endif
 
-
-    float max_spread = max(max(spread_x,spread_y),spread_z);
     global_scale_x = 1.0/ max_spread*7.0; // this should end up ~1
     global_scale_y = 1.0/ max_spread*7.0; //todo make these scale with pixel spacing
     global_scale_z = 1.0/ max_spread*7.0;
@@ -286,9 +285,9 @@ public:
     //global_intensity.envelope.shape = envTriangle;
 
 
-    global_bpm.setMinMax(60, 200);
+    global_bpm.setMinMax(30, 600);
     global_bpm.envelope.setMax(50);
-    global_bpm.envelope.setAttackDecay(10,2000);
+    global_bpm.envelope.setAttackDecay(10,200);
     global_bpm.envelope.shape = envTriangle;
     global_bpm = 115.0;
 
@@ -408,7 +407,7 @@ public:
 
       move.ramp[i]      = move.ramp_no_offset[i] + timings.offset[i] * timings.ratio[i];     // continously rising offsets, returns              0 + offset to max_float + offset, infinite ramp
       
-      move.saw[i]      = fmodf(move.ramp[i], 2 * PI);                        // angle offsets for continous rotation, returns    0 to 2 * PI, sawtooth
+      move.saw[i]      = fmodf(move.ramp[i], PI2);                        // angle offsets for continous rotation, returns    0 to 2 * PI, sawtooth
 
       //move.tri[i]      = fabsf(move.saw[i] - PI);                        // angle offsets for continous rotation, returns    PI to 0 to PI, triangle double frequency
       
@@ -451,8 +450,8 @@ public:
 
 #if ART_TEENSY
     for (int i=10; i < num_oscillators; i++ ){
-      timings.ratio[i] = float(i)/1000;
-      timings.offset[i] = 100*i;
+      timings.ratio[i] = float(i)/500;
+      timings.offset[i] = 10000*i;
     }
 #endif
 
@@ -602,7 +601,7 @@ public:
         
         
     }
-    radial_filter_radius = maxD * 1.3;
+    radial_filter_radius = maxD * 2;
 
     Serial.print("max mapped distance: "); Serial.println(maxD);
     Serial.print("reccomended radias filter: "); Serial.println(maxD*1.3);
@@ -614,8 +613,24 @@ public:
 
   }
 
+#if ART_TEENSY
+  void re_render_spherical_lookup_table() {
+    center_x = center_xm;
+    center_y = center_ym;
+    center_z = center_zm;
+    for (int n = 0; n < NUM_LEDS; n++) {
+        float dx = ledMap[n][xind] - center_x;
+        float dy = ledMap[n][yind] - center_y;
+        float dz = ledMap[n][zind] - center_z;
+        
+        distance[n] = sqrt(pow(dx, 2) + pow(dy, 2) + pow(dz, 2));
+        polar_theta[n] = atan2f(dy,dx);
+        spherical_phi[n] = acosf(dz / distance[n]);
+    }
 
+  }
 
+#endif
   /////////////////////////////////////////////////////////////////////////
   //Color setting Utilities, map, sanity check
   /////////////////////////////////////////////////////////////////////////
@@ -741,7 +756,7 @@ public:
 
 #if ART_WAG and USE_IMU
   upVector.makeUnitVector();
-  roll = upVector.x*2*PI;
+  roll = upVector.x*PI2;
   pitch = upVector.y*PI;
 #endif
   }
@@ -776,7 +791,7 @@ public:
 
   // show current framerate and rendered pixels per second
   void report_performance() {
-   
+
     int fps = FastLED.getFPS();                 // frames per second
     //int kpps = (fps * NUM_LEDS) / 1000;   // kilopixel per second
   
@@ -1839,7 +1854,7 @@ public:
       animation.anglephi   = spherical_phi[n]; //todo, move this later
       
       animation.dist       = distance[n] ;
-      animation.angle      = polar_theta[n] + 2*PI + move.noise_angle[5];
+      animation.angle      = polar_theta[n] + PI2 + move.noise_angle[5];
       animation.scale_x    = 0.08;
       animation.scale_y    = 0.08;
       animation.scale_z    = 0.08;
@@ -1849,7 +1864,7 @@ public:
       float show1          = render_value(animation);
 
       animation.dist       = distance[n];
-      animation.angle      = polar_theta[n] + 2*PI + move.noise_angle[6];;
+      animation.angle      = polar_theta[n] + PI2 + move.noise_angle[6];;
       animation.scale_x    = 0.08;
       animation.scale_y    = 0.08;
       animation.scale_z    = 0.08;
@@ -3492,13 +3507,13 @@ public:
 
     timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.001;    // master speed
 
-    timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.0027;
-    timings.ratio[2] = 0.0031;
-    timings.ratio[3] = 0.0033;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.0037;
-    timings.ratio[5] = 0.0038;
-    timings.ratio[5] = 0.0041;
+    timings.ratio[0] = 0.00025;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.00027;
+    timings.ratio[2] = 0.00031;
+    timings.ratio[3] = 0.00033;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[4] = 0.00037;
+    timings.ratio[5] = 0.00038;
+    timings.ratio[5] = 0.00041;
     
     calculate_oscillators(timings); 
 
@@ -3587,13 +3602,13 @@ public:
 
     timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.01;    // master speed 0.01 in the video
 
-    timings.ratio[0] = 0.025;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.027;
-    timings.ratio[2] = 0.031;
-    timings.ratio[3] = 0.033;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[4] = 0.037;
-    timings.ratio[5] = 0.038;
-    timings.ratio[6] = 0.041;
+    timings.ratio[0] = 0.0025;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.0027;
+    timings.ratio[2] = 0.0031;
+    timings.ratio[3] = 0.0033;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[4] = 0.0037;
+    timings.ratio[5] = 0.0038;
+    timings.ratio[6] = 0.0041;
     
     calculate_oscillators(timings); 
 
@@ -4393,7 +4408,7 @@ public:
 
       show4 = colordodge(show1, show2);
 
-      float rad = sinf(PI/2+distance[n]/14); // todo better radial filter?!
+      float rad = sinf(PIOVER2+distance[n]/14); // todo better radial filter?!
 
       
       /*

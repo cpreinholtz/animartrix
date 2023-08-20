@@ -33,7 +33,7 @@ License CC BY-NC 3.0
 //!!!! ONLY INCLUDE ONE MAP
 
 
-#define USE_AUDIO false
+#define USE_AUDIO true
 #define USE_IMU false
 // todo set these in map??^^
 
@@ -291,16 +291,19 @@ void setMusicMod(int i){
       else if (i==1) audioModBeatDestPtr = &art.global_intensity;
       else if (i==2) audioModBeatDestPtr = &art.global_bpm;
 #if ART_TEENSY
-      else if (i==4) audioModBeatDestPtr = &art.global_scale_x;
-      else if (i==5) audioModBeatDestPtr = &art.global_scale_y;
-      else if (i==6) audioModBeatDestPtr = &art.global_scale_z;
-      else if (i==7) audioModBeatDestPtr = &art.gHue;
+      else if (i==3) audioModBeatDestPtr = &art.global_scale_x;
+      else if (i==4) audioModBeatDestPtr = &art.global_scale_y;
+      else if (i==5) audioModBeatDestPtr = &art.global_scale_z;
+      else if (i==6) audioModBeatDestPtr = &art.gHue;
 #endif
+      else audioModBeatDestPtr = &dummy_mod; 
+      Serial.println("setting music mod to");
+      Serial.println(i);
 }
 
 void randomMusicMod(){
 #if ART_TEENSY
-  int im = 8;
+  int im = 7;
 #else
   int im = 3;
 #endif
@@ -391,6 +394,7 @@ int cnt = 32;
 //******************************************************************************************************************
 void setup() {
   Serial.begin(115200);                 // check serial monitor for current fps count
+  delay(100);
 
   art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
   //art.global_intensity.setBaseToMiddle();
@@ -422,7 +426,7 @@ void setup() {
   amp1.gain(85);        // amplify sign to useful range
   audio.beat_multiplier_min = 2.2;
   audio.peak_hyst_arm = 10;
-  audio.peak_volume_min = 0.1;  
+  audio.peak_volume_min = 0.03;  //SET TO .1
   audio.iir_volume.setWeight(.995);
 #else
   audio.beat_multiplier_min = 2.0;
@@ -528,19 +532,28 @@ void addLife(){
     int prob = 100;
 
     //Change X / Y / Z centers
-    /*
-    EVERY_N_MILLIS(6642) art.center_xm.trigger(float(random(prob))/100.0);
-    art.center_xm.update();
+    /*    */
 
-    EVERY_N_MILLIS(4833) art.center_ym.trigger(float(random(prob))/100.0);
+    float val = float(random(-prob,prob))/float(prob);
+
+    EVERY_N_MILLIS(62542) {
+      art.center_xm.trigger(val);
+      Serial.println(val);
+    }
+    art.center_xm.update();
+    
+    val = float(random(-prob,prob))/float(prob);
+    EVERY_N_MILLIS(42833) art.center_ym.trigger(val);
     art.center_ym.update();
 
-    EVERY_N_MILLIS(7489) art.center_ym.trigger(float(random(prob))/100.0);
+    val = float(random(-prob,prob))/float(prob);
+    EVERY_N_MILLIS(74489) art.center_zm.trigger(val);
     art.center_zm.update();
+    
+    art.re_render_spherical_lookup_table();
 
     //set in animation, can only change envelope
-    animation.low_limit.trigger( -.3 + .05 * move.noise_angle[10]);
-    */
+
     animation.low_limit.trigger(.3 * (move.noise_angle[10]-PI));
     animation.low_limit.update();
 
@@ -549,10 +562,24 @@ void addLife(){
     //animation.high_limit.trigger( move.sine[11]);
     animation.high_limit.update();
 
-    EVERY_N_MILLIS(100){
-      Serial.println();
-      Serial.println(animation.low_limit.getEnvelope());
-      Serial.println(animation.high_limit.getEnvelope());
+    EVERY_N_MILLIS(25){
+      if(verbose2){
+        //
+        //Serial.print("center_xme:"); Serial.print(art.center_xm.envelope.getMax()); Serial.print(",");
+        //Serial.print("center_xm:"); Serial.print(art.center_xm.getEnvelope()); Serial.print(",");
+        //art.center_xm.envelope.verbose=true;
+        //art.center_xm.envelope.debug();        
+
+        art.global_scale_x.envelope.verbose=true;
+        art.global_scale_x.envelope.debug();
+        /*
+        Serial.print("center_ym:"); Serial.print(art.center_ym.getEnvelope()); Serial.print(",");
+        Serial.print("center_zm:"); Serial.print(art.center_zm.getEnvelope()); Serial.print(",");
+        Serial.print("low_limit:"); Serial.print(animation.low_limit.getEnvelope()); Serial.print(",");
+        Serial.print("high_limit:"); Serial.print(animation.high_limit.getEnvelope()); Serial.print(",");
+        Serial.println();*/
+      } else   art.center_xm.envelope.verbose=false;
+
       
       /*
 
@@ -654,7 +681,10 @@ void updateSerial(){
     } else if (incomingByte == 'D'){
       verbose2 = not verbose2;
       Serial.print("Setting top verbose2 shift to"); Serial.println(verbose2);
-    } else if(incomingByte == 'P'){
+    } else if(incomingByte == 'p'){
+      playAll = not playAll;    
+      Serial.print("Setting playAll to"); Serial.println(playAll);
+    }else if(incomingByte == 'P'){
       play = not play;    
       Serial.print("Setting play to"); Serial.println(play);
     } else if(incomingByte == 'a'){
@@ -673,7 +703,7 @@ void updateSerial(){
       Serial.print("Setting musicReactive shift to"); Serial.println(musicReactive);
     } else if (incomingByte == 'b'){
       incrementPattern(-1); 
-    } else if (incomingByte == 'p'){
+    } else if (incomingByte == 'O'){
       audio.verbose = not audio.verbose;
       Serial.print("Setting audio.verbose shift to"); Serial.println(audio.verbose);
     } else if (incomingByte == '['){

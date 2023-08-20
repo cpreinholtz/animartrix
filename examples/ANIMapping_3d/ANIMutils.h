@@ -20,7 +20,8 @@ License CC BY-NC 3.0
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 const float PI2 = 2*PI;
-
+const float PIOVER2 = PI/2;
+const float PIOVER2T3 = 3*PI/2;
 
 ////////////////////////////////////////////////////////////////////////////
 // Data structures
@@ -114,7 +115,7 @@ rgbF Hsi2Rgb(hsiF hsi) {
   hsi.i = constrain_float(hsi.i, 0, 255);
 
     // Step 1: Compute RGB assuming full intensity (I == 1)
-  hAdj = hsi.h * 2 * PI;    // convert h to radians
+  hAdj = hsi.h * PI2;    // convert h to radians
   if (hAdj <= rad120) {   // if h <= 120 degrees
 
     r = (1 + (hsi.s * cos(hAdj))/cos(rad60 - hAdj)) / 3;
@@ -261,7 +262,6 @@ private:
   int state = stateIdle;
 
   float theta = 0;
-  float start_theta = 0;
 
 
   
@@ -323,10 +323,25 @@ private:
   }
 
   void updateSine(){
-    if (state == stateAttack or state == stateDecay){
-      if (isLfo) theta = fmodf(start_theta + PI * elapsedMillis / (attackMillis + decayMillis), 2*PI);
-      else theta = max(2*PI, start_theta + 2*PI * elapsedMillis / (attackMillis + decayMillis));
+    if (state == stateAttack){
+      if (isLfo) theta =  PIOVER2 * elapsedMillis / attackMillis;
+      else theta = min(PIOVER2, PIOVER2 * elapsedMillis / attackMillis);
+      //dc offset for start signal
+      //amplitude high-start signal
+      //phase shift 0
+      //total angular distance in attack PI/2
+      signal = start_signal + (high-start_signal) * sinf(theta);
+
+    } else if (state == stateDecay){
+      if (isLfo) theta = PIOVER2 +  PIOVER2T3 * elapsedMillis / (decayMillis);
+      //dc offset for low
+      //amplitude high-low
+      //phase shift PI/2
+      //max phase 2 PI
+      //total angular distance in decay 3PI/2
+      else theta = min(PI2, PIOVER2 + PIOVER2T3 * elapsedMillis / (decayMillis));
       signal = low + (high-low) * sinf(theta);
+
     } else {
       signal = low;
       theta = 0;
@@ -343,9 +358,9 @@ private:
       theta = 0;
     }
   }
-
+public:
   void debug(){        
-    EVERY_N_MILLIS(50) if (verbose){
+
       Serial.print("elapsedSeconds:");
       Serial.print(elapsedMillis/1000);
       Serial.print(",");
@@ -362,10 +377,8 @@ private:
       Serial.print(high);
       Serial.print(",");
       Serial.print("low:");
+      Serial.flush();
       Serial.print(low);
-      Serial.print(",");
-      Serial.print("start_theta:");
-      Serial.print(start_theta);
       Serial.print(",");
       Serial.print("theta:");
       Serial.print(theta);
@@ -380,10 +393,10 @@ private:
       Serial.print("ref:");
       Serial.print(3);      
       Serial.println();
-    }
+
   }
 
-public:
+
 
   float getSignal() const {
     return signal;
@@ -405,12 +418,14 @@ public:
      //if( high < low) Serial.println("dude, max should probably be > low in evelope setMax");
      //Serial.println(high);
   }
+  float getMax(){
+    return high;
+  }
 
   //! start a new envelop
   void trigger(){
     start_millis = millis();
     start_signal = signal;
-    start_theta = theta;
     state = stateAttack;
     wasLfo = isLfo;
     //update();
@@ -424,7 +439,7 @@ public:
     else if (shape == envSine ) updateSine();
     else if (shape == envConst ) updateConst();
 
-    debug();
+    EVERY_N_MILLIS(50) if (verbose) debug();
   }
 
   void stopLfoNextCylce(){
