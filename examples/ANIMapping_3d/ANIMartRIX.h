@@ -34,7 +34,11 @@ License CC BY-NC 3.0
 #include <sphere3d.h>
 #include "ANIMaudio.h"
 
-#define num_oscillators 10
+#if ART_TEENSY
+#define num_oscillators 12
+#else
+#define num_oscillators 9
+#endif
 
 #ifndef NUM_LEDS
   //#define NUM_LEDS 100
@@ -65,16 +69,19 @@ extern float ledMap[NUM_LEDS][3]; //TODO, make this better...
 
 struct render_parameters {
 
-  float center_x = (sqrt(NUM_LEDS)/2) - 0.5;   // center of the matrix
-  float center_y = (sqrt(NUM_LEDS)/2) - 0.5;
-  float center_z = 0;
+
   float dist, angle, anglephi;                
   float scale_x = 0.1;                  // smaller values = zoom in
   float scale_y = 0.1;
   float scale_z = 0.1;       
   float offset_x, offset_y, offset_z;     
-  float low_limit  = 0;                 // getting contrast by highering the black point
-  float high_limit = 1;                                            
+#if ART_TEENSY
+  modableF low_limit;                 // getting contrast by highering the black point
+  modableF high_limit;                                            
+#else
+  float low_limit  = 0;                 // map(render) from low to 0  decrease me for more high values
+  float high_limit = 1;                 // map(render) from high to 1 lower me for more high values
+#endif
 };
 
 render_parameters animation;     // all animation parameters in one place
@@ -153,14 +160,23 @@ public:
 
 
 
-  // modables for external modulation
-  modableF gHue; //todo name globa hue?
+  // modables for external modulation  
   modableF global_intensity; //todo name globa hue?
-  modableF global_scale_x;
-  modableF global_scale_y;
-  modableF global_scale_z;
-
   modableF global_bpm; // todo why do i have two of these?
+
+
+  //modables only for teensy
+#if ART_TEENSY
+  modableF center_xm, center_ym, center_zm;
+  modableF gHue; //todo name globa hue?  
+  modableF global_scale_x, global_scale_y, global_scale_z;
+  modableF roll;
+  modableF pitch;
+#else
+  float gHue = 0;
+  float global_scale_x, global_scale_y, global_scale_z;
+
+#endif
 
   ANIMaudio * audio;
 
@@ -168,30 +184,92 @@ public:
   //scale, smaller numbers = zoom in = larger blobs
   void init(struct CRGB *data) {
     this->buffer = data;
-
-
+    upVector.set(0,1,0);
     render_spherical_lookup_table();
 
-    //init modables    
+    //init modables  
+
+#if ART_TEENSY
+    
+    animation.low_limit.setMinMax(-2,.5);
+    animation.low_limit = 0;
+    //animation.low_limit.envelope.isLfo = true;
+    //animation.low_limit.envelope.shape = envConst;
+    //animation.low_limit.envelope.setMax(0);
+
+    animation.high_limit.setMinMax(.5,1.2);
+    animation.high_limit = 1;
+    //animation.high_limit.envelope.isLfo = true;
+    //animation.high_limit.envelope.shape = envConst;
+    //animation.high_limit.envelope.setMax(0);
+
+
 
     global_scale_x.setMinMax(0.25, 1.2); //todo scale with size etc???
     global_scale_y.setMinMax(0.25, 1.2);
     global_scale_z.setMinMax(0.25, 1.2);
+    global_scale_x.envelope.shape = envTriangle;
+    global_scale_y.envelope.shape = envTriangle;
+    global_scale_z.envelope.shape = envTriangle; 
+    global_scale_x.envelope.setAttackDecay(100,100);
+    global_scale_z.envelope.setAttackDecay(100,100);
+    global_scale_z.envelope.setAttackDecay(100,100);
+
+    gHue.edge = edgeWrap;
+    //minmax default 0:1 
+    //gHue.envelope.setMax(1.0);// todo test out - min max....
+    gHue.envelope.setAttackDecay(10,2000);
+    gHue.envelope.setMax(0.1);
+    gHue.envelope.shape = envExponential;    
+
+    roll.setMinMax(0,2*PI);
+    roll.edge = edgeWrap;
+    roll.envelope.setAttackDecay(500,100);
+    roll.envelope.setMax(2*PI);
+    roll.envelope.shape = envExponential;
+
+
+    pitch.setMinMax(0,PI);
+    pitch.edge = edgeMirror;
+    pitch.envelope.setAttackDecay(500,100);
+    pitch.envelope.setMax(PI);
+    pitch.envelope.shape = envExponential;
+
+
+
+
+    center_xm.setMinMax(xmin, xmax);
+    center_ym.setMinMax(ymin, ymax);
+    center_zm.setMinMax(zmin, zmax);
+
+    center_xm = (spread_x)/2.0 + xmin;
+    center_ym = (spread_y)/2.0 + ymin;
+    center_zm = (spread_z)/2.0 + zmin;
+
+    //edgeclip fine
+
+    center_xm.envelope.setAttackDecay(2000,2000);
+    center_ym.envelope.setAttackDecay(2000,2000);
+    center_zm.envelope.setAttackDecay(2000,2000);
+
+    center_xm.envelope.setMax(xmax);
+    center_ym.envelope.setMax(ymax);
+    center_zm.envelope.setMax(zmax);
+
+
+    center_xm.envelope.shape = envSine;
+    center_ym.envelope.shape = envSine;
+    center_zm.envelope.shape = envSine;
+
+
+
+#endif
+
 
     float max_spread = max(max(spread_x,spread_y),spread_z);
     global_scale_x = 1.0/ max_spread*7.0; // this should end up ~1
     global_scale_y = 1.0/ max_spread*7.0; //todo make these scale with pixel spacing
     global_scale_z = 1.0/ max_spread*7.0;
-
-    global_scale_x.envelope.shape = envTriangle;
-    global_scale_y.envelope.shape = envTriangle;       
-    global_scale_z.envelope.shape = envTriangle; 
-
-    global_scale_x.envelope.setAttackDecay(100,100);
-    global_scale_z.envelope.setAttackDecay(100,100);
-    global_scale_z.envelope.setAttackDecay(100,100);
-
-        //
 
     Serial.print("gscalx: ");
     Serial.println(global_scale_x.getBase());
@@ -199,15 +277,6 @@ public:
     Serial.println(global_scale_y.getBase());
     Serial.print("gscalz: ");
     Serial.println(global_scale_z.getBase());
-
-
-    //global_scale handled in render_spherical_lookup_table
-    gHue.edge = edgeWrap;
-    //gHue.envelope.setMax(1.0);// todo test out - min max....
-    gHue.envelope.setAttackDecay(10,2000);
-    gHue.envelope.setMax(0.1);
-    gHue.envelope.shape = envExponential;
-
 
     //global_intensity; //default, should be overwritten in top level
     //global_intensity.envelope.setMinMax(1.0);
@@ -379,6 +448,18 @@ public:
 
     timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.005;    // master speed
 
+#if ART_TEENSY
+    for (int i=0; i<9; i++ ){
+      timings.ratio[0] = i;
+      timings.offset[0] = 100*i;
+    }
+    for (int i=10; i < num_oscillators; i++ ){
+      timings.ratio[0] = float(i)/15;
+      timings.offset[0] = 100*i;
+    }
+
+#else
+
     timings.ratio[0] = 1;           // speed ratios for the oscillators, higher values = faster transitions
     timings.ratio[1] = 2;
     timings.ratio[2] = 3;
@@ -388,6 +469,7 @@ public:
     timings.ratio[6] = 7;
     timings.ratio[7] = 8;
     timings.ratio[8] = 9;
+    timings.ratio[9] = 10;
     timings.ratio[9] = 10;
 
     
@@ -402,6 +484,8 @@ public:
     timings.offset[8] = 800;
     timings.offset[9] = 900;
     //set_osc_offset();
+
+#endif
 
     calculate_oscillators(timings);  
   }
@@ -423,9 +507,22 @@ public:
 
     // convert **SPHERICAL** coordinates back to cartesian ones
     //this is really the only difference from base class
-    float newx = (animation.offset_x + animation.center_x - (animation.dist * sinf(animation.anglephi) * cosf(animation.angle))) * animation.scale_x * global_scale_x;
-    float newy = (animation.offset_y + animation.center_y - (animation.dist * sinf(animation.anglephi) * sinf(animation.angle))) * animation.scale_y * global_scale_y;
-    float newz = (animation.offset_z + animation.center_z - (animation.dist * cosf(animation.anglephi))) * animation.scale_z * global_scale_z;
+
+#if ART_TEENSY
+    float newtheta = animation.angle + roll;
+    float newphi = animation.anglephi + pitch; 
+    newphi = animation.anglephi;
+    newtheta = animation.angle ;
+
+
+    float newx = (animation.offset_x + center_x - (animation.dist * sinf(newphi) * cosf(newtheta))) * animation.scale_x * global_scale_x;
+    float newy = (animation.offset_y + center_y - (animation.dist * sinf(newphi) * sinf(newtheta))) * animation.scale_y * global_scale_y;
+    float newz = (animation.offset_z + center_z - (animation.dist * cosf(newphi))) * animation.scale_z * global_scale_z;
+#else
+    float newx = (animation.offset_x + center_x - (animation.dist * sinf(animation.anglephi) * cosf(animation.angle))) * animation.scale_x * global_scale_x;
+    float newy = (animation.offset_y + center_y - (animation.dist * sinf(animation.anglephi) * sinf(animation.angle))) * animation.scale_y * global_scale_y;
+    float newz = (animation.offset_z + center_z - (animation.dist * cosf(animation.anglephi))) * animation.scale_z * global_scale_z;
+#endif
 
     // render noisevalue at this new cartesian point
     //uint16_t raw_noise_field_value =inoise16(newx, newy, newz);
@@ -437,9 +534,11 @@ public:
 
     if (raw_noise_field_value < animation.low_limit)  raw_noise_field_value =  animation.low_limit;
     if (raw_noise_field_value > animation.high_limit) raw_noise_field_value = animation.high_limit;
-
+#if ART_TEENSY
+    float scaled_noise_value = map_float(raw_noise_field_value, animation.low_limit.getEnvelope(), animation.high_limit.getEnvelope(), 0, scaleHigh);
+#else
     float scaled_noise_value = map_float(raw_noise_field_value, animation.low_limit, animation.high_limit, 0, scaleHigh);
-
+#endif
     return scaled_noise_value;
   }
 
@@ -472,6 +571,12 @@ public:
     center_x = (spread_x)/2.0 + xmin;
     center_y = (spread_y)/2.0 + ymin;
     center_z = (spread_z)/2.0 + zmin;
+    
+#if ART_TEENSY
+    center_xm = (spread_x)/2.0 + xmin;
+    center_ym = (spread_y)/2.0 + ymin;
+    center_zm = (spread_z)/2.0 + zmin;
+#endif
     
     Serial.print("x center: ");Serial.println(center_x);
     Serial.print("y center: ");Serial.println(center_y);
@@ -630,6 +735,20 @@ public:
   void get_ready() {  // measure time etc
     markStartOfRender();
     do_often();
+    animation.low_limit = 0;
+    animation.high_limit = 1;
+
+#if ART_TEENSY
+    //center_x = center_xm.getEnvelope();
+    //center_x = center_ym.getEnvelope();
+    //center_x = center_zm.getEnvelope();
+#endif
+
+#if ART_WAG and USE_IMU
+  upVector.makeUnitVector();
+  roll = upVector.x*2*PI;
+  pitch = upVector.y*PI;
+#endif
   }
 
   void do_often(){
@@ -638,7 +757,7 @@ public:
       audio->update();//really needed to figure out more regular polling
     }
 #endif
-  }
+ }
 
   void markStartOfRender(){
     a = micros();
@@ -750,8 +869,9 @@ public:
 
 
     //myPlane.yaw(.001 * move.noise_angle[1]);
+
     myPlane.setRefpoint(center_x+spread_x*move.sine[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.sine[2]*move.noise_angle[1]/2.0, center_z);
-    
+
       for (int n = 0; n < NUM_LEDS; n++) {
         animation.anglephi   = spherical_phi[n]; //todo, move this later
         // describe and render animation layers
@@ -899,8 +1019,10 @@ public:
 
 
     myPlane.yaw(.001 * move.noise_angle[0]);
+
     myPlane.setRefpoint(center_x+spread_x*move.sine[1]+move.noise_angle[0]/2.0, center_y+spread_y*move.sine[2]/2.0, center_z);
-    
+
+
       for (int n = 0; n < NUM_LEDS; n++) {
         animation.anglephi   = spherical_phi[n]; //todo, move this later
         // describe and render animation layers
@@ -2052,7 +2174,6 @@ public:
       
       animation.offset_z   = move.ramp[0];
       animation.low_limit  = -0.1;
-      animation.high_limit = 1;
       float show1          = render_value(animation);
 
       animation.dist       = animation.dist  * 1.1;
@@ -2650,7 +2771,6 @@ public:
       animation.offset_x   = 0;
       animation.offset_y   = -20 * move.ramp[0];;
       animation.low_limit  = -1;
-      animation.high_limit = 1;
       show1          = render_value(animation);
 
       animation.dist       = distance[n];
@@ -2662,7 +2782,6 @@ public:
       animation.offset_x   = 0;
       animation.offset_y   = -20 * move.ramp[0];;
       animation.low_limit  = -1;
-      animation.high_limit = 1;
       show2          = render_value(animation);
 
       animation.dist       = distance[n];
@@ -2674,7 +2793,6 @@ public:
       animation.offset_x   = 500+show1/20;
       animation.offset_y   = -4 * move.ramp[0] + show2/20;
       animation.low_limit  = 0;
-      animation.high_limit = 1;
       show3          = render_value(animation);
 
       animation.dist       = distance[n];
@@ -2686,7 +2804,6 @@ public:
       animation.offset_x   = 500+show1/18;
       animation.offset_y   = -4 * move.ramp[0] + show2/18;
       animation.low_limit  = 0;
-      animation.high_limit = 1;
       show4          = render_value(animation);
 
       animation.dist       = distance[n];
@@ -2698,7 +2815,6 @@ public:
       animation.offset_x   = 500+show1/19;
       animation.offset_y   = -4 * move.ramp[0] + show2/19;
       animation.low_limit  = 0.3;
-      animation.high_limit = 1;
       show5          = render_value(animation);
 
       pixel.r    = show4;
@@ -2743,7 +2859,6 @@ public:
       animation.offset_x   = 0;
       animation.offset_y   = -20 * move.ramp[0];;
       animation.low_limit  = 0;
-      animation.high_limit = 1;
       show1          = render_value(animation);
 
       animation.dist       = distance[n];
@@ -2755,7 +2870,6 @@ public:
       animation.offset_x   = 0;
       animation.offset_y   = -40 * move.ramp[0];;
       animation.low_limit  = 0;
-      animation.high_limit = 1;
       show2          = render_value(animation);
 
       pixel.r    = add(show2, show1);

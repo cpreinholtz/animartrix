@@ -50,7 +50,9 @@ typedef enum {
 
 typedef enum {
   envTriangle,
-  envExponential
+  envExponential,
+  envSine,
+  envConst
 } envelopShape;
 
 typedef enum {
@@ -139,6 +141,14 @@ rgbF Hsi2Rgb(hsiF hsi) {
   g *= hsi.i;
   b *= hsi.i;
 
+#if ART_TEENSY
+  float gamma = 1.01;
+  // Step 3: Apply Gamma correction
+  r = powf(r, gamma);
+  g = powf(g, gamma);
+  b = powf(b, gamma);
+#endif
+
   return {r, g, b};
 }
 
@@ -200,21 +210,21 @@ float mirror_float(float x, float side_distance, int n_sides=2, float start_at =
   }
 
 
-  //nsides 2, side_distance = pi
-  //if my bound is 1, side_distance = pi, ref center = pi
+  //nsides 2, side_distance = PI
+  //if my bound is 1, side_distance = PI, ref center = PI
 
-  //nsides 3, side_distance = 2pi/3, bound dist = 4pi/3
-  //if my bound is 1, ref center = 1*4pi/3 - 2pi/3 = 2pi/3 = 2/3  pi
-  //if my bound is 2, ref center = 2*4pi/3 - 2pi/3 = 6pi/3 = 2Pi  , odd sides dont really work...
+  //nsides 3, side_distance = 2PI/3, bound dist = 4PI/3
+  //if my bound is 1, ref center = 1*4PI/3 - 2PI/3 = 2PI/3 = 2/3  PI
+  //if my bound is 2, ref center = 2*4PI/3 - 2PI/3 = 6PI/3 = 2PI  , odd sides dont really work...
 
-  //nsides 4, side_distance = pi/2, 
-  //if my bound is 1, ref center = pi/2
-  //if my bound is 2, side_distance = pi/2, ref center = 3pi/2
+  //nsides 4, side_distance = PI/2, 
+  //if my bound is 1, ref center = PI/2
+  //if my bound is 2, side_distance = PI/2, ref center = 3PI/2
 
-  //nsides 6, side_distance = pi/3, bound dist = 2pi/3
-  //if my bound is 1, ref center = 1*2pi/3 - pi/3 = pi/3
-  //if my bound is 2, ref center = 2*2pi/3 - pi/3 = 3pi/3
-  //if my bound is 3, ref center = 3*2pi/3 - pi/3 = 5pi/3
+  //nsides 6, side_distance = PI/3, bound dist = 2PI/3
+  //if my bound is 1, ref center = 1*2PI/3 - PI/3 = PI/3
+  //if my bound is 2, ref center = 2*2PI/3 - PI/3 = 3PI/3
+  //if my bound is 3, ref center = 3*2PI/3 - PI/3 = 5PI/3
 
   float reflection_center = mybound*(single_reflection_distance) - side_distance;
 
@@ -232,9 +242,12 @@ float mirror_float(float x, float side_distance, int n_sides=2, float start_at =
 class envelopeF {  
 public:
   envelopShape shape = envExponential;
-  bool verbose = false;
+  bool verbose = false;  
+  bool isLfo = false;
+  
 private:
 
+  bool wasLfo = false;
   float low = 0.0;
   float high = 1.0;
 
@@ -246,6 +259,11 @@ private:
   float signal = 0.0;//!this is the base input signal
   float start_signal = 0.0;
   int state = stateIdle;
+
+  float theta = 0;
+  float start_theta = 0;
+
+
   
 
 
@@ -254,13 +272,23 @@ private:
   void updateState(){
     if (state == stateAttack){ 
       elapsedMillis = millis() - start_millis;
-      if (elapsedMillis >attackMillis) state = stateDecay;
+      if (elapsedMillis > attackMillis) state = stateDecay;
+
     } else if (state == stateDecay) {
       elapsedMillis = millis() - start_millis - attackMillis;
-      if (elapsedMillis > decayMillis) state = stateIdle;
+      if (elapsedMillis > decayMillis) {
+        //repeat
+        if (isLfo) trigger();
+        //done go to idle
+        else {
+          state = stateIdle;
+          isLfo = wasLfo;
+        }
+      }
+
     } else {
-      //dont care
-    } 
+      //dont care: idle = stay idle
+    }
   }
 
   void updateTriangle(){
@@ -291,9 +319,29 @@ private:
       signal = high + (low-high) * (1 - exp(-elapsedMillis/tau));
     } else {
       signal = low;
-      state = stateIdle;
     }
-  }  
+  }
+
+  void updateSine(){
+    if (state == stateAttack or state == stateDecay){
+      if (isLfo) theta = fmodf(start_theta + PI * elapsedMillis / (attackMillis + decayMillis), 2*PI);
+      else theta = max(2*PI, start_theta + 2*PI * elapsedMillis / (attackMillis + decayMillis));
+      signal = low + (high-low) * sinf(theta);
+    } else {
+      signal = low;
+      theta = 0;
+    }
+  }
+
+  void updateConst(){
+    if (state == stateAttack or state == stateDecay){
+      signal = high;
+    } else {
+      signal = low;
+      theta = 0;
+    }
+  }
+
   void debug(){        
     EVERY_N_MILLIS(50) if (verbose){
       Serial.print("elapsedSeconds:");
@@ -313,6 +361,18 @@ private:
       Serial.print(",");
       Serial.print("low:");
       Serial.print(low);
+      Serial.print(",");
+      Serial.print("start_theta:");
+      Serial.print(start_theta);
+      Serial.print(",");
+      Serial.print("theta:");
+      Serial.print(theta);
+      Serial.print(",");
+      Serial.print("wasLfo:");
+      Serial.print(wasLfo);
+      Serial.print(",");
+      Serial.print("isLfo:");
+      Serial.print(isLfo);
       Serial.print(",");
 
       Serial.print("ref:");
@@ -340,15 +400,17 @@ public:
 
   void setMax(float m){
      high=m;
-     if( high < low) Serial.println("dude, max should probably be > low in evelope setMax");
-     Serial.println(high);
+     //if( high < low) Serial.println("dude, max should probably be > low in evelope setMax");
+     //Serial.println(high);
   }
 
   //! start a new envelop
   void trigger(){
     start_millis = millis();
     start_signal = signal;
+    start_theta = theta;
     state = stateAttack;
+    wasLfo = isLfo;
   }
 
   void update(){
@@ -356,7 +418,15 @@ public:
     //todo make a switch for modes triangle, exponential, etc
     if (shape == envTriangle ) updateTriangle();
     else if (shape == envExponential ) updateExponential();
+    else if (shape == envSine ) updateSine();
+    else if (shape == envConst ) updateConst();
+
     debug();
+  }
+
+  void stopLfoNextCylce(){
+    wasLfo = isLfo;
+    isLfo = false;
   }
 
 
@@ -366,7 +436,7 @@ public:
 
 
 
-//! moddable class has 2 control signals, high and low, these control VALUE output clipping and BASE level
+//! moddable class has 2 control signals, high and low, these control VALUE output clipPIng and BASE level
 //2 input signals BASE and MOD.  BASE is constrained to remain in the bounds of high and low, MOD is not constrained
 //1 output signal VALUE, value = BASE + MOD, but is clipped to the bounds of high and low
 class modableF {  
@@ -402,11 +472,11 @@ public:
   //! input: value number ideally from 0/1 that we use to set envelope maximum proportional to the space we 
   void trigger(float value){
       constrain_float(value,0,1);
-      if( edge == edgeClip) envelope.setMax( getSpace() * value); // if we are clipping, get the ammount of space from max-base we have left, make env proportional to that
+      if( edge == edgeClip) envelope.setMax( getSpace() * value); // if we are clipPIng, get the ammount of space from max-base we have left, make env proportional to that
       else {
         base += envelope.getSignal();
         envelope.clear();
-        envelope.setMax( getSpread() *value);// not clipping, get the total spread max-min, make env proportional to that
+        envelope.setMax( getSpread() *value);// not clipPIng, get the total spread max-min, make env proportional to that
       }
       envelope.trigger();
   }
@@ -446,7 +516,11 @@ public:
     return *this;
   }
 
+  operator float() const { return getEnvelope(); }
+
 };
+
+
 
 ////ARITHMATIC OPERATIONS///////////////////////////
 //! operator* [float = float *modable] returns float x value, does NOT follow edge rules
@@ -457,6 +531,13 @@ float operator*(const float &a, const modableF &b){
 //! operator+ [float = float + modable] returns float x, does follow edge rules
 float operator+(const float &a, const modableF &b){
   return b.clip(b.getEnvelope()+a);
+}
+
+float operator<(const float &a, const modableF &b){
+  return (a<b.getEnvelope());
+}
+float operator>(const float &a, const modableF &b){
+  return (a>b.getEnvelope());
 }
 
 

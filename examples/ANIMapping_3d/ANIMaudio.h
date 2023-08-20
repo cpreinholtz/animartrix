@@ -282,6 +282,7 @@ public:
 #if ART_VEST
   float fft_input[samples];
   float fft_output[samples];
+  float fft_magnitude[fft_save_bins];
   
 
   fft_config_t *real_fft_plan = fft_init(samples, FFT_REAL, FFT_FORWARD, fft_input, fft_output);

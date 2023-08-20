@@ -33,7 +33,7 @@ License CC BY-NC 3.0
 //!!!! ONLY INCLUDE ONE MAP
 
 
-#define USE_AUDIO true
+#define USE_AUDIO false
 #define USE_IMU false
 // todo set these in map??^^
 
@@ -80,6 +80,8 @@ ANIMimu imu;
 #endif
 
 
+modableF* audioModBeatDestPtr = &art.global_intensity;
+modableF dummy_mod;
 
 
 //******************************************************************************************************************
@@ -160,14 +162,14 @@ void Module_Experiment11_Hsi(){art.Module_Experiment11_Hsi();}
 void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
 PatternAndNameList gPatterns = {
-  {TestMap, "TestMap"},
+  //{TestMap, "TestMap"},
   {SM9,"SM9"},  
   {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
   {Caleido1,"Caleido1"}, 
   {Complex_Kaleido_5,"Complex_Kaleido_5"},
   {GrowingSpheres, "GrowingSpheres"},
   {PlaneRotation1, "PlaneRotation1"},
-  {PlaneCounterRotation1, "PlaneCounterRotation1"},
+  //{PlaneCounterRotation1, "PlaneCounterRotation1"},
   
   {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},
   {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},
@@ -277,10 +279,34 @@ void incrementPattern(int inc = 1){
 }
 
 void randomPattern(){
-  currentPattern = random(1, gPatternCount);
+  currentPattern = random(gPatternCount);
   if (currentPattern >= gPatternCount) currentPattern = 0;
   Serial.print("Setting pattern to: "); Serial.print(currentPattern); Serial.print(" "); Serial.println(gPatterns[currentPattern].name);
 }
+
+
+
+void setMusicMod(int i){
+      if (i==0) audioModBeatDestPtr = &dummy_mod;      
+      else if (i==1) audioModBeatDestPtr = &art.global_intensity;
+      else if (i==2) audioModBeatDestPtr = &art.global_bpm;
+#if ART_TEENSY
+      else if (i==4) audioModBeatDestPtr = &art.global_scale_x;
+      else if (i==5) audioModBeatDestPtr = &art.global_scale_y;
+      else if (i==6) audioModBeatDestPtr = &art.global_scale_z;
+      else if (i==7) audioModBeatDestPtr = &art.gHue;
+#endif
+}
+
+void randomMusicMod(){
+#if ART_TEENSY
+  int im = 8;
+#else
+  int im = 3;
+#endif
+  setMusicMod(random(im));
+}
+
 
 
 
@@ -288,18 +314,59 @@ void randomPattern(){
 
 //******************************************************************************************************************
 #if ART_TEENSY
+
+float vBat = 12.8;
+const float vBatMin = 11.7;
+bool batteryCharged = true;
+bool batteryChargedOverride = false;
+
+void assessVdiv(){
+  EVERY_N_MILLIS(100){
+    //full scale = 3.3v @ 1024
+    //vAdc = 3.3 * analogRead / 1024
+    //vAdc = vbat * 82 / 4282 ( real rdiv is more like 4720.0 / 82.0 from empirical testing)
+    //vbat = vAdc * 4284 / 82
+    int sum = 0;
+    float n = 20;
+    for (int i=0; i < n; i++) sum += analogRead(15);
+    n = float(sum) / n;
+    //Serial.println(n);
+    
+    vBat = 0.9 * vBat + (3.3 * n / 1024.0 * 4720.0 / 82.0) * .1;
+
+    if (batteryCharged and vBat < vBatMin){
+      batteryCharged = false;
+      Serial.println("Battery too low!!! Turning lights off.");
+    }   
+  }
+}
+
+
+
 void copyBuffer(){
   int thisPixel = 0;
-  for (int ring = 0 ; ring < nRings; ring++){
-    for (int pixel = 0; pixel < nPixelsPerRing[ring]; pixel++){
-      int color = (((int)leds[thisPixel].r)<<16) | (((int)leds[thisPixel].g)<<8)| (((int)leds[thisPixel].b));
-      oleds.setPixel(pixel+ring*nMaxPixels, color);
-      thisPixel++;
+  if (batteryCharged or batteryChargedOverride){
+    for (int ring = 0 ; ring < nRings; ring++){
+      for (int pixel = 0; pixel < nPixelsPerRing[ring]; pixel++){
+        int color = (((int)leds[thisPixel].r)<<16) | (((int)leds[thisPixel].g)<<8)| (((int)leds[thisPixel].b));
+        oleds.setPixel(pixel+ring*nMaxPixels, color);
+        thisPixel++;
+      }
+    }
+  } else {
+    int color = 0;
+    for (int ring = 0 ; ring < nRings; ring++){
+      for (int pixel = 0; pixel < nPixelsPerRing[ring]; pixel++){
+        oleds.setPixel(pixel+ring*nMaxPixels, color);
+        thisPixel++;
+      }
     }
   }
 
   oleds.show();
 }
+
+
 #endif
 
 
@@ -307,8 +374,18 @@ void copyBuffer(){
 
 //******************************************************************************************************************
 
-modableF* audioModBeatDestPtr = &art.global_intensity;
-modableF dummy_mod;
+
+
+bool verbose = false;
+bool verbose2 = false;
+bool play = true;
+bool playAll = false;
+bool doRandom = true;
+bool musicReactive = true;
+bool hueDrift = true;
+bool doDarkCheck = true;
+int cnt = 32;
+
 
 //******************************************************************************************************************
 void setup() {
@@ -321,13 +398,18 @@ void setup() {
   //art.global_scale_z.setBaseToMiddle();
   //art.gHue.setBaseToMiddle();
 #if ART_TEENSY
-
+  randomSeed(max(analogRead(A1),1));
 #else
+  randomSeed(analogRead(A0));
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
   FastLED.addLeds<WS2811, LED_PIN, GRB>(leds, NUM_LEDS);
   //FastLED.setMaxPowerInVoltsAndMilliamps( 5, 2000); // optional current limiting [5V, 2000mA]  todo
   FastLED.setBrightness(255); // this is OVERWRITTEN!!!!!! see art.global_intensity  //todo set to 255 in final production???
 #endif
+
+  if ((play and doRandom) or playAll){
+    randomPattern();
+  }
 
   //art.setGlobalScale(0.5); 
 
@@ -337,7 +419,7 @@ void setup() {
   AudioMemory(50);
   //filter1.frequency(30); // filter out DC & extremely low frequencies
   amp1.gain(85);        // amplify sign to useful range
-  audio.beat_multiplier_min = 2.0;
+  audio.beat_multiplier_min = 2.2;
   audio.peak_hyst_arm = 10;
   audio.peak_volume_min = 0.1;  
   audio.iir_volume.setWeight(.995);
@@ -373,75 +455,151 @@ void setup() {
 //*******************************************************************************************************************
 
 
-bool verbose = false;
-bool verbose2 = false;
-bool play = false;
-bool doRandom = true;
-bool musicReactive = true;
-bool hueDrift = true;
-int cnt = 32;
+bool isDark = false;
+
+unsigned long darkTime = 0; //start of total darkness
+
+void darkWadCheck(){
+  if (doDarkCheck){
+    // if we were not dark last time, update timer to now  // else leave timer 
+    if (not isDark) darkTime = millis();
+
+    //do dark check
+    isDark = true;
+    for (int i=0; i< NUM_LEDS; i++){
+      //leds[i].r = 0;
+      //leds[i].b = 0;
+      //leds[i].g = 0;
+      if (leds[i].r > 0 or leds[i].b > 0 or leds[i].g > 0) {
+        isDark = false;
+        break;
+      }
+    }
+
+    // if we are dark now and have been for a long while, change the pattern
+    if (isDark and millis() - darkTime > 3000){
+      randomPattern();
+      Serial.println("force random pattern");
+      isDark = false;
+    }
+  }
+}
+
 
 void showCurrentPattern(){
+  //plat the current pattern through the art
   gPatterns[currentPattern].pattern();  
   art.markStartOfShow();
 
+  //show buffer
 #if ART_VEST
     FastLED.show();
 #endif
 #if ART_TEENSY
   copyBuffer();
+  assessVdiv();
 #endif
-  
+
+  //check for all black animations, if so change the pattern
+  darkWadCheck();
+
   art.markEndOfShow();
 }
 
-void loop() {
-  //changing paterns
-  if (play){
-      if (doRandom) {EVERY_N_SECONDS(30) randomPattern();}
-      else {EVERY_N_SECONDS(30) incrementPattern();}
+void addLife(){
+
+  ///////////////////////////////////////////////////////
+  //add all sorts of modulation
+  if (playAll){
+    //change pattern
+    EVERY_N_SECONDS(45) randomPattern();
+
+    //change music reactivity
+    EVERY_N_SECONDS(80) randomMusicMod();
+
+    //change hue shift
+    art.gHue += .0001;
+
+#if ART_TEENSY
+    int prob = 100;
+
+    //Change X / Y / Z centers
+    /*
+    EVERY_N_MILLIS(6642) art.center_xm.trigger(float(random(prob))/100.0);
+    EVERY_N_MILLIS(4833) art.center_ym.trigger(float(random(prob))/100.0);
+    EVERY_N_MILLIS(7489) art.center_ym.trigger(float(random(prob))/100.0);
+
+    //set in animation, can only change envelope
+    animation.low_limit.trigger( -.3 + .05 * move.noise_angle[10]);
+   
+    animation.high_limit.trigger( -.3 + .05 * move.noise_angle[11]);
+    EVERY_N_MILLIS(50)Serial.println(animation.high_limit.getEnvelope());
+ */
+
+#endif
+    
+
+
+  ///////////////////////////////////////////////////////
+  //add only user specified modulation
+  } else {
+    if (hueDrift) art.gHue += .0001; // todo make this scale with FPS, put into show current patter to make immune to FPS changes
+
+    //changing paterns
+    if (play){
+        if (doRandom) {}
+        else {EVERY_N_SECONDS(45) incrementPattern();}
+    }
   }
+}
+
+
+
+void updateIMU(){
+#if USE_IMU
+  imu.update();
+  art.upVector = imu.filteredPosition;
+#endif
+}
+
+
+
+void updateAudio(){
+#if USE_AUDIO
+#if ART_TEENSY
+  if (fft256_1.available()) {
+      //EVERY_N_MILLIS(5) Serial.println("fft audio");
+      float b0 = fft256_1.read(0);
+      audio.peakDetect(b0);
+      if (audio.beat_detected && musicReactive) {
+        Serial.println("beat");
+        audioModBeatDestPtr->trigger(audio.ratio/3.0);
+      } // beat
+    } // fft available
+#else
+  //audio.update();
+  if (audio.beat_detected_poll && musicReactive) {
+    Serial.println("beat");
+    audioModBeatDestPtr->trigger(audio.ratio_poll);
+    audio.beat_detected_poll = false;
+
+
+  } // beat
+#endif
+#endif
+  audioModBeatDestPtr->update();
+}
+
+
+void updateSerial(){
   // report
   if(verbose){
     EVERY_N_MILLIS(500) {
+      Serial.print("vBat:"); Serial.print(vBat); Serial.print(",");
       art.report_performance();   // check serial monitor for report 
     }
   }
 
-//*******************************************************************************************************************
-  EVERY_N_MILLIS(5) {
-    if (hueDrift) art.gHue += .0001; // todo make this scale with FPS, put into show current patter to make immune to FPS changes
-    showCurrentPattern(); // 200 FPS max
-
-#if USE_IMU
-    imu.update();
-    art.upVector = imu.filteredPosition;
-#endif
-
-
-#if USE_AUDIO
-#if ART_TEENSY
-    if (fft256_1.available()) {
-        //EVERY_N_MILLIS(5) Serial.println("fft audio");
-        float b0 = fft256_1.read(0);
-        audio.peakDetect(b0);
-        if (audio.beat_detected && musicReactive) {
-          Serial.println("beat");
-          audioModBeatDestPtr->trigger(audio.ratio/3.0);
-        } // beat
-      } // fft available
-#else
-    audio.update();
-    if (audio.beat_detected_poll && musicReactive) {
-      Serial.println("beat");
-      audioModBeatDestPtr->trigger(audio.ratio_poll/3.0);
-      audio.beat_detected_poll = false;
-    } // beat
-#endif
-#endif
-    audioModBeatDestPtr->update();
-  } // EVERY_N_MILLIS(5)
-//*******************************************************************************************************************
   // testing interface, user input
   if (Serial.available() > 0) {
     // read the incoming byte:
@@ -457,19 +615,16 @@ void loop() {
       play = not play;    
       Serial.print("Setting play to"); Serial.println(play);
     } else if(incomingByte == 'a'){
-      int i = Serial.parseInt();
-      //audioModBeatDestPtr->disa;
-      if (i==1) audioModBeatDestPtr = &art.global_intensity;
-      if (i==2) audioModBeatDestPtr = &art.global_scale_x;
-      if (i==3) audioModBeatDestPtr = &art.global_scale_y;
-      if (i==4) audioModBeatDestPtr = &art.global_scale_z;
-      if (i==5) audioModBeatDestPtr = &art.gHue;
-      if (i==6) audioModBeatDestPtr = &art.global_bpm;
-      if (i==7) audioModBeatDestPtr = &dummy_mod;
+      int a = Serial.parseInt();
+      setMusicMod(a);
+      Serial.print("Setting misic mod shift to"); Serial.println(a);
     } else if(incomingByte == 'c'){
       incrementPalette();
     } else if (incomingByte == 'n'){
       incrementPattern();
+    } else if (incomingByte == 'x'){
+      batteryChargedOverride = not batteryChargedOverride;
+      Serial.print("Setting batteryChargedOverride shift to"); Serial.println(batteryChargedOverride);
     } else if (incomingByte == 'm'){
       musicReactive = not musicReactive;
       Serial.print("Setting musicReactive shift to"); Serial.println(musicReactive);
@@ -510,6 +665,22 @@ void loop() {
       Serial.print("Setting play to"); Serial.println(play);
     }
   }
+
+}
+
+
+void loop() {
+
+//*******************************************************************************************************************
+  EVERY_N_MILLIS(5) {
+    addLife();
+    showCurrentPattern(); // 200 FPS max
+    updateIMU();
+    updateAudio();
+    updateSerial();
+  } // EVERY_N_MILLIS(5)
+//*******************************************************************************************************************
+  
 
 
 } 
