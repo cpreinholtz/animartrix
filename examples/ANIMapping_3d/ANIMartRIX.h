@@ -278,23 +278,31 @@ public:
     global_scale_z = 1.0/ max_spread*7.0;
 
     Serial.print("gscalx: ");
-    Serial.println(global_scale_x.getBase());
+    Serial.println(global_scale_x);
     Serial.print("gscaly: ");
-    Serial.println(global_scale_y.getBase());
+    Serial.println(global_scale_y);
     Serial.print("gscalz: ");
-    Serial.println(global_scale_z.getBase());
+    Serial.println(global_scale_z);
 
     //global_intensity; //default, should be overwritten in top level
     //global_intensity.envelope.setMinMax(1.0);
+    
+#if ART_TEENSY
     global_intensity.envelope.setAttackDecay(10,400);
     global_intensity.envelope.shape = envExponential;
-    //global_intensity.envelope.shape = envTriangle;
+    global_bpm.envelope.setAttackDecay(10,200);
+    global_bpm.envelope.shape = envTriangle;
+#else
+    global_intensity.envelope.setAttackDecay(100,300);
+    global_intensity.envelope.shape = envTriangle;
+    global_bpm.envelope.setAttackDecay(100,300);
+    global_bpm.envelope.shape = envTriangle;
+#endif
 
 
     global_bpm.setMinMax(30, 600);
     global_bpm.envelope.setMax(50);
-    global_bpm.envelope.setAttackDecay(10,200);
-    global_bpm.envelope.shape = envTriangle;
+
     global_bpm = 115.0;
 
     Serial.println("global_bpm");
@@ -706,7 +714,11 @@ public:
 
   //! hue shift given hsiF, return rgbF.  sanity checks performed in Hsi2Rgb
   rgbF hue_shift(hsiF hsi){
-      hsi.h = hsi.h+gHue;  //todo PROTECT THIS
+#if ART_TEENSY
+      hsi.h = hsi.h+gHue;
+#else
+      hsi.h = fmodf(hsi.h+gHue,1);
+#endif
       return Hsi2Rgb(hsi);
   }
   //! hue shift given rgbF, convert to hsiF, perform shift, return rgbF.  sanity checks performed in Rgb2Hsi and Hsi2Rgb

@@ -163,9 +163,9 @@ public:
       Serial.print(sig);
       Serial.print(",");
 
-      Serial.print("comp:");
-      Serial.print(comp);
-      Serial.print(",");
+      //Serial.print("comp:");
+      //Serial.print(comp);
+      //Serial.print(",");
 
       Serial.print("peak_hyst_count:");
       if (peak_hyst_count < peak_hyst_arm) Serial.print(float(peak_hyst_count)/10.0);
@@ -178,6 +178,10 @@ public:
 
       Serial.print("ratio:");
       Serial.print(ratio);
+      Serial.print(",");
+
+      Serial.print("ratiop:");
+      Serial.print(ratio_poll);
       Serial.print(",");
 
       Serial.print("beat:"); 

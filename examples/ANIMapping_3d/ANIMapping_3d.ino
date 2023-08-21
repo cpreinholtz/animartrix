@@ -26,15 +26,15 @@ License CC BY-NC 3.0
 #define ART_VEST false
 
 //!!!! ONLY INCLUDE ONE MAP
-#include "MapWag.h"
-//#include "MapKVest.h"
+//#include "MapWag.h"
+#include "MapKVest.h"
 //#include "MapCVest.h"
 //#include "MapProtoVest.h"
 //!!!! ONLY INCLUDE ONE MAP
 
 
 #define USE_AUDIO true
-#define USE_IMU true
+#define USE_IMU false
 // todo set these in map??^^
 
 
@@ -293,6 +293,7 @@ void randomPattern(){
 
 
 void setMusicMod(int i){
+      audioModBeatDestPtr->envelope.clear();
       if (i==0) audioModBeatDestPtr = &dummy_mod;      
       else if (i==1) audioModBeatDestPtr = &art.global_intensity;
       else if (i==2) audioModBeatDestPtr = &art.global_bpm;
@@ -310,10 +311,12 @@ void setMusicMod(int i){
 void randomMusicMod(){
 #if ART_TEENSY
   int im = 7;
+  setMusicMod(random(im));
 #else
   int im = 3;
+  setMusicMod(random(1,im));
 #endif
-  setMusicMod(random(im));
+  
 }
 
 
@@ -402,7 +405,11 @@ void setup() {
   Serial.begin(115200);                 // check serial monitor for current fps count
   delay(100);
 
+#if ART_TEENSY
   art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
+#else
+  art.global_intensity.setMinMax(0.4, 1);//MIN MUST be >0// MAX MUST be <=1
+#endif
   //art.global_intensity.setBaseToMiddle();
   //art.global_scale_x.setBaseToMiddle();
   //art.global_scale_y.setBaseToMiddle();
@@ -420,6 +427,7 @@ void setup() {
 
   if ((play and doRandom) or playAll){
     randomPattern();
+    randomMusicMod();
   }
 
   //art.setGlobalScale(0.5); 
@@ -520,7 +528,7 @@ void showCurrentPattern(){
 void addLife(){
 
   ///////////////////////////////////////////////////////
-  //add all sorts of modulation
+  //add free runing patterns, hues, music reactivity, and colors
   if (playAll){
     //change pattern
     int chg = 60;
@@ -533,11 +541,21 @@ void addLife(){
 
     //change hue shift
     art.gHue += .0001;
+  ///////////////////////////////////////////////////////
+  //add only user specified modulation
+  } else {
+    if (hueDrift) art.gHue += .0001; // todo make this scale with FPS, put into show current patter to make immune to FPS changes
+
+    //changing paterns
+    if (play){
+        if (doRandom) {randomPattern();}
+        else {EVERY_N_SECONDS(45) incrementPattern();}
+    }
   }
 
-  if (doModulation){
-
+  
 #if ART_TEENSY
+  if (doModulation){
     int prob = 100;
 
     //Change X / Y / Z centers
@@ -571,64 +589,15 @@ void addLife(){
     //animation.high_limit.trigger( move.sine[11]);
     animation.high_limit.update();
 
-    EVERY_N_MILLIS(25){
+    EVERY_N_MILLIS(50){
       if(verbose2){
-        //
         //Serial.print("center_xme:"); Serial.print(art.center_xm.envelope.getMax()); Serial.print(",");
-        //Serial.print("center_xm:"); Serial.print(art.center_xm.getEnvelope()); Serial.print(",");
-        //art.center_xm.envelope.verbose=true;
-        //art.center_xm.envelope.debug();        
-        //art.global_scale_x.envelope.verbose=true;
-        //art.global_scale_x.envelope.debug();
-        /*
-        Serial.print("center_ym:"); Serial.print(art.center_ym.getEnvelope()); Serial.print(",");
-        Serial.print("center_zm:"); Serial.print(art.center_zm.getEnvelope()); Serial.print(",");
-        Serial.print("low_limit:"); Serial.print(animation.low_limit.getEnvelope()); Serial.print(",");
-        Serial.print("high_limit:"); Serial.print(animation.high_limit.getEnvelope()); Serial.print(",");
-        Serial.println();*/
-      } else   art.center_xm.envelope.verbose=false;
-
-      
-      /*
-
-      Serial.print("10 ramp, sine noise");
-      Serial.print(move.ramp[10]);
-      Serial.print("   ");
-      Serial.print(move.sine[10]);
-      Serial.print("   ");
-      Serial.println(move.noise_angle[10]);
-
-      Serial.print("11 ramp, sine noise");
-      Serial.print(move.ramp[11]);
-      Serial.print("   ");
-      Serial.print(move.sine[11]);
-      Serial.print("   ");
-      Serial.println(move.noise_angle[11]);
-
-      Serial.print("2 ramp, sine noise");
-      Serial.print(move.ramp[2]);
-      Serial.print("   ");
-      Serial.print(move.sine[2]);
-      Serial.print("   ");
-      Serial.println(move.noise_angle[2]);*/
-    }
-
-
-#endif
-    
-
-
-  ///////////////////////////////////////////////////////
-  //add only user specified modulation
-  } else {
-    if (hueDrift) art.gHue += .0001; // todo make this scale with FPS, put into show current patter to make immune to FPS changes
-
-    //changing paterns
-    if (play){
-        if (doRandom) {}
-        else {EVERY_N_SECONDS(45) incrementPattern();}
+        //Serial.println();
+      } 
     }
   }
+#endif
+
 }
 
 
@@ -657,7 +626,7 @@ void updateAudio(){
 #else
   //audio.update();
   if (audio.beat_detected_poll && musicReactive) {
-    //Serial.println("beat");
+    Serial.print(audio.ratio_poll);Serial.println(" beat");
     audioModBeatDestPtr->trigger(audio.ratio_poll);
     audio.beat_detected_poll = false;
   } // beat
@@ -671,7 +640,6 @@ void updateSerial(){
   // report
   if(verbose){
     EVERY_N_MILLIS(500) {
-      Serial.print("vBat:"); Serial.print(vBat); Serial.print(",");
       art.report_performance();   // check serial monitor for report 
     }
   }
@@ -701,9 +669,11 @@ void updateSerial(){
       incrementPalette();
     } else if (incomingByte == 'n'){
       incrementPattern();
+#if ART_TEENSY
     } else if (incomingByte == 'x'){
       batteryChargedOverride = not batteryChargedOverride;
       Serial.print("Setting batteryChargedOverride shift to"); Serial.println(batteryChargedOverride);
+#endif
     } else if (incomingByte == 'm'){
       musicReactive = not musicReactive;
       Serial.print("Setting musicReactive shift to"); Serial.println(musicReactive);
@@ -733,10 +703,10 @@ void updateSerial(){
       Serial.print("Setting hueDrift to"); Serial.println(hueDrift);
     } else if (incomingByte == 'h'){
       art.gHue += .1;
-      Serial.print("Setting hue shift to"); Serial.println(art.gHue.getBase());
+      Serial.print("Setting hue shift to"); Serial.println(art.gHue);
     } else if (incomingByte == 'H'){
       art.gHue = 0;
-      Serial.print("Setting hue shift to"); Serial.println(art.gHue.getBase());
+      Serial.print("Setting hue shift to"); Serial.println(art.gHue);
     } else if (incomingByte == 'r'){
       doRandom = not doRandom;
       if (doRandom && play==false) play = true;
