@@ -120,7 +120,7 @@ DEFINE_GRADIENT_PALETTE( bggo_gp ) {
   0,    0,    0,    0, //black
 60,19,0,224,//blue
 120,11,224,110,//green
-1160,    0,    0,    0, //black
+160,    0,    0,    0, //black
 180,224,194,29,//gold
 255,224,41,22//burnt orange
 };

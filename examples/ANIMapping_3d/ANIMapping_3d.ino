@@ -27,7 +27,8 @@ License CC BY-NC 3.0
 
 //!!!! ONLY INCLUDE ONE MAP
 //#include "MapWag.h"
-#include "MapKVest.h"
+#include "MapBf.h"
+//#include "MapKVest.h"
 //#include "MapCVest.h"
 //#include "MapProtoVest.h"
 //!!!! ONLY INCLUDE ONE MAP
@@ -220,9 +221,12 @@ PatternAndNameList gPatterns = {
   {RGB_Blobs,"RGB_Blobs"},
   {Polar_Waves,"Polar_Waves"},
   //{Slow_Fade,"Slow_Fade"},
-  {Zoom2, "Zoom2"}, 
-  {Zoom,"Zoom"},
-  {Hot_Blob,"Hot_Blob"},
+#if ART_TEENSY
+  {Zoom2, "Zoom2"}, //broken on esp
+  {Zoom,"Zoom"}, //broken on esp
+  {Hot_Blob,"Hot_Blob"}, //broken on esp
+#endif
+
   {Spiralus2,"Spiralus2"},
   {Spiralus,"Spiralus"},
   {Yves,"Yves"},
@@ -333,6 +337,7 @@ bool batteryCharged = true;
 bool batteryChargedOverride = false;
 
 void assessVdiv(){
+#if ART_WAG
   EVERY_N_MILLIS(100){
     //full scale = 3.3v @ 1024
     //vAdc = 3.3 * analogRead / 1024
@@ -351,6 +356,7 @@ void assessVdiv(){
       Serial.println("Battery too low!!! Turning lights off.");
     }   
   }
+#endif
 }
 
 
@@ -406,7 +412,7 @@ void setup() {
   delay(100);
 
 #if ART_TEENSY
-  art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.7, 0.9);//MIN MUST be >0// MAX MUST be <=1
 #else
   art.global_intensity.setMinMax(0.4, 1);//MIN MUST be >0// MAX MUST be <=1
 #endif
