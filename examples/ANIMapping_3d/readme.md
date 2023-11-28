@@ -64,7 +64,7 @@ for mad mapper purposes you could connect the data lines into a 2 pin serpentine
 
 
 
-
+Going to try an analog mic on pin A2 (16), wish me luck...
 
 
 

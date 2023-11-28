@@ -17,13 +17,22 @@ License CC BY-NC 3.0
 
 */
 
+
+#define ART_TEENSY false
+
 //These SHOULD be overwritten accordinly in map
 //TEENSY + IIS MIC
 #define ART_WAG false
 #define ART_BF false
-#define ART_TEENSY false
+//TEENSY + analog mic
+#define ART_CUBE false
+
 //ESP + ANALOG MIC
 #define ART_VEST false
+
+
+
+
 
 //!!!! ONLY INCLUDE ONE MAP
 //#include "MapWag.h"
@@ -40,7 +49,7 @@ License CC BY-NC 3.0
 
 
 #if USE_AUDIO
-#if ART_TEENSY
+#if ART_WAG
 #include <Audio.h>
 //include this^&@
 AudioInputI2S2            i2s1;           //xy=698,360
@@ -48,8 +57,17 @@ AudioAnalyzeFFT256       fft256_1;       //xy=1152,492
 AudioAmplifier           amp1;           //xy=470,93
 AudioConnection          patchCord0(i2s1, 0, amp1, 0);
 AudioConnection          patchCord2(amp1, 0, fft256_1, 0);
+
+//ART_CUBE uses analog mic on pin 16(A2)
 #else
-//esp archictecture using fft
+
+#include <Audio.h>
+//include this^&@
+AudioInputAnalog            adc1;           //xy=698,360
+AudioAnalyzeFFT256       fft256_1;       //xy=1152,492
+AudioAmplifier           amp1;           //xy=470,93
+AudioConnection          patchCord0(adc1, 0, amp1, 0);
+AudioConnection          patchCord2(amp1, 0, fft256_1, 0);
 
 #endif
 #endif
