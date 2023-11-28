@@ -58,7 +58,7 @@ rings = []
 #left side
 cubeSideLength = 5*12 # 5 feet to inches
 nPipes = 8
-nLengthsPerPipe = 2
+nLengthsPerPipe = 8
 nLedsPerLength = 25
 
 ySpacing = cubeSideLength/(nPipes-1) #5 feet / 8 pipes to inches
@@ -96,6 +96,8 @@ print([xSpacing, ySpacing])
 
 for pipe in range(nPipes):
   rings.append([])
+
+for pipe in range(nPipes):
   for length in range(nLengthsPerPipe):
 
     #x and y are the same for the whole length (assumed to hang straight down)
@@ -124,7 +126,12 @@ for pipe in range(nPipes):
     #print(start)
     #print(start)
 
-    rings[pipe] += linearRun(start,stop,nLedsPerLength)
+    pin = pipe
+    # for the second half of the pipes, go in reverse order
+    if pipe >= nPipes/2:
+      pin = int(nPipes/2 + nPipes-1-pipe)
+
+    rings[pin] += linearRun(start,stop,nLedsPerLength)
 
 
 
@@ -209,11 +216,13 @@ ax.set_zlabel('Z Label')
 
 for cnt,ring in enumerate(rings):
     ring = np.array(ring)
-    ax.scatter(ring[2:-1, 0], ring[2:-1, 1], ring[2:-1, 2], c='blue')
+
+    reds = cnt+1
+    ax.scatter(ring[2:-reds, 0], ring[2:-reds, 1], ring[2:-reds, 2], c='blue')
 
     ax.scatter(ring[0, 0], ring[0, 1], ring[0, 2], c='green', marker='*', s=10)
     ax.scatter(ring[1, 0], ring[1, 1], ring[1, 2], c='yellow', marker='*', s=10)
-    ax.scatter(ring[-1, 0], ring[-1, 1], ring[-1, 2], c='red', marker='*', s=10)
+    ax.scatter(ring[-reds:, 0], ring[-reds:, 1], ring[-reds:, 2], c='red', marker='*', s=10)
 
     #print(cnt)
 ax.set_aspect('equal')

@@ -1,5 +1,93 @@
 
 
+## CUBE
+
+# arrange the structure so front left top corner is 0,0,0
+# bottom back right is 5,5,-5
+
+# this is a right handed coordinate system
+# +x is right
+# +y is back
+# +z is up
+
+#
+#  +z  +y
+#  ^   7
+#  |  /
+#  | /
+#  |/____> +x 
+
+#              pipes are all on z=0 XY plane 
+#              _____   <-   5,5,0
+#             /    /.     
+#            /    / .  
+#  0,0,0 ->  ----- .
+#            . . . .  <-   5,5,-5
+#            . . .   
+#  0,0,-5 -> . . .     <- LEDS hang down below pipes  (-z)
+#
+
+
+
+serpentines l-R front to back
+here is an example layout for colors
+
+    Ethernet Layout TOP VIEW
+               
+
+"pin"                          nailpolish color (ethernet color)
+
+4      ^ <--------              salmon (orange)
+5         --------> ^           purple (blue)
+6      ^ <--------              green (green)
+7         --------> ^           yellow (brown)
+      ------------- MIRROR IMAGE ------------------
+3      ^ <--------              yellow (brown)
+2         --------> ^           green (green)
+1      ^ <--------              purple (blue)
+0         --------> ^           salmon (orange)
+
+
+
+layout the strips so that each ethernet services either front or back 4 pipes
+
+therfore it is symetrical in terms of pipe installation
+all pipes are the same, all that matters are the serpintine layout and 4 data connection points are correct and symetrical
+salmon is on outermost pipe on both ends
+yellow is on innermost pipe on both ends
+
+
+for mad mapper purposes you could connect the data lines into a 2 pin serpentine layout
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Older notes
+
+
+
+
+
+
 IMU
 ESP audio
 motor drivers
