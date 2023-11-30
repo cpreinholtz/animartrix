@@ -17,10 +17,16 @@ License CC BY-NC 3.0
 
 */
 
+//These SHOULD be overwritten accordingly in map
 
+//switch between teensy and esp architecture
 #define ART_TEENSY false
 
-//These SHOULD be overwritten accordinly in map
+//turn on and off IMU and AUDIO processing
+#define USE_IMU false
+#define USE_AUDIO false
+
+
 //TEENSY + IIS MIC
 #define ART_WAG false
 #define ART_BF false
@@ -36,19 +42,20 @@ License CC BY-NC 3.0
 
 //!!!! ONLY INCLUDE ONE MAP
 //#include "MapWag.h"
-#include "MapBf.h"
+//#include "MapBf.h"
+#include "MapCube.h"
 //#include "MapKVest.h"
 //#include "MapCVest.h"
 //#include "MapProtoVest.h"
 //!!!! ONLY INCLUDE ONE MAP
 
 
-#define USE_AUDIO true
-#define USE_IMU false
-// todo set these in map??^^
+
 
 
 #if USE_AUDIO
+#if ART_TEENSY
+
 #if ART_WAG
 #include <Audio.h>
 //include this^&@
@@ -60,7 +67,6 @@ AudioConnection          patchCord2(amp1, 0, fft256_1, 0);
 
 //ART_CUBE uses analog mic on pin 16(A2)
 #else
-
 #include <Audio.h>
 //include this^&@
 AudioInputAnalog            adc1;           //xy=698,360
@@ -68,6 +74,8 @@ AudioAnalyzeFFT256       fft256_1;       //xy=1152,492
 AudioAmplifier           amp1;           //xy=470,93
 AudioConnection          patchCord0(adc1, 0, amp1, 0);
 AudioConnection          patchCord2(amp1, 0, fft256_1, 0);
+
+#endif
 
 #endif
 #endif
@@ -429,16 +437,29 @@ void setup() {
   Serial.begin(115200);                 // check serial monitor for current fps count
   delay(100);
 
-#if ART_TEENSY
+
+#if ART_BF
   art.global_intensity.setMinMax(0.7, 0.9);//MIN MUST be >0// MAX MUST be <=1
+
+#elif ART_WAG
+  art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
+
+#elif ART_CUBE
+  art.global_intensity.setMinMax(0.3, 0.7);//MIN MUST be >0// MAX MUST be <=1
+
+#elif ART_VEST
+  art.global_intensity.setMinMax(0.4, 1.0);//MIN MUST be >0// MAX MUST be <=1
+
 #else
-  art.global_intensity.setMinMax(0.4, 1);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.4, 0.8);//MIN MUST be >0// MAX MUST be <=1
+
 #endif
-  //art.global_intensity.setBaseToMiddle();
-  //art.global_scale_x.setBaseToMiddle();
-  //art.global_scale_y.setBaseToMiddle();
-  //art.global_scale_z.setBaseToMiddle();
-  //art.gHue.setBaseToMiddle();
+  art.global_intensity.setBaseToMiddle();
+  art.global_scale_x.setBaseToMiddle();
+  art.global_scale_y.setBaseToMiddle();
+  art.global_scale_z.setBaseToMiddle();
+  art.gHue.setBaseToMiddle();
+
 #if ART_TEENSY
   randomSeed(max(analogRead(A1),1));
 #else
@@ -580,38 +601,60 @@ void addLife(){
   
 #if ART_TEENSY
   if (doModulation){
-    int prob = 100;
+    const static int prob = 100;
+    const static int spd_low = 50;
+    const static int spd_high = 200;
+    float val, speed;
 
     //Change X / Y / Z centers
     /*    */
 
-    float val = float(random(-prob,prob))/float(prob);
 
-    EVERY_N_MILLIS(62542) {
-      art.center_xm.trigger(val);
+    //EVERY_N_MILLIS(62542) {
+    if (art.center_xm.isIdle()){
+      val = float(random(-prob,prob))/float(prob);
+      speed = float(random(spd_low,spd_high))/float(100);
+      art.center_xm.trigger(val,speed);
       Serial.println(val);
     }
     art.center_xm.update();
     
-    val = float(random(-prob,prob))/float(prob);
-    EVERY_N_MILLIS(42833) art.center_ym.trigger(val);
+    
+    //EVERY_N_MILLIS(42833){
+    if (art.center_ym.isIdle()){
+      val = float(random(-prob,prob))/float(prob);
+      speed = float(random(spd_low,spd_high))/float(100);
+      art.center_ym.trigger(val, speed);
+    }
     art.center_ym.update();
 
-    val = float(random(-prob,prob))/float(prob);
-    EVERY_N_MILLIS(74489) art.center_zm.trigger(val);
+
+    //EVERY_N_MILLIS(74489){
+    if (art.center_zm.isIdle()){
+      val = float(random(-prob,prob))/float(prob);
+      speed = float(random(spd_low,spd_high))/float(100);
+      art.center_zm.trigger(val, speed);
+    }
     art.center_zm.update();
     
     art.re_render_spherical_lookup_table();
 
-    //set in animation, can only change envelope
-
-    animation.low_limit.trigger(.3 * (move.noise_angle[10]-PI));
+    //base is set in animation, can only change envelope
+    animation.low_limit.trigger(move.noise_range[10]);
     animation.low_limit.update();
 
-    //TODO TEST THESE!!!
-    animation.high_limit.trigger( .3 * (move.noise_angle[11]-PI));
-    //animation.high_limit.trigger( move.sine[11]);
+    animation.high_limit.trigger(move.noise_range[11]);    //animation.high_limit.trigger( move.sine[11]);
     animation.high_limit.update();
+
+
+    //envelope used in audio, only change base
+    todo this might be waaaaay too chaotic, test slowly, perhaps add switches and modes? calm things down?
+    art.global_scale_x = art.global_scale_x.getMiddle() + art.global_scale_x.getQuarterSpread() * (move.noise_range[9]);
+    art.global_scale_y = art.global_scale_y.getMiddle() + art.global_scale_y.getQuarterSpread() * (move.noise_range[10]*move.noise_range[11]);
+    art.global_scale_z = art.global_scale_z.getMiddle() + art.global_scale_z.getQuarterSpread() * (move.noise_range[10] + move.noise_range[11]);
+    art.global_intensity = art.global_intensity.getMiddle() + art.global_intensity.getQuarterSpread() * (move.noise_range[9] * move.noise_range[10] - move.noise_range[11] );
+    art.global_bpm = art.global_bpm.getMiddle() + art.global_bpm.getQuarterSpread() * (move.noise_range[9] * move.noise_range[10]);
+
 
     EVERY_N_MILLIS(50){
       if(verbose2){
@@ -627,9 +670,38 @@ void addLife(){
 
 
 void updateIMU(){
+
+
 #if USE_IMU
   imu.update();
   art.upVector = imu.filteredPosition;
+
+#elif ART_TEENSY
+  const static int prob = 100;
+  const static int spd_low = 50;
+  const static int spd_high = 200;
+  float val, speed;
+
+  todo test these, honetly might be cool to increase the envelope min max and or add more modulation
+  if (art.roll.isIdle()){
+    val = float(random(-prob,prob))/float(prob);
+    speed = float(random(spd_low,spd_high))/float(100);
+    art.roll.trigger(val,speed);
+  }
+
+  if (art.pitch.isIdle()){
+    val = float(random(-prob,prob))/float(prob);
+    speed = float(random(spd_low,spd_high))/float(100);
+    art.pitch.trigger(val,speed);
+  }
+
+
+  art.roll.update();
+  art.pitch.update();
+
+
+#else
+
 #endif
 }
 

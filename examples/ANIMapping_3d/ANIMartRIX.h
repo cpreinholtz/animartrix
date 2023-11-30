@@ -35,8 +35,11 @@ License CC BY-NC 3.0
 #include "ANIMaudio.h"
 
 #if ART_TEENSY
+//teensy uses 0 to 8 for animations
+//9 10 11 for adding life via external modulation
 #define num_oscillators 12
 #else
+//esp only uses 0 to 8
 #define num_oscillators 9
 #endif
 
@@ -101,6 +104,7 @@ struct modulators {
   float saw[num_oscillators];        // returns 0 to 2*PI
   //float tri[num_oscillators];        // returns 0 to PI double frequency
   float sine[num_oscillators];   // returns -1 to 1 in a sin waveform
+  float noise_range[num_oscillators];   // returns -1 to 1
   float noise_angle[num_oscillators];   // returns 0 to 2*PI
 };
 
@@ -207,9 +211,9 @@ public:
 
 
 
-    global_scale_x.setMinMax(1.0/ max_spread*5.0, 1.0/ max_spread*14.0); //todo scale with size etc???
-    global_scale_y.setMinMax(1.0/ max_spread*5.0, 1.0/ max_spread*14.0);
-    global_scale_z.setMinMax(1.0/ max_spread*5.0, 1.0/ max_spread*14.0);
+    global_scale_x.setMinMax(1.0/ max_spread*3.0, 1.0/ max_spread*11.0); //todo scale with size etc???
+    global_scale_y.setMinMax(1.0/ max_spread*3.0, 1.0/ max_spread*11.0);
+    global_scale_z.setMinMax(1.0/ max_spread*3.0, 1.0/ max_spread*11.0);
     //global_scale_x.envelope.shape = envSine;
     //global_scale_y.envelope.shape = envSine;
     //global_scale_z.envelope.shape = envSine; 
@@ -232,19 +236,16 @@ public:
 
     roll.setMinMax(0,PI2);
     roll.edge = edgeWrap;
-    roll.envelope.setAttackDecay(500,100);
+    roll.envelope.setAttackDecay(30000,10000);
     roll.envelope.setMax(PI2);
     roll.envelope.shape = envExponential;
 
 
     pitch.setMinMax(0,PI);
     pitch.edge = edgeMirror;
-    pitch.envelope.setAttackDecay(500,100);
+    pitch.envelope.setAttackDecay(30000,10000);
     pitch.envelope.setMax(PI);
     pitch.envelope.shape = envExponential;
-
-
-
 
     center_xm.setMinMax(xmin, xmax);
     center_ym.setMinMax(ymin, ymax);
@@ -274,7 +275,7 @@ public:
 #endif
 
     global_scale_x = 1.0/ max_spread*7.0; // this should end up ~1
-    global_scale_y = 1.0/ max_spread*7.0; //todo make these scale with pixel spacing
+    global_scale_y = 1.0/ max_spread*7.0; //todo make these scale with pixel spacing, not just spread?  spacing really has more todo with features we can show
     global_scale_z = 1.0/ max_spread*7.0;
 
     Serial.print("gscalx: ");
@@ -427,7 +428,9 @@ public:
       
       move.sine[i] = sinf(move.saw[i]);                                 // directional offsets or factors, returns         -1 to 1, sin
       
-      move.noise_angle[i] = PI * (1 + pnoise(move.ramp[i], 0, 0));              // noise based angle offset, returns                0 to 2 * PI, smooth noise
+      move.noise_range[i] = pnoise(move.ramp[i], 0, 0);              // noise based range offset, returns                -1 to 1 smooth noise
+
+      move.noise_angle[i] = PI * (1 + move.noise_range[i]);              // noise based angle offset, returns                0 to 2 * PI, smooth noise
       
     }
 
@@ -463,7 +466,9 @@ public:
     timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.005;    // master speed
 
 #if ART_TEENSY
-    for (int i=10; i < num_oscillators; i++ ){
+    //set free running Oscilators that are used in the top level (10 and 11)
+    //these should be unused in the animation
+    for (int i=9; i < num_oscillators; i++ ){
       timings.ratio[i] = float(i)/500;
       timings.offset[i] = 10000*i;
     }
@@ -478,8 +483,6 @@ public:
     timings.ratio[6] = 7;
     timings.ratio[7] = 8;
     timings.ratio[8] = 9;
-    timings.ratio[9] = 10;
-
     
     timings.offset[0] = 000;
     timings.offset[1] = 100;
@@ -490,7 +493,6 @@ public:
     timings.offset[6] = 600;
     timings.offset[7] = 700;
     timings.offset[8] = 800;
-    timings.offset[9] = 900;
     //set_osc_offset();
 
 
@@ -773,9 +775,13 @@ public:
 #endif
 
 #if ART_WAG and USE_IMU
+  //up vector set in top level, transfer to roll and pitch
   upVector.makeUnitVector();
   roll = upVector.mX*PI2;
   pitch = upVector.mY*PI;
+#elif ART_TEENSY
+  //roll and pitch modulation handled in the top level
+#else
 #endif
   }
 

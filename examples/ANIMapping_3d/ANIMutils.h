@@ -262,20 +262,20 @@ private:
   int state = stateIdle;
 
   float theta = 0;
+  float speedMultiplier = 1.0;
 
 
   
 
 
 
-
   void updateState(){
     if (state == stateAttack){ 
-      elapsedMillis = millis() - start_millis;
+      elapsedMillis = speedMultiplier*millis() - start_millis;
       if (elapsedMillis > attackMillis) state = stateDecay;
 
     } else if (state == stateDecay) {
-      elapsedMillis = millis() - start_millis - attackMillis;
+      elapsedMillis = speedMultiplier*millis() - start_millis - attackMillis;
       if (elapsedMillis > decayMillis) {
         //repeat
         if (isLfo) trigger();
@@ -359,6 +359,8 @@ private:
     }
   }
 public:
+
+  //getters / const functions///////////////////////////
   void debug(){        
 
       Serial.print("elapsedSeconds:");
@@ -402,6 +404,16 @@ public:
     return signal;
   }
 
+  bool isIdle() const {
+    return (state == stateIdle);
+  }
+
+  float getMax() const {
+    return high;
+  }
+
+
+  // setters / utility functions///////////////////////////
   void clear(){
     state = stateIdle;
     signal = 0.0;
@@ -418,16 +430,15 @@ public:
      //if( high < low) Serial.println("dude, max should probably be > low in evelope setMax");
      //Serial.println(high);
   }
-  float getMax(){
-    return high;
-  }
+
 
   //! start a new envelop
-  void trigger(){
+  void trigger(speed=1.0){
     start_millis = millis();
     start_signal = signal;
     state = stateAttack;
     wasLfo = isLfo;
+    speedMultiplier = speed;
     //update();
   }
 
@@ -448,6 +459,7 @@ public:
   }
 
 
+
 };
 
 
@@ -461,6 +473,11 @@ class modableF {
 private:
   float low = 0.0;
   float high = 1.0;
+  //these are really just used for convenience and are always a function of low and high
+  float middle = 0.5; // low + (high-low)/2
+  float spread = 1.0; // high-low
+  float halfSpread = 0.5; // (high-low)/2
+  float quarterSpread = 0.25; // (high-low)/4
 
   float base = 0.0;//!this is the base input signal
 
@@ -475,10 +492,14 @@ public:
   float getBase() const{return base;}
   float getEnvelope() const{return clip(base+envelope.getSignal());}
   float getOffset() const{return base - low;}
-  float getSpread() const { return high-low;}
+  float getSpread() const { return spread;}
+  float getHalfSpread() const { return halfSpread;}
+  float getQuarterSpread() const { return halfSpread;}
+  float getMiddle() const { return middle;}
   float getSpace() const { return high-(base+envelope.getSignal());}
   float getNegSpace() const { return (envelope.getSignal()+base)-low;}
 
+  float isIdle() const {return envelope.isIdle();}
   //utility functions///////////////////////////
   float clip(float v) const{
     if (edge == edgeClip) v =  constrain_float(v, low, high);//edgeClip = clipped like an op-amp hitting the rails
@@ -489,7 +510,7 @@ public:
 
 
   //! input: value number ideally from -1/1 that we use to set envelope maximum proportional to the space we 
-  void trigger(float value){
+  void trigger(float value, float speed = 1.0){
       constrain_float(value,-1,1);
       if( edge == edgeClip ) {
         if (value > 0) envelope.setMax( getSpace() * value); // if we are clipPIng, get the ammount of space from max-base we have left, make env proportional to that
@@ -500,7 +521,7 @@ public:
         envelope.clear();
         envelope.setMax( getSpread() *value);// not clipPIng, get the total spread max-min, make env proportional to that
       }
-      envelope.trigger();
+      envelope.trigger(speed);
   }
 
 
@@ -514,12 +535,16 @@ public:
   void setMinMax(float mn, float mx) {
     low = mn;
     high = mx;
+    spread = high - low;
+    halfSpread = spread / 2;
+    quaterSpread = halfSpread / 2;
+    middle = low + halfSpread;
     if (high <= low) Serial.println("dude, max should probably be > min");
     base = clip(base); //just in case user set min max out of range of where base was
   }
 
   void setBaseToMiddle(){
-    base = low + getSpread()/2;
+    base = middle;
   }
 
   void setBaseToMin(){

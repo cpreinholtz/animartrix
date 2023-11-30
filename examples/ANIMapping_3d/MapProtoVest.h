@@ -18,8 +18,10 @@ License CC BY-NC 3.0
 
 #pragma once
 #define ART_PROTO_VEST true
-
 #define ART_VEST true
+
+#define USE_IMU false
+#define USE_AUDIO true
 
 #ifndef xind
   #define xind 0
