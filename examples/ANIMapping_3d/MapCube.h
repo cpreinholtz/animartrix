@@ -54,7 +54,12 @@ const int numPins = 8;
 //orange, blue, green, brown, orange, blue, green, brown
 //defaults {2, 14, 7, 8, 6, 20, 21, 5};
 //I USED {2, 14, 7, 8, 6, 20, 21,***9***}; on the waggle because I needed pin 5 for I2S
-byte pinList[numPins] = {2, 14, 7, 8, 6, 20, 21, 5}
+//byte pinList[numPins] = {2, 14, 7, 8, 6, 20, 21, 5};
+
+//mounting the octo shifter on the teensy 4.1 (dont connect teensy 3.3v to octo pin 15~!!!)
+//see blue notebook for explanation
+//results in T34 = O14, T33 = O13... 
+byte pinList[numPins] = {12,34,27,28,26,40,41,25};
 
 //const int nMaxPixels = nMaxPixels; // set this to your MAX leds per strip
 const int bytesPerLED = 3;  // change to 4 if using RGBW

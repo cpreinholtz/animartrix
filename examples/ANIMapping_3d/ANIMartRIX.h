@@ -236,16 +236,16 @@ public:
 
     roll.setMinMax(0,PI2);
     roll.edge = edgeWrap;
-    roll.envelope.setAttackDecay(30000,10000);
-    roll.envelope.setMax(PI2);
-    roll.envelope.shape = envExponential;
+    roll.envelope.setAttackDecay(5000,5000);
+    roll.envelope.setMax(PI8);
+    roll.envelope.shape = envSine;
 
 
     pitch.setMinMax(0,PI);
     pitch.edge = edgeMirror;
-    pitch.envelope.setAttackDecay(30000,10000);
-    pitch.envelope.setMax(PI);
-    pitch.envelope.shape = envExponential;
+    pitch.envelope.setAttackDecay(6000,6000);
+    pitch.envelope.setMax(PI2);
+    pitch.envelope.shape = envSine;
 
     center_xm.setMinMax(xmin, xmax);
     center_ym.setMinMax(ymin, ymax);
@@ -823,6 +823,7 @@ public:
     Serial.print(getRenderTime()); Serial.print(" us RenderTime ... ");
     Serial.print(getShowTime()); Serial.print(" us ShowTime ... ");
     Serial.print(getTotalUpdateTime()); Serial.print(" TotalUpdateTime ... ");
+    fps = 1000000 / getTotalUpdateTime();
     Serial.print(fps); Serial.print(" fps @ ");
     Serial.print(NUM_LEDS); Serial.println(" LEDs ... "); Serial.println();
   }

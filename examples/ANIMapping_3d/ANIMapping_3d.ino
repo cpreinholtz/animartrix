@@ -65,14 +65,14 @@ AudioAmplifier           amp1;           //xy=470,93
 AudioConnection          patchCord0(i2s1, 0, amp1, 0);
 AudioConnection          patchCord2(amp1, 0, fft256_1, 0);
 
-//ART_CUBE uses analog mic on pin 16(A2)
+//ART_CUBE 
 #else
 #include <Audio.h>
 //include this^&@
-AudioInputAnalog            adc1;           //xy=698,360
+AudioInputI2S2            audioSource;           //xy=698,360
 AudioAnalyzeFFT256       fft256_1;       //xy=1152,492
 AudioAmplifier           amp1;           //xy=470,93
-AudioConnection          patchCord0(adc1, 0, amp1, 0);
+AudioConnection          patchCord0(audioSource, 0, amp1, 0);
 AudioConnection          patchCord2(amp1, 0, fft256_1, 0);
 
 #endif
@@ -445,7 +445,8 @@ void setup() {
   art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
 
 #elif ART_CUBE
-  art.global_intensity.setMinMax(0.3, 0.7);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
+  digitalWrite(13,1);
 
 #elif ART_VEST
   art.global_intensity.setMinMax(0.4, 1.0);//MIN MUST be >0// MAX MUST be <=1
@@ -593,7 +594,7 @@ void addLife(){
 
     //changing paterns
     if (play){
-        if (doRandom) {randomPattern();}
+        if (doRandom) {EVERY_N_SECONDS(45) randomPattern();}
         else {EVERY_N_SECONDS(45) incrementPattern();}
     }
   }
@@ -648,7 +649,7 @@ void addLife(){
 
 
     //envelope used in audio, only change base
-    todo this might be waaaaay too chaotic, test slowly, perhaps add switches and modes? calm things down?
+    //todo this might be waaaaay too chaotic, test slowly, perhaps add switches and modes? calm things down?
     art.global_scale_x = art.global_scale_x.getMiddle() + art.global_scale_x.getQuarterSpread() * (move.noise_range[9]);
     art.global_scale_y = art.global_scale_y.getMiddle() + art.global_scale_y.getQuarterSpread() * (move.noise_range[10]*move.noise_range[11]);
     art.global_scale_z = art.global_scale_z.getMiddle() + art.global_scale_z.getQuarterSpread() * (move.noise_range[10] + move.noise_range[11]);
@@ -660,6 +661,8 @@ void addLife(){
       if(verbose2){
         //Serial.print("center_xme:"); Serial.print(art.center_xm.envelope.getMax()); Serial.print(",");
         //Serial.println();
+        Serial.print("roll:"); Serial.print(art.roll); Serial.print(",pitch:"); Serial.print(art.pitch);Serial.print(",");
+        Serial.println();
       } 
     }
   }
@@ -679,24 +682,25 @@ void updateIMU(){
 #elif ART_TEENSY
   const static int prob = 100;
   const static int spd_low = 50;
-  const static int spd_high = 200;
+  const static int spd_high = 250;
   float val, speed;
 
-  todo test these, honetly might be cool to increase the envelope min max and or add more modulation
+  //todo test these, honetly might be cool to increase the envelope min max and or add more modulation
   if (art.roll.isIdle()){
     val = float(random(-prob,prob))/float(prob);
     speed = float(random(spd_low,spd_high))/float(100);
+
     art.roll.trigger(val,speed);
+
   }
+  art.roll.update();
+
 
   if (art.pitch.isIdle()){
     val = float(random(-prob,prob))/float(prob);
     speed = float(random(spd_low,spd_high))/float(100);
     art.pitch.trigger(val,speed);
-  }
-
-
-  art.roll.update();
+  }  
   art.pitch.update();
 
 

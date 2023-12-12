@@ -20,6 +20,8 @@ License CC BY-NC 3.0
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 const float PI2 = 2*PI;
+const float PI4 = 4*PI;
+const float PI8 = 8*PI;
 const float PIOVER2 = PI/2;
 const float PIOVER2T3 = 3*PI/2;
 
@@ -252,6 +254,8 @@ private:
   float low = 0.0;
   float high = 1.0;
 
+  float attackBaseMillis = 400.0; // in millis
+  float decayBaseMillis = 400.0; // in millis
   float attackMillis = 400.0; // in millis
   float decayMillis = 400.0; // in millis
   unsigned long start_millis = 0;
@@ -271,11 +275,11 @@ private:
 
   void updateState(){
     if (state == stateAttack){ 
-      elapsedMillis = speedMultiplier*millis() - start_millis;
+      elapsedMillis = millis() - start_millis;
       if (elapsedMillis > attackMillis) state = stateDecay;
 
     } else if (state == stateDecay) {
-      elapsedMillis = speedMultiplier*millis() - start_millis - attackMillis;
+      elapsedMillis = millis() - start_millis - attackMillis;
       if (elapsedMillis > decayMillis) {
         //repeat
         if (isLfo) trigger();
@@ -421,8 +425,8 @@ public:
 
   void setAttackDecay(float aMillis, float dMillis){
      float m = 0.0;
-     attackMillis = max(aMillis, m);
-     decayMillis = max(dMillis,m);
+     attackBaseMillis = max(aMillis, m);
+     decayBaseMillis = max(dMillis, m);
   }
 
   void setMax(float m){
@@ -433,12 +437,14 @@ public:
 
 
   //! start a new envelop
-  void trigger(speed=1.0){
+  void trigger(float speed=1.0){
     start_millis = millis();
     start_signal = signal;
     state = stateAttack;
     wasLfo = isLfo;
-    speedMultiplier = speed;
+    speedMultiplier = max(speed,0.);
+    attackMillis = attackBaseMillis / speedMultiplier;// higher speed = shorter attack decay
+    decayMillis = decayBaseMillis / speedMultiplier;
     //update();
   }
 
@@ -494,7 +500,7 @@ public:
   float getOffset() const{return base - low;}
   float getSpread() const { return spread;}
   float getHalfSpread() const { return halfSpread;}
-  float getQuarterSpread() const { return halfSpread;}
+  float getQuarterSpread() const { return quarterSpread;}
   float getMiddle() const { return middle;}
   float getSpace() const { return high-(base+envelope.getSignal());}
   float getNegSpace() const { return (envelope.getSignal()+base)-low;}
@@ -537,7 +543,7 @@ public:
     high = mx;
     spread = high - low;
     halfSpread = spread / 2;
-    quaterSpread = halfSpread / 2;
+    quarterSpread = halfSpread / 2;
     middle = low + halfSpread;
     if (high <= low) Serial.println("dude, max should probably be > min");
     base = clip(base); //just in case user set min max out of range of where base was

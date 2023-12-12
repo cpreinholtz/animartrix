@@ -128,9 +128,20 @@ for pipe in range(nPipes):
 
     pin = pipe
     # for the second half of the pipes, go in reverse order
-    if pipe >= nPipes/2:
-      pin = int(nPipes/2 + nPipes-1-pipe)
+    #if pipe >= nPipes/2:      
+      #pin = int(nPipes/2 + nPipes-1-pipe)
+    #result is 0  1  2  3  7  6  5  4
+    #          Or Bl Gr Br Br Gr Bl Or
 
+
+    #for odd pipes, go in reverse order
+    if pipe %2 ==1:
+      pin = int(nPipes-(pipe+1)/2)
+    #even divide by 2
+    else:
+      pin = int(pipe/2)
+    #result is 0 7 1 6 2 5 3 4
+    #LeftOrange RightBrown LeftBlue RightGreen LeftGreen RightBlue LeftBrown RightOrande
     rings[pin] += linearRun(start,stop,nLedsPerLength)
 
 
