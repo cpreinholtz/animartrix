@@ -195,57 +195,57 @@ PatternAndNameList gPatterns = {
   {PlaneCounterRotation1, "PlaneCounterRotation1"},
 #endif
   
-  {Module_Experiment1,"Module_Experiment1"},
-  {SM9,"SM9"},  
-  {Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},
-  {Caleido1,"Caleido1"}, 
-  {Complex_Kaleido_5,"Complex_Kaleido_5"},
+  {Module_Experiment1,"Module_Experiment1"},//todo fix on cube!!!!, sensitive to modulation?
+  {SM9,"SM9"},  //todo fix on cube!!!!, sensitive to modulation?
+  //THIS IS CROKEN ON CUBE AND BREAKS OTHER PATTERNS?{Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},//todo fix on cube!!!!
+  {Caleido1,"Caleido1"}, //todo fix on cube!!!!
+  {Complex_Kaleido_5,"Complex_Kaleido_5"},//todo fix on cube!!!!
   //{GrowingSpheres, "GrowingSpheres"},
-  {PlaneRotation1, "PlaneRotation1"},
+  //BROKEN ON CUBE AND BREAKS OTHERS!!!!!!! {PlaneRotation1, "PlaneRotation1"},//todo fix on cube!!!!
 
 
-  {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},
-  {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},
+  {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},//todo fix on cube!!!!
+  {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},//todo fix on cube!!!!
 
 
-  {Rings, "Rings"},
-  {Module_Experiment10,"Module_Experiment10"},
-  {Module_Experiment9,"Module_Experiment9"}, // FAV swipes!
-  {SPARKLE_EDGES_MOD9,"SPARKLE_EDGES_MOD9"}, // FAV swipes! with sweet edges
-  {Module_Experiment8,"Module_Experiment8"},
+  {Rings, "Rings"},// todo sensitive to modulation
+  {Module_Experiment10,"Module_Experiment10"},//todo  again a bit chatoc on cube
+  {Module_Experiment9,"Module_Experiment9"}, //todo  FAV swipes!
+  {SPARKLE_EDGES_MOD9,"SPARKLE_EDGES_MOD9"}, //todo  FAV swipes! with sweet edges, bit chaotic on the cude?
+  {Module_Experiment8,"Module_Experiment8"}, // I fucking love this one, cube, alternating edge colors solid base
   {Module_Experiment7,"Module_Experiment7"},
-  {Module_Experiment6,"Module_Experiment6"},
-  {Module_Experiment5,"Module_Experiment5"},
-  {Module_Experiment4,"Module_Experiment4"},
+  {Module_Experiment6,"Module_Experiment6"},//boring
+  {Module_Experiment5,"Module_Experiment5"},//incredible
+  {Module_Experiment4,"Module_Experiment4"},//pretty cool, a bit fast?
   {Module_Experiment3,"Module_Experiment3"},//FAV yellow blob in red
   {Module_Experiment2,"Module_Experiment2"},//FAV
 
-  {Parametric_Water,"Parametric_Water"},
-  {Water,"Water"},
+  {Parametric_Water,"Parametric_Water"},//todo too sensitive to contrast changes
+  {Water,"Water"},//todo too sensitive to contrast changes
   
   {Complex_Kaleido_6,"Complex_Kaleido_6"}, ///great at 30 secs!
   {Complex_Kaleido_4,"Complex_Kaleido_4"},//good
   //{Complex_Kaleido_3, "Complex_Kaleido_3"},
-  {Complex_Kaleido_2,"Complex_Kaleido_2"},
+  {Complex_Kaleido_2,"Complex_Kaleido_2"},//todo figure out what is making the raindrop effect, need to calm this down to do more!!!!!!
   {Complex_Kaleido, "Complex_Kaleido"},
   
-  {SM10,"SM10"},
+  {SM10,"SM10"},// flashy and fast
 
-  {SM8,"SM8"},//fun strobe
+  {SM8,"SM8"},//fun strobe, a bit fast on the cube
   //{SM7,"SM7"}, //todo why is this commented out?
   {SM6,"SM6"},
-  {SM5,"SM5"},
+  {SM5,"SM5"},//hass the red blob issue
   {SM4,"SM4"},
   {SM3,"SM3"},
   {SM2,"SM2"},
   {SM1,"SM1"},
   {Big_Caleido,"Big_Caleido"},
-  {RGB_Blobs5,"RGB_Blobs5"},
-  {RGB_Blobs4,"RGB_Blobs4"},
+  {RGB_Blobs5,"RGB_Blobs5"},//todo needs better offsets?
+  {RGB_Blobs4,"RGB_Blobs4"},//todo needs better offsets? not cool on cube
   {RGB_Blobs3,"RGB_Blobs3"},
   {RGB_Blobs2,"RGB_Blobs2"},
-  {RGB_Blobs,"RGB_Blobs"},
-  {Polar_Waves,"Polar_Waves"},
+  {RGB_Blobs,"RGB_Blobs"},//has the red blob issue
+  {Polar_Waves,"Polar_Waves"},//cool, has the red blob issue
   //{Slow_Fade,"Slow_Fade"},
 #if ART_TEENSY
   {Zoom2, "Zoom2"}, //broken on esp
@@ -253,23 +253,24 @@ PatternAndNameList gPatterns = {
   {Hot_Blob,"Hot_Blob"}, //broken on esp
 #endif
 
-  {Spiralus2,"Spiralus2"},
-  {Spiralus,"Spiralus"},
-  {Yves,"Yves"},
+  {Spiralus2,"Spiralus2"},//todo fix on cube?
+  {Spiralus,"Spiralus"},//todo fix on cube?
+  {Yves,"Yves"},//bit darkwady?
   //{Scaledemo1,"Scaledemo1"},///active and fun
   //{Scaledemo2,"Scaledemo2"},///active and fun
-  {Lava1,"Lava1"},
+  {Lava1,"Lava1"},// bit fast
   
-  {Caleido3,"Caleido3"},
-  {Caleido2,"Caleido2"},
-  {Caleido1,"Caleido1"}, 
+  {Caleido3,"Caleido3"}, //todo fix on cube!!!!, sensitive to modulation?  scaling issue?
+  {Caleido2,"Caleido2"}, //todo fix on cube!!!!, sensitive to modulation?  scaling issue?
+  {Caleido1,"Caleido1"}, //todo fix on cube!!!!, sensitive to modulation?  scaling issue?
   
   //{Distance_Experiment,"Distance_Experiment"},
-  {Center_Field,"Center_Field"},
-  {Waves,"Waves"},//broken
-  {Chasing_Spirals,"Chasing_Spirals"},
-  {Rotating_Blob,"Rotating_Blob"}
+  {Center_Field,"Center_Field"},//bit fast
+  {Waves,"Waves"},//broken, too fast
+  {Chasing_Spirals,"Chasing_Spirals"},//todo fix on cube!!!!, sensitive to modulation?  scaling issue?
+  {Rotating_Blob,"Rotating_Blob"}//todo fix on cube!!!!, sensitive to modulation?
 };
+
 
 
 
@@ -300,26 +301,31 @@ bugfixes:
 */
 
 int gPatternCount = ARRAY_SIZE(gPatterns);
-void clearPattern(){
-  currentPattern = 0;
-  Serial.print("Setting pattern to: "); Serial.print(currentPattern); Serial.print(" "); Serial.println(gPatterns[currentPattern].name);
-}
 
+void setPattern(int setTo){
+  //need to do this periodically or else the ramps get out of hand
+  //every 100 secs should do
+  EVERY_N_MILLIS(100000){art.clearRamps();Serial.println("clearing ramps")}
 
-void incrementPattern(int inc = 1){
-  currentPattern = currentPattern + inc;
+  currentPattern = setTo;
   if (currentPattern >= gPatternCount) currentPattern = 0;
   if (currentPattern < 0) currentPattern = gPatternCount-1;
 
   Serial.print("Incrementing pattern to: "); Serial.print(currentPattern); Serial.print(" "); Serial.println(gPatterns[currentPattern].name);
-}
-
-void randomPattern(){
-  currentPattern = random(gPatternCount);
-  if (currentPattern >= gPatternCount) currentPattern = 0;
   Serial.print("Setting pattern to: "); Serial.print(currentPattern); Serial.print(" "); Serial.println(gPatterns[currentPattern].name);
 }
 
+void clearPattern(){
+  setPattern(0);
+}
+
+void incrementPattern(int inc = 1){
+  setPattern(currentPattern + inc);
+}
+
+void randomPattern(){
+  setPattern(random(gPatternCount));
+}
 
 
 void setMusicMod(int i){
@@ -445,7 +451,7 @@ void setup() {
   art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
 
 #elif ART_CUBE
-  art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.2, 0.3);//MIN MUST be >0// MAX MUST be <=1
   digitalWrite(13,1);
 
 #elif ART_VEST

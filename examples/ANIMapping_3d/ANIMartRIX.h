@@ -445,6 +445,12 @@ public:
   //LIB8STATIC uint16_t beatsin88( accum88 beats_per_minute_88, uint16_t lowest = 0, uint16_t highest = 65535,  uint32_t timebase = 0, uint16_t phase_offset = 0);
   }
 
+  void clearRamps(){
+    for (int i=0; i< num_oscillators; i++){
+      move.ramp_no_offset[i] = i;
+    }
+  }
+
 
   float bpmToSpeedMillis(modableF& bpm) const{
     //double runtime = millis() * timings.master_speed;  // global anaimation speed gives the frequency in millis of the ramp to increase by 1 per millisecond
@@ -470,7 +476,7 @@ public:
     //these should be unused in the animation
     for (int i=9; i < num_oscillators; i++ ){
       timings.ratio[i] = float(i)/500;
-      timings.offset[i] = 10000*i;
+      timings.offset[i] = 1000*i;
     }
 #endif
 
@@ -484,7 +490,7 @@ public:
     timings.ratio[7] = 8;
     timings.ratio[8] = 9;
     
-    timings.offset[0] = 000;
+    timings.offset[0] = 050;
     timings.offset[1] = 100;
     timings.offset[2] = 200;
     timings.offset[3] = 300;
@@ -767,6 +773,7 @@ public:
     do_often();
     animation.low_limit = 0;
     animation.high_limit = 1;
+    //for (int i=0; i<9; i++){ timings.offset[i] = i; }
 
 #if ART_TEENSY
     center_x = center_xm.getEnvelope();
@@ -2105,8 +2112,8 @@ public:
     
 
     run_default_oscillators();
-    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.003;
-    calculate_oscillators(timings); 
+    //timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.003;
+    //calculate_oscillators(timings); 
 
     
     for (int n = 0; n < NUM_LEDS; n++) {
@@ -2148,8 +2155,8 @@ public:
     
 
     run_default_oscillators();
-    timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.003;
-    calculate_oscillators(timings); 
+    //timings.master_speed = bpmToSpeedMillis(global_bpm);// was: 0.003;
+    //calculate_oscillators(timings); 
 
     
     for (int n = 0; n < NUM_LEDS; n++) {
@@ -2175,6 +2182,61 @@ public:
       pixel.r   = show1;
       pixel.b   = 40-show1;
       pixel.g = 15; 
+      
+
+      buffer[n] = setPixelColor(pixel);
+    }
+  }
+
+  void Polar_Waves() { // nice one
+
+    get_ready();
+
+    
+
+                      
+
+    timings.master_speed = bpmToSpeedMillis(global_bpm)/2;// was: 0.5;    // master speed
+
+    timings.ratio[0] = 0.25;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.ratio[1] = 0.27;
+    timings.ratio[2] = 0.31;
+    timings.offset[0] = 0.25;           // speed ratios for the oscillators, higher values = faster transitions
+    timings.offset[1] = 0.27;
+    timings.offset[2] = 0.31;
+    calculate_oscillators(timings); 
+
+    
+    for (int n = 0; n < NUM_LEDS; n++) { 
+      animation.anglephi   = spherical_phi[n]; //todo, move this later
+      
+      animation.dist       = (distance[n]);
+      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[0];
+      animation.offset_z   = (animation.dist * 1.5)-2 * move.ramp[0];
+      animation.scale_x    = 0.15;
+      animation.scale_y    = 0.15;
+      animation.scale_z    = 0.15;
+      animation.offset_x   = move.ramp[0];
+      
+      float show1          = render_value(animation);
+      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[1];
+      animation.offset_z   = (animation.dist * 1.5)-2 * move.ramp[1];
+      animation.offset_x   = move.ramp[1];
+
+      float show2          = render_value(animation);
+      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[2];
+      animation.offset_z   = (animation.dist * 1.5)-2 * move.ramp[2];
+      animation.offset_x   = move.ramp[2];
+
+      float show3          = render_value(animation);
+
+      float radius = radial_filter_radius;   // radius of a radial brightness filter
+      float radial = (radius-distance[n])/distance[n];
+
+      pixel.r = radial * show1;
+      pixel.g = radial * show2;
+      pixel.b = radial * show3;
+      
       
 
       buffer[n] = setPixelColor(pixel);
@@ -2228,59 +2290,6 @@ public:
       pixel.r    = radial * show1;
       pixel.g  = radial * (show1 - show2) / 6;
       pixel.b   = radial * (show1 - show3) / 5;
-      
-      
-
-      buffer[n] = setPixelColor(pixel);
-    }
-  }
-
-  void Polar_Waves() { // nice one
-
-    get_ready();
-
-    
-
-                      
-
-    timings.master_speed = bpmToSpeedMillis(global_bpm)/2;// was: 0.5;    // master speed
-
-    timings.ratio[0] = 0.25;           // speed ratios for the oscillators, higher values = faster transitions
-    timings.ratio[1] = 0.27;
-    timings.ratio[2] = 0.31;
-    
-    calculate_oscillators(timings); 
-
-    
-    for (int n = 0; n < NUM_LEDS; n++) { 
-      animation.anglephi   = spherical_phi[n]; //todo, move this later
-      
-      animation.dist       = (distance[n]);
-      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[0];
-      animation.offset_z   = (animation.dist * 1.5)-10 * move.ramp[0];
-      animation.scale_x    = 0.15;
-      animation.scale_y    = 0.15;
-      animation.scale_z    = 0.15;
-      animation.offset_x   = move.ramp[0];
-      
-      float show1          = render_value(animation);
-      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[1];
-      animation.offset_z   = (animation.dist * 1.5)-10 * move.ramp[1];
-      animation.offset_x   = move.ramp[1];
-
-      float show2          = render_value(animation);
-      animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[2];
-      animation.offset_z   = (animation.dist * 1.5)-10 * move.ramp[2];
-      animation.offset_x   = move.ramp[2];
-
-      float show3          = render_value(animation);
-
-      float radius = radial_filter_radius;   // radius of a radial brightness filter
-      float radial = (radius-distance[n])/distance[n];
-
-      pixel.r    = radial * show1;
-      pixel.g  = radial * show2;
-      pixel.b   = radial * show3;
       
       
 
@@ -4106,7 +4115,7 @@ public:
       animation.scale_y    = 0.1 ;
       animation.scale_z    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 20 * move.ramp[2];
+      animation.offset_y   = 2 * move.ramp[2];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
@@ -4150,7 +4159,7 @@ public:
       animation.scale_y    = 0.003 * s;
       animation.scale_z    = 0.003 * s;
       animation.offset_z   = 0.1*move.ramp[2] ;
-      animation.offset_y   = -20 * move.ramp[2];
+      animation.offset_y   = -2 * move.ramp[2];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
@@ -4161,7 +4170,7 @@ public:
       animation.scale_y    = 0.003 * s;
       animation.scale_z    = 0.003 * s;
       animation.offset_z   = 0.1*move.ramp[3] ;
-      animation.offset_y   = -20 * move.ramp[3];
+      animation.offset_y   = -2 * move.ramp[3];
       animation.offset_x   = 100;
       animation.low_limit  = 0;
       show2                = render_value(animation);
@@ -4172,7 +4181,7 @@ public:
       animation.scale_y    = 0.003 * s;
       animation.scale_z    = 0.003 * s;
       animation.offset_z   = 0.1*move.ramp[4] ;
-      animation.offset_y   = -20 * move.ramp[4];
+      animation.offset_y   = -2 * move.ramp[4];
       animation.offset_x   = 1000;
       animation.low_limit  = 0;
       show3                = render_value(animation);
