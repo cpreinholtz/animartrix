@@ -190,48 +190,54 @@ void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
 PatternAndNameList gPatterns = {
   //{TestMap, "TestMap"},
+#if ART_CUBE
+  {Scaledemo1,"Scaledemo1"},///active and fun
+  {Scaledemo2,"Scaledemo2"},///active and fun
+#endif
 
 #if USE_IMU
   {PlaneCounterRotation1, "PlaneCounterRotation1"},
-#endif
-  
-  {Module_Experiment1,"Module_Experiment1"},//todo fix on cube!!!!, sensitive to modulation?
-  {SM9,"SM9"},  //todo fix on cube!!!!, sensitive to modulation?
-  //THIS IS CROKEN ON CUBE AND BREAKS OTHER PATTERNS?{Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},//todo fix on cube!!!!
-  {Caleido1,"Caleido1"}, //todo fix on cube!!!!
-  {Complex_Kaleido_5,"Complex_Kaleido_5"},//todo fix on cube!!!!
-  //{GrowingSpheres, "GrowingSpheres"},
-  //BROKEN ON CUBE AND BREAKS OTHERS!!!!!!! {PlaneRotation1, "PlaneRotation1"},//todo fix on cube!!!!
 
-
-  {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},//todo fix on cube!!!!
-  {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},//todo fix on cube!!!!
-
-
-  {Rings, "Rings"},// todo sensitive to modulation
   {Module_Experiment10,"Module_Experiment10"},//todo  again a bit chatoc on cube
   {Module_Experiment9,"Module_Experiment9"}, //todo  FAV swipes!
   {SPARKLE_EDGES_MOD9,"SPARKLE_EDGES_MOD9"}, //todo  FAV swipes! with sweet edges, bit chaotic on the cude?
-  {Module_Experiment8,"Module_Experiment8"}, // I fucking love this one, cube, alternating edge colors solid base
+
+  //THIS IS CROKEN ON CUBE AND BREAKS OTHER PATTERNS?{Chasing_Spirals_Hsi, "Chasing_Spirals_Hsi"},//todo fix on cube!!!!
+  //{GrowingSpheres, "GrowingSpheres"}, //BROKEN ON CUBE AND BREAKS OTHERS!!!!!!! {PlaneRotation1, "PlaneRotation1"},//todo fix on cube!!!!
+
+#endif
+  
+  {Module_Experiment1,"Module_Experiment1"},
+  {SM9,"SM9"}, 
+  {Caleido1,"Caleido1"}, 
+  {Complex_Kaleido_5,"Complex_Kaleido_5"},
+
+
+  {Module_Experiment11_Hsi, "Module_Experiment11_Hsi"},
+  {Module_Experiment9_Hsi, "Module_Experiment9_Hsi"},
+
+
+  {Rings, "Rings"},
+  {Module_Experiment8,"Module_Experiment8"}, // todo speed up
   {Module_Experiment7,"Module_Experiment7"},
-  {Module_Experiment6,"Module_Experiment6"},//boring
+  {Module_Experiment6,"Module_Experiment6"},
   {Module_Experiment5,"Module_Experiment5"},//incredible
-  {Module_Experiment4,"Module_Experiment4"},//pretty cool, a bit fast?
+  {Module_Experiment4,"Module_Experiment4"},//pretty cool
   {Module_Experiment3,"Module_Experiment3"},//FAV yellow blob in red
   {Module_Experiment2,"Module_Experiment2"},//FAV
 
-  {Parametric_Water,"Parametric_Water"},//todo too sensitive to contrast changes
-  {Water,"Water"},//todo too sensitive to contrast changes
+  {Parametric_Water,"Parametric_Water"},
+  {Water,"Water"},
   
-  {Complex_Kaleido_6,"Complex_Kaleido_6"}, ///great at 30 secs!
-  {Complex_Kaleido_4,"Complex_Kaleido_4"},//good
+  {Complex_Kaleido_6,"Complex_Kaleido_6"},
+  {Complex_Kaleido_4,"Complex_Kaleido_4"},
   //{Complex_Kaleido_3, "Complex_Kaleido_3"},
-  {Complex_Kaleido_2,"Complex_Kaleido_2"},//todo figure out what is making the raindrop effect, need to calm this down to do more!!!!!!
+  {Complex_Kaleido_2,"Complex_Kaleido_2"},//todo figure out what is making the raindrop effect, need to do more!!!!!!
   {Complex_Kaleido, "Complex_Kaleido"},
   
-  {SM10,"SM10"},// flashy and fast
+  {SM10,"SM10"},
 
-  {SM8,"SM8"},//fun strobe, a bit fast on the cube
+  {SM8,"SM8"},
   //{SM7,"SM7"}, //todo why is this commented out?
   {SM6,"SM6"},
   {SM5,"SM5"},//hass the red blob issue
@@ -242,33 +248,32 @@ PatternAndNameList gPatterns = {
   {Big_Caleido,"Big_Caleido"},
   {RGB_Blobs5,"RGB_Blobs5"},//todo needs better offsets?
   {RGB_Blobs4,"RGB_Blobs4"},//todo needs better offsets? not cool on cube
-  {RGB_Blobs3,"RGB_Blobs3"},
+  {RGB_Blobs3,"RGB_Blobs3"},//has the red blob issue
   {RGB_Blobs2,"RGB_Blobs2"},
   {RGB_Blobs,"RGB_Blobs"},//has the red blob issue
   {Polar_Waves,"Polar_Waves"},//cool, has the red blob issue
   //{Slow_Fade,"Slow_Fade"},
 #if ART_TEENSY
-  {Zoom2, "Zoom2"}, //broken on esp
+  {Zoom2, "Zoom2"}, //broken on esp, todo speed up on cube?
   {Zoom,"Zoom"}, //broken on esp
-  {Hot_Blob,"Hot_Blob"}, //broken on esp
+  {Hot_Blob,"Hot_Blob"}, //broken on esp,
 #endif
 
   {Spiralus2,"Spiralus2"},//todo fix on cube?
   {Spiralus,"Spiralus"},//todo fix on cube?
   {Yves,"Yves"},//bit darkwady?
-  //{Scaledemo1,"Scaledemo1"},///active and fun
-  //{Scaledemo2,"Scaledemo2"},///active and fun
-  {Lava1,"Lava1"},// bit fast
+
+  {Lava1,"Lava1"},
   
-  {Caleido3,"Caleido3"}, //todo fix on cube!!!!, sensitive to modulation?  scaling issue?
-  {Caleido2,"Caleido2"}, //todo fix on cube!!!!, sensitive to modulation?  scaling issue?
-  {Caleido1,"Caleido1"}, //todo fix on cube!!!!, sensitive to modulation?  scaling issue?
+  {Caleido3,"Caleido3"},
+  {Caleido2,"Caleido2"},
+  {Caleido1,"Caleido1"},
   
   //{Distance_Experiment,"Distance_Experiment"},
-  {Center_Field,"Center_Field"},//bit fast
-  {Waves,"Waves"},//broken, too fast
-  {Chasing_Spirals,"Chasing_Spirals"},//todo fix on cube!!!!, sensitive to modulation?  scaling issue?
-  {Rotating_Blob,"Rotating_Blob"}//todo fix on cube!!!!, sensitive to modulation?
+  {Center_Field,"Center_Field"},
+  {Waves,"Waves"},
+  {Chasing_Spirals,"Chasing_Spirals"},//todo make more like this!!!!!!
+  {Rotating_Blob,"Rotating_Blob"}//todo fix on cube!!!!,
 };
 
 
@@ -305,7 +310,7 @@ int gPatternCount = ARRAY_SIZE(gPatterns);
 void setPattern(int setTo){
   //need to do this periodically or else the ramps get out of hand
   //every 100 secs should do
-  EVERY_N_MILLIS(100000){art.clearRamps();Serial.println("clearing ramps")}
+  EVERY_N_MILLIS(100000){art.clearRamps();Serial.println("clearing ramps");}
 
   currentPattern = setTo;
   if (currentPattern >= gPatternCount) currentPattern = 0;
@@ -647,10 +652,10 @@ void addLife(){
     art.re_render_spherical_lookup_table();
 
     //base is set in animation, can only change envelope
-    animation.low_limit.trigger(move.noise_range[10]);
+    animation.low_limit.trigger(move.noise_range[10]/2);
     animation.low_limit.update();
 
-    animation.high_limit.trigger(move.noise_range[11]);    //animation.high_limit.trigger( move.sine[11]);
+    animation.high_limit.trigger(move.noise_range[11]/2);    //animation.high_limit.trigger( move.sine[11]);
     animation.high_limit.update();
 
 
@@ -660,14 +665,29 @@ void addLife(){
     art.global_scale_y = art.global_scale_y.getMiddle() + art.global_scale_y.getQuarterSpread() * (move.noise_range[10]*move.noise_range[11]);
     art.global_scale_z = art.global_scale_z.getMiddle() + art.global_scale_z.getQuarterSpread() * (move.noise_range[10] + move.noise_range[11]);
     art.global_intensity = art.global_intensity.getMiddle() + art.global_intensity.getQuarterSpread() * (move.noise_range[9] * move.noise_range[10] - move.noise_range[11] );
-    art.global_bpm = art.global_bpm.getMiddle() + art.global_bpm.getQuarterSpread() * (move.noise_range[9] * move.noise_range[10]);
-
+    art.global_bpm = 80 + art.global_bpm.getQuarterSpread() * absf(move.noise_range[9] * move.noise_range[10]);
 
     EVERY_N_MILLIS(50){
       if(verbose2){
         //Serial.print("center_xme:"); Serial.print(art.center_xm.envelope.getMax()); Serial.print(",");
         //Serial.println();
-        Serial.print("roll:"); Serial.print(art.roll); Serial.print(",pitch:"); Serial.print(art.pitch);Serial.print(",");
+
+
+        //Serial.print("roll:"); Serial.print(art.roll); Serial.print(",");
+        //Serial.print("pitch:"); Serial.print(art.pitch);Serial.print(",");
+
+        Serial.print("center_xm:"); Serial.print(art.center_zm); Serial.print(",");
+        //Serial.print("center_ym:"); Serial.print(art.center_zm);Serial.print(",");
+        //Serial.print("center_zm:"); Serial.print(art.center_zm);Serial.print(",");
+
+        Serial.print("global_scale_x:"); Serial.print(art.global_scale_x); Serial.print(",");
+        //Serial.print("global_scale_y:"); Serial.print(art.global_scale_y);Serial.print(",");
+        //Serial.print("global_scale_z:"); Serial.print(art.global_scale_z);Serial.print(",");
+
+        Serial.print("globalbpm:"); Serial.print(art.global_bpm);Serial.print(",");
+        Serial.print("highlimit:"); Serial.print(animation.high_limit);Serial.print(",");
+        Serial.print("lowlimit:"); Serial.print(animation.low_limit);Serial.print(",");
+
         Serial.println();
       } 
     }

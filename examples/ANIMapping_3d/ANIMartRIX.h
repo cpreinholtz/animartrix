@@ -203,7 +203,7 @@ public:
     animation.low_limit.envelope.shape = envConst;
     animation.low_limit.envelope.setMax(0);
 
-    animation.high_limit.setMinMax(.6,1.2);
+    animation.high_limit.setMinMax(.8,1.2);
     animation.high_limit = 1;
     animation.high_limit.envelope.isLfo = true;
     animation.high_limit.envelope.shape = envConst;
@@ -236,7 +236,7 @@ public:
 
     roll.setMinMax(0,PI2);
     roll.edge = edgeWrap;
-    roll.envelope.setAttackDecay(5000,5000);
+    roll.envelope.setAttackDecay(7000,7000);
     roll.envelope.setMax(PI8);
     roll.envelope.shape = envSine;
 
@@ -2212,7 +2212,7 @@ public:
       
       animation.dist       = (distance[n]);
       animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[0];
-      animation.offset_z   = (animation.dist * 1.5)-2 * move.ramp[0];
+      animation.offset_z   = (animation.dist * 1.5)-10 * move.ramp[0];
       animation.scale_x    = 0.15;
       animation.scale_y    = 0.15;
       animation.scale_z    = 0.15;
@@ -2220,12 +2220,12 @@ public:
       
       float show1          = render_value(animation);
       animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[1];
-      animation.offset_z   = (animation.dist * 1.5)-2 * move.ramp[1];
+      animation.offset_z   = (animation.dist * 1.5)-10 * move.ramp[1];
       animation.offset_x   = move.ramp[1];
 
       float show2          = render_value(animation);
       animation.angle      = polar_theta[n] - animation.dist * 0.1 + move.saw[2];
-      animation.offset_z   = (animation.dist * 1.5)-2 * move.ramp[2];
+      animation.offset_z   = (animation.dist * 1.5)-10 * move.ramp[2];
       animation.offset_x   = move.ramp[2];
 
       float show3          = render_value(animation);
@@ -4115,7 +4115,7 @@ public:
       animation.scale_y    = 0.1 ;
       animation.scale_z    = 0.1 ;
       animation.offset_z   = -10 ;
-      animation.offset_y   = 2 * move.ramp[2];
+      animation.offset_y   = 20 * move.ramp[2];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
@@ -4159,7 +4159,7 @@ public:
       animation.scale_y    = 0.003 * s;
       animation.scale_z    = 0.003 * s;
       animation.offset_z   = 0.1*move.ramp[2] ;
-      animation.offset_y   = -2 * move.ramp[2];
+      animation.offset_y   = -20 * move.ramp[2];
       animation.offset_x   = 10;
       animation.low_limit  = 0;
       show1                = render_value(animation);
@@ -4170,7 +4170,7 @@ public:
       animation.scale_y    = 0.003 * s;
       animation.scale_z    = 0.003 * s;
       animation.offset_z   = 0.1*move.ramp[3] ;
-      animation.offset_y   = -2 * move.ramp[3];
+      animation.offset_y   = -20 * move.ramp[3];
       animation.offset_x   = 100;
       animation.low_limit  = 0;
       show2                = render_value(animation);
@@ -4181,7 +4181,7 @@ public:
       animation.scale_y    = 0.003 * s;
       animation.scale_z    = 0.003 * s;
       animation.offset_z   = 0.1*move.ramp[4] ;
-      animation.offset_y   = -2 * move.ramp[4];
+      animation.offset_y   = -20 * move.ramp[4];
       animation.offset_x   = 1000;
       animation.low_limit  = 0;
       show3                = render_value(animation);
