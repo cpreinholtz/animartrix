@@ -339,7 +339,7 @@ void setMusicMod(int i){
       else if (i==1) audioModBeatDestPtr = &art.global_intensity;
       else if (i==2) audioModBeatDestPtr = &art.global_bpm;
 #if ART_TEENSY
-      else if (i==3) audioModBeatDestPtr = &art.global_scale_x;
+      else if (i==3) audioModBeatDestPtr = &art.global_scale_x;//todo, globa scal x y z can be a bit intense????
       else if (i==4) audioModBeatDestPtr = &art.global_scale_y;
       else if (i==5) audioModBeatDestPtr = &art.global_scale_z;
       else if (i==6) audioModBeatDestPtr = &art.gHue;
@@ -456,7 +456,7 @@ void setup() {
   art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
 
 #elif ART_CUBE
-  art.global_intensity.setMinMax(0.2, 0.3);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.2, 0.7);//MIN MUST be >0// MAX MUST be <=1
   digitalWrite(13,1);
 
 #elif ART_VEST
@@ -810,7 +810,7 @@ void updateSerial(){
       Serial.print("Setting audio.verbose shift to"); Serial.println(audio.verbose);
     } else if (incomingByte == '['){
       audio.verbose2 = not audio.verbose2;
-      Serial.print("Setting audio.verbose shift to"); Serial.println(audio.verbose2);
+      Serial.print("Setting audio.verbose2 shift to"); Serial.println(audio.verbose2);
     }else if (incomingByte == 'o'){
       audioModBeatDestPtr->envelope.verbose = not audioModBeatDestPtr->envelope.verbose;
       Serial.print("Setting amod.verbose shift to"); Serial.println(audioModBeatDestPtr->envelope.verbose);
