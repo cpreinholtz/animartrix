@@ -118,7 +118,12 @@ rgbF Hsi2Rgb(hsiF hsi) {
 
     // Step 1: Compute RGB assuming full intensity (I == 1)
   hAdj = hsi.h * PI2;    // convert h to radians
-  if (hAdj <= rad120) {   // if h <= 120 degrees
+  if (hsi.s==0){
+    r = 1;
+    b = 1;
+    g = 1;
+  }
+  else if (hAdj <= rad120) {   // if h <= 120 degrees
 
     r = (1 + (hsi.s * cos(hAdj))/cos(rad60 - hAdj)) / 3;
     b = (1 - hsi.s) / 3;

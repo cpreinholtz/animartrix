@@ -190,6 +190,10 @@ void Chasing_Spirals_Hsi(){art.Chasing_Spirals_Hsi();}
 void Module_Experiment11_Hsi(){art.Module_Experiment11_Hsi();}
 void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
+
+
+// p to 0 = stop random
+//b n or g23 to change
 PatternAndNameList gPatterns = {
   //{TestMap, "TestMap"},
 #if ART_CUBE || ART_WALL
@@ -222,14 +226,20 @@ PatternAndNameList gPatterns = {
   {Rings, "Rings"},
   {Module_Experiment8,"Module_Experiment8"}, // todo speed up
   {Module_Experiment7,"Module_Experiment7"},
+#if not ART_WALL
   {Module_Experiment6,"Module_Experiment6"},
+#endif
   {Module_Experiment5,"Module_Experiment5"},//incredible
   {Module_Experiment4,"Module_Experiment4"},//pretty cool
+#if not ART_WALL
   {Module_Experiment3,"Module_Experiment3"},//FAV yellow blob in red
+#endif
   {Module_Experiment2,"Module_Experiment2"},//FAV
 
   {Parametric_Water,"Parametric_Water"},
+#if not ART_WALL
   {Water,"Water"},
+#endif
   
   {Complex_Kaleido_6,"Complex_Kaleido_6"},
   {Complex_Kaleido_4,"Complex_Kaleido_4"},
@@ -244,7 +254,9 @@ PatternAndNameList gPatterns = {
   {SM6,"SM6"},
   {SM5,"SM5"},//hass the red blob issue
   {SM4,"SM4"},
+#if not ART_WALL
   {SM3,"SM3"},
+#endif
   {SM2,"SM2"},
   {SM1,"SM1"},
   {Big_Caleido,"Big_Caleido"},
@@ -262,7 +274,9 @@ PatternAndNameList gPatterns = {
 #endif
 
   {Spiralus2,"Spiralus2"},//todo fix on cube?
+#if not ART_WALL
   {Spiralus,"Spiralus"},//todo fix on cube?
+#endif
   {Yves,"Yves"},//bit darkwady?
 
   {Lava1,"Lava1"},
