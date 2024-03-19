@@ -32,6 +32,7 @@ License CC BY-NC 3.0
 #define ART_BF false
 //TEENSY + analog mic
 #define ART_CUBE false
+#define ART_WALL false
 
 //ESP + ANALOG MIC
 #define ART_VEST false
@@ -43,7 +44,8 @@ License CC BY-NC 3.0
 //!!!! ONLY INCLUDE ONE MAP
 //#include "MapWag.h"
 //#include "MapBf.h"
-#include "MapCube.h"
+//#include "MapCube.h"
+#include "MapWall.h"
 //#include "MapKVest.h"
 //#include "MapCVest.h"
 //#include "MapProtoVest.h"
@@ -190,7 +192,7 @@ void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 
 PatternAndNameList gPatterns = {
   //{TestMap, "TestMap"},
-#if ART_CUBE
+#if ART_CUBE || ART_WALL
   {Scaledemo1,"Scaledemo1"},///active and fun
   {Scaledemo2,"Scaledemo2"},///active and fun
 #endif
@@ -270,7 +272,7 @@ PatternAndNameList gPatterns = {
   {Caleido1,"Caleido1"},
   
   //{Distance_Experiment,"Distance_Experiment"},
-  {Center_Field,"Center_Field"},
+  //{Center_Field,"Center_Field"},
   {Waves,"Waves"},
   {Chasing_Spirals,"Chasing_Spirals"},//todo make more like this!!!!!!
   {Rotating_Blob,"Rotating_Blob"}//todo fix on cube!!!!,
@@ -352,10 +354,10 @@ void setMusicMod(int i){
 void randomMusicMod(){
 #if ART_TEENSY
   int im = 7;
-  setMusicMod(random(im));
+  setMusicMod(random(2,im));
 #else
   int im = 3;
-  setMusicMod(random(1,im));
+  setMusicMod(random(2,im));
 #endif
   
 }
@@ -456,7 +458,11 @@ void setup() {
   art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
 
 #elif ART_CUBE
-  art.global_intensity.setMinMax(0.2, 0.7);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.6, 0.95);//MIN MUST be >0// MAX MUST be <=1
+  digitalWrite(13,1);
+
+#elif ART_WALL
+  art.global_intensity.setMinMax(0.6, 0.95);//MIN MUST be >0// MAX MUST be <=1
   digitalWrite(13,1);
 
 #elif ART_VEST
@@ -494,8 +500,8 @@ void setup() {
   fft256_1.averageTogether(2); //runs at 300Hz+, lets slow that down to ~ 200 hz
   AudioMemory(50);
   //filter1.frequency(30); // filter out DC & extremely low frequencies
-  amp1.gain(85);        // amplify sign to useful range
-  audio.beat_multiplier_min = 2.2;
+  amp1.gain(20);        // amplify sign to useful range
+  audio.beat_multiplier_min = 1.9;
   audio.peak_hyst_arm = 10;
   audio.peak_volume_min = 0.1;  //SET TO .1
   audio.iir_volume.setWeight(.995);
@@ -746,7 +752,8 @@ void updateAudio(){
       audio.peakDetect(b0);
       if (audio.beat_detected && musicReactive) {
         //Serial.println("beat");
-        audioModBeatDestPtr->trigger(audio.ratio/3.0);
+        audioModBeatDestPtr->trigger(audio.ratio/2.0);
+        art.global_intensity.trigger(audio.ratio);
       } // beat
     } // fft available
 #else

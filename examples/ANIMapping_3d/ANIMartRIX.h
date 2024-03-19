@@ -624,7 +624,9 @@ public:
         
     }
     radial_filter_radius = maxD * 2;
-
+#if ART_WALL
+    radial_filter_radius = maxD / 2;
+#endif
     Serial.print("max mapped distance: "); Serial.println(maxD);
     Serial.print("reccomended radias filter: "); Serial.println(maxD*1.3);
 
@@ -1430,7 +1432,7 @@ public:
       // colormapping
       pixel.r   = show1;
       pixel.g = show2;
-      pixel.b  = 0;
+      pixel.b  = 25;
 
 
       buffer[n] = setPixelColor(pixel);
@@ -1792,11 +1794,11 @@ public:
       float show2          = render_value(animation);
 
       float dist = 1;//(10-distance[n])/ 10;
-      pixel.r = show1*dist;
-      pixel.g = (show1-show2)*dist*0.7;
-      pixel.b = (show2-show1)*dist;
+      pixel.r = show1*16*dist/maxD;
+      pixel.g = (show1-show2)*16*dist/maxD*0.7;
+      pixel.b = (show2-show1)*16*dist/maxD;
 
-      if (distance[n] > 16) { // todo make scaled version????
+      if (distance[n] > maxD) { // todo make scaled version????
          pixel.r = 0;
          pixel.g = 0;
          pixel.b = 0;
@@ -1844,11 +1846,11 @@ public:
       float show2          = render_value(animation);
 
       float dist = 1;//(10-distance[n])/ 10; // todo replace with radial?
-      pixel.r = show1*dist;
-      pixel.g = (show1-show2)*dist*0.76;
-      pixel.b = (show2-show1)*dist;
+      pixel.r = show1*16*dist/maxD;
+      pixel.g = (show1-show2)*16*dist/maxD*0.76;
+      pixel.b = (show2-show1)*16*dist/maxD;
 
-      if (distance[n] > 16) { // todo make scaled version????
+      if (distance[n] > maxD) { // todo make scaled version????
          pixel.r = 0;
          pixel.g = 0;
          pixel.b = 0;
@@ -2498,7 +2500,7 @@ public:
       animation.offset_z   = 300;
       float show3          = render_value(animation);
       
-      float radius = 23;   // radius of a radial brightness filter
+      float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/distance[n];
 
       pixel.r    = radial * (show1+show3)*0.5 * animation.dist/5;
@@ -2552,7 +2554,7 @@ public:
       animation.offset_z   = 300;
       float show3          = render_value(animation);
       
-      float radius = 23;   // radius of a radial brightness filter
+      float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/distance[n];
 
       pixel.r    = radial * (show1+show3)*0.5 * animation.dist/5;
