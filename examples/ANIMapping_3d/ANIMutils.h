@@ -68,7 +68,7 @@ typedef enum {
 // floating point utilities
 ////////////////////////////////////////////////////////////////////////////
 //!constrain, includes edges
-float constrain_float(float &x, float out_min, float out_max){
+float constrain_float(float x, float out_min, float out_max){
   if (x < out_min) x = out_min;
   if( x > out_max) x = out_max;
   return x;
@@ -501,6 +501,7 @@ public:
   envelopeF envelope;
   //getters///////////////////////////
   float getBase() const{return base;}
+  float getLow() const{return low;}
   float getEnvelope() const{return clip(base+envelope.getSignal());}
   float getOffset() const{return base - low;}
   float getSpread() const { return spread;}

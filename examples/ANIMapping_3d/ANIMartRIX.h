@@ -211,9 +211,9 @@ public:
 
 
 
-    global_scale_x.setMinMax(1.0/ max_spread*3.0, 1.0/ max_spread*11.0); //todo scale with size etc???
-    global_scale_y.setMinMax(1.0/ max_spread*3.0, 1.0/ max_spread*11.0);
-    global_scale_z.setMinMax(1.0/ max_spread*3.0, 1.0/ max_spread*11.0);
+    global_scale_x.setMinMax(1.0/ max_spread*1.0, 1.0/ max_spread*11.0); //todo scale with size etc???
+    global_scale_y.setMinMax(1.0/ max_spread*1.0, 1.0/ max_spread*11.0);
+    global_scale_z.setMinMax(1.0/ max_spread*1.0, 1.0/ max_spread*11.0);
     //global_scale_x.envelope.shape = envSine;
     //global_scale_y.envelope.shape = envSine;
     //global_scale_z.envelope.shape = envSine; 
@@ -223,15 +223,18 @@ public:
     global_scale_x.envelope.shape = envExponential;
     global_scale_y.envelope.shape = envExponential;
     global_scale_z.envelope.shape = envExponential;
-    global_scale_x.envelope.setAttackDecay(50,150);
-    global_scale_z.envelope.setAttackDecay(50,150);
-    global_scale_z.envelope.setAttackDecay(50,150);
+    //global_scale_x.envelope.shape = envSine;
+    //global_scale_y.envelope.shape = envSine;
+    //global_scale_z.envelope.shape = envSine; 
+    global_scale_x.envelope.setAttackDecay(150,250);
+    global_scale_z.envelope.setAttackDecay(150,250);
+    global_scale_z.envelope.setAttackDecay(150,250);
 
     gHue.edge = edgeWrap;
     //minmax default 0:1 
     //gHue.envelope.setMax(1.0);// todo test out - min max....
     gHue.envelope.setAttackDecay(10,2000);
-    gHue.envelope.setMax(0.1);
+    gHue.envelope.setMax(0.05);
     gHue.envelope.shape = envExponential;    
 
     roll.setMinMax(0,PI2);
@@ -302,7 +305,7 @@ public:
 
 
     global_bpm.setMinMax(30, 600);
-    global_bpm.envelope.setMax(50);
+    global_bpm.envelope.setMax(150);
 
     global_bpm = 115.0;
 

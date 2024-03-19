@@ -346,6 +346,7 @@ void incrementPattern(int inc = 1){
 
 void randomPattern(){
   setPattern(random(gPatternCount));
+  //state =2;
 }
 
 
@@ -413,13 +414,34 @@ void assessVdiv(){
 }
 
 
-
+float mult=1;
+int state =0 ;
 void copyBuffer(){
   int thisPixel = 0;
   if (batteryCharged or batteryChargedOverride){
+
+    float total = 0;
+    float max=0;
     for (int ring = 0 ; ring < nRings; ring++){
       for (int pixel = 0; pixel < nPixelsPerRing[ring]; pixel++){
-        int color = (((int)leds[thisPixel].r)<<16) | (((int)leds[thisPixel].g)<<8)| (((int)leds[thisPixel].b));
+        total+= leds[thisPixel].r +leds[thisPixel].g+leds[thisPixel].b;
+      }
+      max +=nPixelsPerRing[ring];
+    }
+    //we want the total brightness > N*max always
+    float desired = 0.1*765.0*max*art.global_intensity.getBase();
+    //make mult IIR and constrain from 1 to high
+    if (state ==0) mult = constrain_float(desired/total*.01 + mult*.99,1.0,5.0);
+    //mult = constrain_float(mult,1.0,10000.0);
+
+    for (int ring = 0 ; ring < nRings; ring++){
+      for (int pixel = 0; pixel < nPixelsPerRing[ring]; pixel++){
+        float r = constrain_float(leds[thisPixel].r*mult,0,255);
+        float g = constrain_float(leds[thisPixel].g*mult,0,255);
+        float b = constrain_float(leds[thisPixel].b*mult,0,255);
+        int color = (((int)(r))<<16) | ((int)(g)<<8) | ((int)(b));
+
+        //int color = (((int)(leds[thisPixel].r))<<16) | (((int)(leds[thisPixel].g))<<8)| (((int)(leds[thisPixel].b)));
         oleds.setPixel(pixel+ring*nMaxPixels, color);
         thisPixel++;
       }
@@ -472,11 +494,11 @@ void setup() {
   art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
 
 #elif ART_CUBE
-  art.global_intensity.setMinMax(0.6, 0.95);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.5, 0.95);//MIN MUST be >0// MAX MUST be <=1
   digitalWrite(13,1);
 
 #elif ART_WALL
-  art.global_intensity.setMinMax(0.6, 0.95);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.5, 0.95);//MIN MUST be >0// MAX MUST be <=1
   digitalWrite(13,1);
 
 #elif ART_VEST
@@ -493,7 +515,7 @@ void setup() {
   art.gHue.setBaseToMiddle();
 
 #if ART_TEENSY
-  randomSeed(max(analogRead(A1),1));
+  //randomSeed(max(analogRead(A1),1));
 #else
   randomSeed(analogRead(A0));
   //FastLED.addLeds<APA102, 7, 14, BGR, DATA_RATE_MHZ(8)>(leds, NUM_LED);   
@@ -574,7 +596,8 @@ void darkWadCheck(){
 
     // if we are dark now and have been for a long while, change the pattern
     if (isDark and millis() - darkTime > 3000){
-      randomPattern();
+      //randomPattern();
+      state = 2;
       Serial.println("force random pattern");
       isDark = false;
     }
@@ -602,19 +625,54 @@ void showCurrentPattern(){
   art.markEndOfShow();
 }
 
+
+unsigned long ttime = 0;
 void addLife(){
+
 
   ///////////////////////////////////////////////////////
   //add free runing patterns, hues, music reactivity, and colors
   if (playAll){
     //change pattern
-    int chg = 60;
+    int chg = 90;
     EVERY_N_SECONDS(chg) {
-      randomPattern();
-      incrementPalette();
+      state =-1;
     }
-    //change music reactivity
-    EVERY_N_SECONDS(chg*2) randomMusicMod();
+
+    switch(state){
+      case 0:
+        break;
+      case -1:
+        ttime = millis();
+        state = 1;
+      case 1:
+        mult-= (float(millis()-ttime)/500.0);
+        if (mult<=0) {
+          state = 2;
+          mult=0;
+        }
+        break;
+      case 2:
+        randomPattern();
+        mult=0;
+        incrementPalette();
+        randomMusicMod();
+        ttime = millis();
+        state = 3;
+        break;
+      case 3:
+        mult+=(float(millis()-ttime)/3000.0);
+        if (mult >= 1) {
+          state = 0;
+          mult=1;
+        }
+        break;
+      default:
+        state=0;
+        break;
+    }
+
+
 
     //change hue shift
     art.gHue += .0001;
@@ -684,7 +742,7 @@ void addLife(){
     art.global_scale_x = art.global_scale_x.getMiddle() + art.global_scale_x.getQuarterSpread() * (move.noise_range[9]);
     art.global_scale_y = art.global_scale_y.getMiddle() + art.global_scale_y.getQuarterSpread() * (move.noise_range[10]*move.noise_range[11]);
     art.global_scale_z = art.global_scale_z.getMiddle() + art.global_scale_z.getQuarterSpread() * (move.noise_range[10] + move.noise_range[11]);
-    art.global_intensity = art.global_intensity.getMiddle() + art.global_intensity.getQuarterSpread() * (move.noise_range[9] * move.noise_range[10] - move.noise_range[11] );
+    art.global_intensity = art.global_intensity.getMiddle() + art.global_intensity.getQuarterSpread() * (move.noise_range[9] * move.noise_range[10] - move.noise_range[11] );;
     art.global_bpm = 80 + art.global_bpm.getQuarterSpread() * absf(move.noise_range[9] * move.noise_range[10]);
 
     EVERY_N_MILLIS(50){
@@ -766,7 +824,7 @@ void updateAudio(){
       audio.peakDetect(b0);
       if (audio.beat_detected && musicReactive) {
         //Serial.println("beat");
-        audioModBeatDestPtr->trigger(audio.ratio/2.0);
+        audioModBeatDestPtr->trigger(audio.ratio*.75);
         art.global_intensity.trigger(audio.ratio);
       } // beat
     } // fft available
