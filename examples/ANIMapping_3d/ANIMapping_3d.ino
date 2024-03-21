@@ -415,6 +415,7 @@ void assessVdiv(){
 
 
 float mult=1;
+float multiir=1;
 int state =0 ;
 void copyBuffer(){
   int thisPixel = 0;
@@ -424,28 +425,42 @@ void copyBuffer(){
     float max=0;
     for (int ring = 0 ; ring < nRings; ring++){
       for (int pixel = 0; pixel < nPixelsPerRing[ring]; pixel++){
-        total+= leds[thisPixel].r +leds[thisPixel].g+leds[thisPixel].b;
+        float r = constrain_float(leds[thisPixel].r*mult,0,255);
+        float g = constrain_float(leds[thisPixel].g*mult,0,255);
+        float b = constrain_float(leds[thisPixel].b*mult,0,255);
+
+        int color = (((int)(r))<<16) | ((int)(g)<<8) | ((int)(b));
+        //int color = (((int)(leds[thisPixel].r))<<16) | (((int)(leds[thisPixel].g))<<8)| (((int)(leds[thisPixel].b)));
+        oleds.setPixel(pixel+ring*nMaxPixels, color);
+        thisPixel++;
+
+        total+= r+g+b;
       }
       max +=nPixelsPerRing[ring];
     }
     //we want the total brightness > N*max always
     float desired = 0.1*765.0*max*art.global_intensity.getBase();
     //make mult IIR and constrain from 1 to high
-    if (state ==0) mult = constrain_float(desired/total*.01 + mult*.99,1.0,5.0);
-    //mult = constrain_float(mult,1.0,10000.0);
 
-    for (int ring = 0 ; ring < nRings; ring++){
-      for (int pixel = 0; pixel < nPixelsPerRing[ring]; pixel++){
-        float r = constrain_float(leds[thisPixel].r*mult,0,255);
-        float g = constrain_float(leds[thisPixel].g*mult,0,255);
-        float b = constrain_float(leds[thisPixel].b*mult,0,255);
-        int color = (((int)(r))<<16) | ((int)(g)<<8) | ((int)(b));
-
-        //int color = (((int)(leds[thisPixel].r))<<16) | (((int)(leds[thisPixel].g))<<8)| (((int)(leds[thisPixel].b)));
-        oleds.setPixel(pixel+ring*nMaxPixels, color);
-        thisPixel++;
-      }
+    if (state ==0) {
+      multiir = desired/total*.015 + multiir*.985;
+      multiir = constrain_float(multiir,0.25,5.0);
+      mult = constrain_float(multiir,.75,4.0);
     }
+    else multiir = mult;
+    //mult = constrain_float(mult,1.0,10000.0);
+    EVERY_N_MILLIS(50){
+      //Serial.print("ratiodot:"); Serial.print(desired/total);Serial.print(",");
+      //Serial.print("noise_range:"); Serial.print(move.noise_range[0]);Serial.print(",");
+      //Serial.print("noise_angle:"); Serial.print(move.noise_angle[0]);Serial.print(",");
+      //Serial.print("ramp:"); Serial.print(move.ramp[0]);Serial.print(",");
+
+      //Serial.print("mult:"); Serial.print(mult);Serial.print(",");
+      //Serial.print("multiir:"); Serial.print(multiir);
+      //Serial.println();
+    }
+    
+
   } else {
     int color = 0;
     for (int ring = 0 ; ring < nRings; ring++){
@@ -646,7 +661,8 @@ void addLife(){
         ttime = millis();
         state = 1;
       case 1:
-        mult-= (float(millis()-ttime)/500.0);
+        mult-= (float(millis()-ttime)/300.0);
+        ttime = millis();
         if (mult<=0) {
           state = 2;
           mult=0;
@@ -661,7 +677,8 @@ void addLife(){
         state = 3;
         break;
       case 3:
-        mult+=(float(millis()-ttime)/3000.0);
+        mult+=(float(millis()-ttime)/2000.0);
+        ttime= millis();
         if (mult >= 1) {
           state = 0;
           mult=1;

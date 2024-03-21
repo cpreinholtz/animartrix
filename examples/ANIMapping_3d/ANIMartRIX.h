@@ -418,6 +418,7 @@ public:
   void calculate_oscillators(oscillators &timings) { 
     unsigned long thisMillis = millis();
     double runtime = (thisMillis - move.lastMillis) * timings.master_speed;  // global anaimation speed gives the frequency in millis of the ramp to increase by 1
+    //EVERY_N_MILLIS(50){Serial.print("runtime:"); Serial.print(runtime);Serial.println(",");}
     move.lastMillis = thisMillis;
     for (int i = 0; i < num_oscillators; i++) {
       
@@ -628,7 +629,7 @@ public:
     }
     radial_filter_radius = maxD * 2;
 #if ART_WALL
-    radial_filter_radius = maxD / 2;
+    radial_filter_radius = maxD ;
 #endif
     Serial.print("max mapped distance: "); Serial.println(maxD);
     Serial.print("reccomended radias filter: "); Serial.println(maxD*1.3);

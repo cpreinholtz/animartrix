@@ -17,7 +17,7 @@ License CC BY-NC 3.0
 */
 
 #pragma once
-#define ART_CUBE true
+#define ART_WALL true
 #define ART_TEENSY true
 
 #define USE_IMU false
