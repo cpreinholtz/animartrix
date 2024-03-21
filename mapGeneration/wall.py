@@ -57,7 +57,7 @@ rings = []
 
 #left side
 cubeSideLength = 5*12 # 5 feet to inches
-nPipes = 4
+nPipes = 8
 nLengthsPerPipe = 8
 nLedsPerLength = 25
 
@@ -115,15 +115,20 @@ for pipe in range(nPipes):
       # the x is shifted right each pipe 
       x = ((8+cubeSideLength)*(pipe+1)) - (xSpacing * (1+length))
 
-
+    ys=0
+    ym=1
+    if pipe >= 4:
+      x=x-4*((8+cubeSideLength))
+      ym=-1
+      ys=8
 
     # y is just the position of the whole pipe ( and all the leds hanging under it)
 
     #start Z coordinate is 0 for downward runs (even) and -5 for upward runs (odd)    
-    start = [x,cubeSideLength * (length%2),0]
+    start = [x,(ys+cubeSideLength)* ym * (length%2)-ys,0]
 
     #stop has same XY as start, but the Z is opposite, end at -5 for downward, 0 for upward
-    stop = [x, cubeSideLength * ((length+1)%2),0]
+    stop = [x, (ys+cubeSideLength)* ym * ((length+1)%2)-ys,0]
 
     #print(start)
     #print(start)

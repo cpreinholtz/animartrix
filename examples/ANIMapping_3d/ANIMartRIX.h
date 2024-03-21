@@ -257,7 +257,9 @@ public:
     center_xm = (spread_x)/2.0 + xmin;
     center_ym = (spread_y)/2.0 + ymin;
     center_zm = (spread_z)/2.0 + zmin;
-
+#if ART_WALL
+    center_ym = center_ym -(spread_y)/4.0;
+#endif;
     //edgeclip fine
 
     center_xm.envelope.setAttackDecay(10000,30000);
@@ -597,7 +599,9 @@ public:
     center_ym = (spread_y)/2.0 + ymin;
     center_zm = (spread_z)/2.0 + zmin;
 #endif
-    
+#if ART_WALL
+    center_ym = center_ym -(spread_y)/4.0;
+#endif;
     Serial.print("x center: ");Serial.println(center_x);
     Serial.print("y center: ");Serial.println(center_y);
     Serial.print("z center: ");Serial.println(center_z); Serial.println();

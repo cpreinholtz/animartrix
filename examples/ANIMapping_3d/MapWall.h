@@ -48,7 +48,7 @@ License CC BY-NC 3.0
 #include <OctoWS2811.h>
 
 // Any group of digital pins may be used
-const int numPins = 4;
+const int numPins = 8;
 
 //top jack, bottom jack
 //orange, blue, green, brown, orange, blue, green, brown
@@ -59,13 +59,17 @@ const int numPins = 4;
 //mounting the octo shifter on the teensy 4.1 (dont connect teensy 3.3v to octo pin 15~!!!)
 //see blue notebook for explanation
 //results in T34 = O14, T33 = O13... 
+//orange, blue, green, brown, orange, blue, green, brown
 //byte pinList[numPins] = {12,34,27,28,  26,40,41,25};
 
-// wall is L orange, brown R blue green
-//pipe        1      4    2     3
-//so order is Lorange Rblue RGreen,Lbrown
+// wall top is  orange brown    blue green
+//pipe  top      1      8       2     7
 
-byte pinList[numPins] = {12,40,41,28};
+// wall bottom is green blue    brown orange
+//pipe  bot      3      6       4     5
+
+//so order is Lorange Rblue RGreen,Lbrown
+byte pinList[numPins] = {12,40,27,25,26,34,41,28};
 
 //const int nMaxPixels = nMaxPixels; // set this to your MAX leds per strip
 const int bytesPerLED = 3;  // change to 4 if using RGBW
