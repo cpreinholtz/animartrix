@@ -77,7 +77,8 @@ struct render_parameters {
   float scale_x = 0.1;                  // smaller values = zoom in
   float scale_y = 0.1;
   float scale_z = 0.1;       
-  float offset_x, offset_y, offset_z;     
+  float offset_x, offset_y, offset_z;  
+  float low_limit_offset=0;   
 #if ART_TEENSY
   modableF low_limit;                 // getting contrast by highering the black point
   modableF high_limit;                                            
@@ -259,7 +260,7 @@ public:
     center_zm = (spread_z)/2.0 + zmin;
 #if ART_WALL
     center_ym = center_ym -(spread_y)/4.0;
-#endif;
+#endif
     //edgeclip fine
 
     center_xm.envelope.setAttackDecay(10000,30000);
@@ -554,11 +555,19 @@ public:
     // B) scale the result to a 0-255 range (assuming you want 8 bit color depth per rgb chanel)
     // Here happens the contrast boosting & the brightness mapping
 
+
+#if ART_TEENSY
+    float ll = animation.low_limit.getEnvelope() + animation.low_limit_offset;
+    float hh = constrain_float(animation.high_limit.getEnvelope() + (0.25 * animation.low_limit_offset), .4,1.5);
+    if (animation.low_limit_offset > 0) hh = constrain_float(animation.high_limit.getEnvelope() + ( animation.low_limit_offset), .4,1.5);
+    if (hh <ll) hh = ll + .5;
+
+    if (raw_noise_field_value < ll)  raw_noise_field_value =  ll;
+    if (raw_noise_field_value > hh) raw_noise_field_value = hh;
+    float scaled_noise_value = map_float(raw_noise_field_value, ll, hh, 0, scaleHigh);
+#else
     if (raw_noise_field_value < animation.low_limit)  raw_noise_field_value =  animation.low_limit;
     if (raw_noise_field_value > animation.high_limit) raw_noise_field_value = animation.high_limit;
-#if ART_TEENSY
-    float scaled_noise_value = map_float(raw_noise_field_value, animation.low_limit.getEnvelope(), animation.high_limit.getEnvelope(), 0, scaleHigh);
-#else
     float scaled_noise_value = map_float(raw_noise_field_value, animation.low_limit, animation.high_limit, 0, scaleHigh);
 #endif
     return scaled_noise_value;
@@ -601,7 +610,7 @@ public:
 #endif
 #if ART_WALL
     center_ym = center_ym -(spread_y)/4.0;
-#endif;
+#endif
     Serial.print("x center: ");Serial.println(center_x);
     Serial.print("y center: ");Serial.println(center_y);
     Serial.print("z center: ");Serial.println(center_z); Serial.println();
@@ -4006,7 +4015,7 @@ public:
 
       
      
-      float radius = 40;   // radius of a radial brightness filter
+      float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/radius;
      
       //pixel.r    = show6;

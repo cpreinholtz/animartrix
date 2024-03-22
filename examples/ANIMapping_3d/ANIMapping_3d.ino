@@ -112,6 +112,7 @@ ANIMimu imu;
 modableF* audioModBeatDestPtr = &art.global_intensity;
 modableF dummy_mod;
 
+bool verbose2 = false;
 
 //******************************************************************************************************************
 
@@ -196,9 +197,9 @@ void Module_Experiment9_Hsi(){art.Module_Experiment9_Hsi();}
 //b n or g23 to change
 PatternAndNameList gPatterns = {
   //{TestMap, "TestMap"},
-#if ART_CUBE || ART_WALL
-  {Scaledemo1,"Scaledemo1"},///active and fun
-  {Scaledemo2,"Scaledemo2"},///active and fun
+#if ART_CUBE
+  //{Scaledemo1,"Scaledemo1"},///active and fun
+  //{Scaledemo2,"Scaledemo2"},///active and fun
 #endif
 
 #if USE_IMU
@@ -213,7 +214,7 @@ PatternAndNameList gPatterns = {
 
 #endif
   
-  {Module_Experiment1,"Module_Experiment1"},
+//{Module_Experiment1,"Module_Experiment1"},
   {SM9,"SM9"}, 
   {Caleido1,"Caleido1"}, 
   {Complex_Kaleido_5,"Complex_Kaleido_5"},
@@ -230,7 +231,7 @@ PatternAndNameList gPatterns = {
   {Module_Experiment6,"Module_Experiment6"},
 #endif
   {Module_Experiment5,"Module_Experiment5"},//incredible
-  {Module_Experiment4,"Module_Experiment4"},//pretty cool
+  //{Module_Experiment4,"Module_Experiment4"},//pretty cool
 #if not ART_WALL
   {Module_Experiment3,"Module_Experiment3"},//FAV yellow blob in red
 #endif
@@ -277,7 +278,7 @@ PatternAndNameList gPatterns = {
 #if not ART_WALL
   {Spiralus,"Spiralus"},//todo fix on cube?
 #endif
-  {Yves,"Yves"},//bit darkwady?
+  //{Yves,"Yves"},//bit darkwady?
 
   {Lava1,"Lava1"},
   
@@ -322,7 +323,7 @@ bugfixes:
 */
 
 int gPatternCount = ARRAY_SIZE(gPatterns);
-
+float multiir=0;
 void setPattern(int setTo){
   //need to do this periodically or else the ramps get out of hand
   //every 100 secs should do
@@ -331,7 +332,8 @@ void setPattern(int setTo){
   currentPattern = setTo;
   if (currentPattern >= gPatternCount) currentPattern = 0;
   if (currentPattern < 0) currentPattern = gPatternCount-1;
-
+  animation.low_limit_offset=0;
+  multiir=0;
   Serial.print("Incrementing pattern to: "); Serial.print(currentPattern); Serial.print(" "); Serial.println(gPatterns[currentPattern].name);
   Serial.print("Setting pattern to: "); Serial.print(currentPattern); Serial.print(" "); Serial.println(gPatterns[currentPattern].name);
 }
@@ -415,7 +417,7 @@ void assessVdiv(){
 
 
 float mult=1;
-float multiir=1;
+
 int state =0 ;
 void copyBuffer(){
   int thisPixel = 0;
@@ -441,23 +443,29 @@ void copyBuffer(){
     //we want the total brightness > N*max always
     float desired = 0.1*765.0*max*art.global_intensity.getBase();
     //make mult IIR and constrain from 1 to high
-
+      float ratio=0;
     if (state ==0) {
-      multiir = desired/total*.015 + multiir*.985;
-      multiir = constrain_float(multiir,0.25,5.0);
-      mult = constrain_float(multiir,.75,4.0);
+
+      ratio=(total-desired)/desired;
+      multiir = ratio*.015 + multiir*.985;
+      multiir = constrain_float(multiir,-5.0,5.0);
+      mult = 1;
+      animation.low_limit_offset = constrain_float(multiir,-2,.3);
     }
-    else multiir = mult;
+    else {
+      multiir = mult;
+    }
+    //if(state ==2) animation.low_limit_offset =0;
+    
     //mult = constrain_float(mult,1.0,10000.0);
     EVERY_N_MILLIS(50){
-      //Serial.print("ratiodot:"); Serial.print(desired/total);Serial.print(",");
-      //Serial.print("noise_range:"); Serial.print(move.noise_range[0]);Serial.print(",");
-      //Serial.print("noise_angle:"); Serial.print(move.noise_angle[0]);Serial.print(",");
-      //Serial.print("ramp:"); Serial.print(move.ramp[0]);Serial.print(",");
-
-      //Serial.print("mult:"); Serial.print(mult);Serial.print(",");
-      //Serial.print("multiir:"); Serial.print(multiir);
-      //Serial.println();
+      if(verbose2){
+      Serial.print("ratiodot:"); Serial.print(ratio);Serial.print(",");
+      Serial.print("low_limit_offset:"); Serial.print(animation.low_limit_offset);Serial.print(",");
+      Serial.print("mult:"); Serial.print(mult);Serial.print(",");
+      Serial.print("multiir:"); Serial.print(multiir);
+      Serial.println();
+      }
     }
     
 
@@ -485,7 +493,7 @@ void copyBuffer(){
 bool playAll = true;
 
 bool verbose = false;
-bool verbose2 = false;
+
 bool play = false;
 
 bool doModulation = true;
@@ -509,11 +517,11 @@ void setup() {
   art.global_intensity.setMinMax(0.2, 0.6);//MIN MUST be >0// MAX MUST be <=1
 
 #elif ART_CUBE
-  art.global_intensity.setMinMax(0.5, 0.95);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.5, 0.9);//MIN MUST be >0// MAX MUST be <=1
   digitalWrite(13,1);
 
 #elif ART_WALL
-  art.global_intensity.setMinMax(0.5, 0.95);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.4, 0.9);//MIN MUST be >0// MAX MUST be <=1
   digitalWrite(13,1);
 
 #elif ART_VEST
@@ -673,6 +681,7 @@ void addLife(){
         mult=0;
         incrementPalette();
         randomMusicMod();
+        animation.low_limit_offset=0;
         ttime = millis();
         state = 3;
         break;
@@ -697,7 +706,7 @@ void addLife(){
   //add only user specified modulation
   } else {
     if (hueDrift) art.gHue += .0001; // todo make this scale with FPS, put into show current patter to make immune to FPS changes
-
+    state =0;
     //changing paterns
     if (play){
         if (doRandom) {EVERY_N_SECONDS(45) randomPattern();}
@@ -771,19 +780,19 @@ void addLife(){
         //Serial.print("roll:"); Serial.print(art.roll); Serial.print(",");
         //Serial.print("pitch:"); Serial.print(art.pitch);Serial.print(",");
 
-        Serial.print("center_xm:"); Serial.print(art.center_zm); Serial.print(",");
+        //Serial.print("center_xm:"); Serial.print(art.center_zm); Serial.print(",");
         //Serial.print("center_ym:"); Serial.print(art.center_zm);Serial.print(",");
         //Serial.print("center_zm:"); Serial.print(art.center_zm);Serial.print(",");
 
-        Serial.print("global_scale_x:"); Serial.print(art.global_scale_x); Serial.print(",");
+        //Serial.print("global_scale_x:"); Serial.print(art.global_scale_x); Serial.print(",");
         //Serial.print("global_scale_y:"); Serial.print(art.global_scale_y);Serial.print(",");
         //Serial.print("global_scale_z:"); Serial.print(art.global_scale_z);Serial.print(",");
 
-        Serial.print("globalbpm:"); Serial.print(art.global_bpm);Serial.print(",");
-        Serial.print("highlimit:"); Serial.print(animation.high_limit);Serial.print(",");
-        Serial.print("lowlimit:"); Serial.print(animation.low_limit);Serial.print(",");
+        //Serial.print("globalbpm:"); Serial.print(art.global_bpm);Serial.print(",");
+       // Serial.print("highlimit:"); Serial.print(animation.high_limit);Serial.print(",");
+        //Serial.print("lowlimit:"); Serial.print(animation.low_limit);Serial.print(",");
 
-        Serial.println();
+        //Serial.println();
       } 
     }
   }
@@ -901,6 +910,9 @@ void updateSerial(){
       Serial.print("Setting musicReactive shift to"); Serial.println(musicReactive);
     } else if (incomingByte == 'b'){
       incrementPattern(-1); 
+    } else if (incomingByte == 'X'){
+      doDarkCheck = not doDarkCheck;
+      Serial.print("Setting doDarkCheck to"); Serial.println(doDarkCheck);
     } else if (incomingByte == 'O'){
       audio.verbose = not audio.verbose;
       Serial.print("Setting audio.verbose shift to"); Serial.println(audio.verbose);
