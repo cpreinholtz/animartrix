@@ -26,15 +26,15 @@ License CC BY-NC 3.0
 #define ART_VEST false
 
 //!!!! ONLY INCLUDE ONE MAP
-//#include "MapWag.h"
-#include "MapKVest.h"
+#include "MapWag.h"
+//#include "MapKVest.h"
 //#include "MapCVest.h"
 //#include "MapProtoVest.h"
 //!!!! ONLY INCLUDE ONE MAP
 
 
 #define USE_AUDIO true
-#define USE_IMU false
+#define USE_IMU true
 // todo set these in map??^^
 
 
@@ -330,7 +330,7 @@ void randomMusicMod(){
 float vBat = 12.8;
 const float vBatMin = 11.7;
 bool batteryCharged = true;
-bool batteryChargedOverride = false;
+bool batteryChargedOverride = true;
 
 void assessVdiv(){
   EVERY_N_MILLIS(100){
@@ -516,7 +516,7 @@ void showCurrentPattern(){
 #endif
 #if ART_TEENSY
   copyBuffer();
-  assessVdiv();
+  //assessVdiv();
 #endif
 
   //check for all black animations, if so change the pattern
