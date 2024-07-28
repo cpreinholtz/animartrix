@@ -62,6 +62,11 @@ License CC BY-NC 3.0
 #endif
 extern float ledMap[NUM_LEDS][3]; //TODO, make this better...
 
+#if ART_WALL1BY8
+extern float ledMap2[NUM_LEDS][3]; //TODO, make this better...
+#endif
+
+float selectedMap[NUM_LEDS][3];
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
@@ -190,8 +195,10 @@ public:
   void init(struct CRGB *data) {
     this->buffer = data;
     upVector.set(0,1,0);
-    render_spherical_lookup_table();
+    setMap(0);
     run_default_oscillators();
+    
+
     float max_spread = max(max(spread_x,spread_y),spread_z);
 
     //init modables  
@@ -258,7 +265,7 @@ public:
     center_xm = (spread_x)/2.0 + xmin;
     center_ym = (spread_y)/2.0 + ymin;
     center_zm = (spread_z)/2.0 + zmin;
-#if ART_WALL
+#if ART_WALL or ART_WALL1BY8
     center_ym = center_ym -(spread_y)/4.0;
 #endif
     //edgeclip fine
@@ -579,21 +586,21 @@ public:
   void render_spherical_lookup_table() {
 
     //initialize min / max for finding center of each axis
-    xmin = ledMap[0][xind];
+    xmin = selectedMap[0][xind];
     xmax = xmin;
-    ymin = ledMap[0][yind];
+    ymin = selectedMap[0][yind];
     ymax = ymin;
-    zmin = ledMap[0][zind];
+    zmin = selectedMap[0][zind];
     zmax = zmin;
 
     //min and max mapping used for finding center
     for (int n = 1; n < (int) NUM_LEDS; n++) {
-      if(ledMap[n][xind] < xmin) xmin = ledMap[n][xind];
-      if(ledMap[n][xind] > xmax) xmax = ledMap[n][xind];
-      if(ledMap[n][yind] < ymin) ymin = ledMap[n][yind];
-      if(ledMap[n][yind] > ymax) ymax = ledMap[n][yind];
-      if(ledMap[n][zind] < zmin) zmin = ledMap[n][zind];
-      if(ledMap[n][zind] > zmax) zmax = ledMap[n][zind];
+      if(selectedMap[n][xind] < xmin) xmin = selectedMap[n][xind];
+      if(selectedMap[n][xind] > xmax) xmax = selectedMap[n][xind];
+      if(selectedMap[n][yind] < ymin) ymin = selectedMap[n][yind];
+      if(selectedMap[n][yind] > ymax) ymax = selectedMap[n][yind];
+      if(selectedMap[n][zind] < zmin) zmin = selectedMap[n][zind];
+      if(selectedMap[n][zind] > zmax) zmax = selectedMap[n][zind];
     }
     spread_x = xmax-xmin;
     spread_y = ymax-ymin;
@@ -618,9 +625,9 @@ public:
 
     maxD = 0.0;
     for (int n = 0; n < NUM_LEDS; n++) {
-        float dx = ledMap[n][xind] - center_x;
-        float dy = ledMap[n][yind] - center_y;
-        float dz = ledMap[n][zind] - center_z;
+        float dx = selectedMap[n][xind] - center_x;
+        float dy = selectedMap[n][yind] - center_y;
+        float dz = selectedMap[n][zind] - center_z;
         
         distance[n] = sqrt(pow(dx, 2) + pow(dy, 2) + pow(dz, 2));
         polar_theta[n] = atan2f(dy,dx);
@@ -644,6 +651,11 @@ public:
 #if ART_WALL
     radial_filter_radius = maxD ;
 #endif
+
+#if ART_WALL1BY8
+    radial_filter_radius = maxD;
+#endif
+
     Serial.print("max mapped distance: "); Serial.println(maxD);
     Serial.print("reccomended radias filter: "); Serial.println(maxD*1.3);
 
@@ -654,15 +666,43 @@ public:
 
   }
 
+  void setMap(int setTo){
+#if ART_WALL1BY8
+    if (setTo ==1) {
+      for (int i =0; i<NUM_LEDS; i++){
+        for (int j =0; j<3; j++){
+          selectedMap[i][j] = ledMap2[i][j];
+        }
+      }
+    } else {
+      for (int i =0; i<NUM_LEDS; i++){
+        for (int j =0; j<3; j++){
+          selectedMap[i][j] = ledMap[i][j];
+        }
+      }
+    }
+    Serial.print("Setting Map to"); Serial.println(setTo);
+#else
+      for (int i =0; i<NUM_LEDS; i++){
+        for (int j =0; j<3; j++){
+          selectedMap[i][j] = ledMap[i][j];
+        }
+      }
+#endif
+  //always calculate lookup if map could be changing
+  render_spherical_lookup_table();
+  }
+
+
 #if ART_TEENSY
   void re_render_spherical_lookup_table() {
     center_x = center_xm;
     center_y = center_ym;
     center_z = center_zm;
     for (int n = 0; n < NUM_LEDS; n++) {
-        float dx = ledMap[n][xind] - center_x;
-        float dy = ledMap[n][yind] - center_y;
-        float dz = ledMap[n][zind] - center_z;
+        float dx = selectedMap[n][xind] - center_x;
+        float dy = selectedMap[n][yind] - center_y;
+        float dz = selectedMap[n][zind] - center_z;
         
         distance[n] = sqrt(pow(dx, 2) + pow(dy, 2) + pow(dz, 2));
         polar_theta[n] = atan2f(dy,dx);
@@ -866,32 +906,32 @@ public:
         pixel_hsi.i = 0;
         pixel_hsi.h = 2;
 
-        if (ledMap[n][xind] > center_x && ledMap[n][yind] > center_y){
+        if (selectedMap[n][xind] > center_x && selectedMap[n][yind] > center_y){
           pixel_hsi.h = .17;//6.0/255.0 *show1 * radial_filter; //todo fix all these
           pixel_hsi.i = 16;
         } 
         
-        if (ledMap[n][xind] < center_x && ledMap[n][zind] > center_z){
+        if (selectedMap[n][xind] < center_x && selectedMap[n][zind] > center_z){
           pixel_hsi.h = .5;//6.0/255.0 *show1 * radial_filter; //todo fix all these
           pixel_hsi.i = 16;
         } 
 
-        if (ledMap[n][xind] < center_x && ledMap[n][yind] < center_y){
+        if (selectedMap[n][xind] < center_x && selectedMap[n][yind] < center_y){
           pixel_hsi.h = .8;//6.0/255.0 *show1 * radial_filter; //todo fix all these
           pixel_hsi.i = 16;          
         }
 
         /* 
-        else if (ledMap[n][xind] > 0){
+        else if (selectedMap[n][xind] > 0){
           pixel_hsi.i = 4;//6.0/255.0 *show1 * radial_filter; //todo fix all these
           pixel_hsi.h = .3;
         }
-        else if (ledMap[n][yind] > 0){
+        else if (selectedMap[n][yind] > 0){
           pixel_hsi.i = 4;//6.0/255.0 *show1 * radial_filter; //todo fix all these
           pixel_hsi.h = .6;
         }
 
-        else if (ledMap[n][zind] > 0){
+        else if (selectedMap[n][zind] > 0){
           pixel_hsi.i = 10;//6.0/255.0 *show1 * radial_filter; //todo fix all these
           pixel_hsi.h = .8;
         }
@@ -908,6 +948,19 @@ public:
       }   
   }
 
+
+  void TestMap2() { // todo rename, brighness
+    get_ready();     
+    calculate_oscillators(timings);     // get linear movers and oscillators going
+      for (int n = 0; n < NUM_LEDS; n++) {
+        pixel_hsi.i = 70;
+        pixel_hsi.h = selectedMap[n][xind] / spread_x;
+        pixel_hsi.s = 0.5;
+        if (spread_z > 0 )  pixel_hsi.s = pixel_hsi.s + selectedMap[n][zind] / spread_z / 2;
+        
+        buffer[n] = setPixelColor(pixel_hsi);
+      }   
+  }
 
   void Chasing_Spirals_Hsi() { // todo rename, brighness
 
@@ -966,7 +1019,7 @@ public:
 
 
 
-        float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
+        float d = myPlane.distance(selectedMap[n][xind],selectedMap[n][yind],selectedMap[n][zind]);
         //d=fmodf(d,maxD);
         pixel_hsi.h = (map_float(d, -maxD/2, maxD/2, 0, 1));        
         pixel_hsi.i = 64;//6.0/255.0 *show1 * radial_filter; //todo fix all these
@@ -1118,7 +1171,7 @@ public:
         pixel_hsi.i = 64;//6.0/255.0 *show1 * radial_filter; //todo
         pixel_hsi.s = 1;
 
-        float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
+        float d = myPlane.distance(selectedMap[n][xind],selectedMap[n][yind],selectedMap[n][zind]);
         d=fmodf(d,maxD/2);
         pixel_hsi.h = (map_float(d, -maxD/2, maxD/2, 0, 1));
         buffer[n] = setPixelColor(pixel_hsi);
@@ -1152,7 +1205,7 @@ public:
         pixel_hsi.i = 64;//6.0/255.0 *show1 * radial_filter;
         pixel_hsi.s = 1;
 
-        float d = myPlane.distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
+        float d = myPlane.distance(selectedMap[n][xind],selectedMap[n][yind],selectedMap[n][zind]);
         pixel_hsi.h = (map_float(d, -maxD/2, maxD/2, 0, 1));
         //pixel_hsi.i = (map_float(absf(d), 0, maxD/2, 1, 0));
 
@@ -1213,7 +1266,7 @@ public:
       int mind = 0;
       float minD = -1000;
       for (int s = 0; s <num_spheres; s++) {
-        float d = spheres[s].distance(ledMap[n][xind],ledMap[n][yind],ledMap[n][zind]);
+        float d = spheres[s].distance(selectedMap[n][xind],selectedMap[n][yind],selectedMap[n][zind]);
         //must be outside, but closest
         if (d >= 0 and (d<minD or minD<0)){
           minD = d;
@@ -1702,7 +1755,7 @@ public:
       // colormapping
       float radius = radial_filter_radius;  // radial mask
 
-      pixel.r   = show1 * (ledMap[n][yind]+1) / spread_y;
+      pixel.r   = show1 * (selectedMap[n][yind]+1) / spread_y;
       pixel.g = show3 * distance[n] / 10;
       pixel.b  = (show2 + show4) / 2;
       if (distance[n] > radius) {
@@ -2521,8 +2574,8 @@ public:
       float radial = (radius-distance[n])/distance[n];
 
       pixel.r    = radial * (show1+show3)*0.5 * animation.dist/5;
-      pixel.g  = radial * (show2+show1)*0.5 ;//* ledMap[n][yind]/spread_y;
-      pixel.b   = radial * (show3+show2)*0.5 ;//* ledMap[n][xind]/spread_x;
+      pixel.g  = radial * (show2+show1)*0.5 ;//* selectedMap[n][yind]/spread_y;
+      pixel.b   = radial * (show3+show2)*0.5 ;//* selectedMap[n][xind]/spread_x;
      
 
       buffer[n] = setPixelColor(pixel);
@@ -2575,8 +2628,8 @@ public:
       float radial = (radius-distance[n])/distance[n];
 
       pixel.r    = radial * (show1+show3)*0.5 * animation.dist/5;
-      pixel.g  = radial * (show2+show1)*0.5 ;//* ledMap[n][yind]/spread_y;
-      pixel.b   = radial * (show3+show2)*0.5 ;//* ledMap[n][xind]/spread_x;
+      pixel.g  = radial * (show2+show1)*0.5 ;//* selectedMap[n][yind]/spread_y;
+      pixel.b   = radial * (show3+show2)*0.5 ;//* selectedMap[n][xind]/spread_x;
      
 
    
@@ -3627,7 +3680,7 @@ public:
 
       show7 = multiply(show1, show2);
       
-      float linear1 = ledMap[n][yind] / (spread_y*2);
+      float linear1 = selectedMap[n][yind] / (spread_y*2);
 
       float radius = radial_filter_radius;   // radius of a radial brightness filter
       float radial = (radius-distance[n])/distance[n];
@@ -3878,7 +3931,7 @@ public:
     for (int n = 0; n < NUM_LEDS; n++) {
       animation.anglephi   = spherical_phi[n]; //todo, move this later
 
-      animation.dist       = distance[n] + 4*sinf(move.sine[5]*PI+(float)ledMap[n][xind]/2) + 4 * cosf(move.sine[6]*PI+float(ledMap[n][yind])/2);
+      animation.dist       = distance[n] + 4*sinf(move.sine[5]*PI+(float)selectedMap[n][xind]/2) + 4 * cosf(move.sine[6]*PI+float(selectedMap[n][yind])/2);
       animation.angle      = 1 * polar_theta[n];
       animation.scale_x    = 0.06 ;
       animation.scale_y    = 0.06 ;

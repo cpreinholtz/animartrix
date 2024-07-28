@@ -33,6 +33,7 @@ License CC BY-NC 3.0
 //TEENSY + analog mic
 #define ART_CUBE false
 #define ART_WALL false
+#define ART_WALL1BY8 false
 
 //ESP + ANALOG MIC
 #define ART_VEST false
@@ -45,7 +46,8 @@ License CC BY-NC 3.0
 //#include "MapWag.h"
 //#include "MapBf.h"
 //#include "MapCube.h"
-#include "MapWall.h"
+//#include "MapWall.h"
+#include "MapWall1by8.h"
 //#include "MapKVest.h"
 //#include "MapCVest.h"
 //#include "MapProtoVest.h"
@@ -127,7 +129,7 @@ typedef PatternAndName PatternAndNameList[];
 int currentPattern = 0;
 
 
-void TestMap(){art.TestMap();}
+void TestMap(){art.TestMap2();}
 void Module_Experiment10(){art.Module_Experiment10();}
 void Module_Experiment9(){art.Module_Experiment9();}
 void SPARKLE_EDGES_MOD9(){art.SPARKLE_EDGES_MOD9();}
@@ -351,6 +353,11 @@ void randomPattern(){
   //state =2;
 }
 
+void randomMap(){
+  if (random(10) > 7) art.setMap(1); //ledMap2
+  else art.setMap(0); // ledMap
+  //state =2;
+}
 
 void setMusicMod(int i){
       audioModBeatDestPtr->envelope.clear();
@@ -452,8 +459,8 @@ void copyBuffer(){
       mult = 1;
       animation.low_limit_offset = constrain_float(multiir,-2,.3);
     }
-    else {
-      multiir = mult;
+    else if (state ==2) {
+      //multiir = 0;
     }
     //if(state ==2) animation.low_limit_offset =0;
     
@@ -521,7 +528,7 @@ void setup() {
   digitalWrite(13,1);
 
 #elif ART_WALL
-  art.global_intensity.setMinMax(0.4, 0.9);//MIN MUST be >0// MAX MUST be <=1
+  art.global_intensity.setMinMax(0.5, 0.75);//MIN MUST be >0// MAX MUST be <=1
   digitalWrite(13,1);
 
 #elif ART_VEST
@@ -678,10 +685,12 @@ void addLife(){
         break;
       case 2:
         randomPattern();
+        randomMap();
         mult=0;
         incrementPalette();
         randomMusicMod();
         animation.low_limit_offset=0;
+        multiir =0;
         ttime = millis();
         state = 3;
         break;
@@ -864,6 +873,7 @@ void updateAudio(){
 #endif
 #endif
   audioModBeatDestPtr->update();
+  art.global_intensity.update();
 }
 
 
@@ -926,6 +936,9 @@ void updateSerial(){
       int i = Serial.parseInt();
       clearPattern();
       incrementPattern(i);
+    } else if (incomingByte == 'M'){
+      int i = Serial.parseInt();
+      art.setMap(i);
     } else if (incomingByte == 'v'){
       float i = Serial.parseFloat();
       audio.iir_volume.setWeight(float(i));
