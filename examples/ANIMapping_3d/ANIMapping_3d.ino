@@ -42,10 +42,10 @@ License CC BY-NC 3.0
 
 
 //!!!! ONLY INCLUDE ONE MAP
-//#include "MapWag.h"
+#include "MapWag.h"
 //#include "MapBf.h"
 //#include "MapCube.h"
-#include "MapWall.h"
+//#include "MapWall.h"
 //#include "MapKVest.h"
 //#include "MapCVest.h"
 //#include "MapProtoVest.h"
@@ -390,7 +390,7 @@ void randomMusicMod(){
 float vBat = 12.8;
 const float vBatMin = 11.7;
 bool batteryCharged = true;
-bool batteryChargedOverride = false;
+bool batteryChargedOverride = true;
 
 void assessVdiv(){
 #if ART_WAG
@@ -450,7 +450,7 @@ void copyBuffer(){
       multiir = ratio*.015 + multiir*.985;
       multiir = constrain_float(multiir,-5.0,5.0);
       mult = 1;
-      animation.low_limit_offset = constrain_float(multiir,-2,.3);
+      //animation.low_limit_offset = constrain_float(multiir,-2,.3);
     }
     else {
       multiir = mult;
@@ -639,7 +639,7 @@ void showCurrentPattern(){
 #endif
 #if ART_TEENSY
   copyBuffer();
-  assessVdiv();
+  //assessVdiv();
 #endif
 
   //check for all black animations, if so change the pattern
