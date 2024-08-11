@@ -27,8 +27,8 @@ License CC BY-NC 3.0
 
 //!!!! ONLY INCLUDE ONE MAP
 //#include "MapWag.h"
-#include "MapBf.h"
-//#include "MapKVest.h"
+//#include "MapBf.h"
+#include "MapKVest.h"
 //#include "MapCVest.h"
 //#include "MapProtoVest.h"
 //!!!! ONLY INCLUDE ONE MAP
@@ -630,9 +630,9 @@ void updateAudio(){
       } // beat
     } // fft available
 #else
-  //audio.update();
+  audio.update();
   if (audio.beat_detected_poll && musicReactive) {
-    Serial.print(audio.ratio_poll);Serial.println(" beat");
+    Serial.print(audio.ratio_poll);//Serial.println(" beat");
     audioModBeatDestPtr->trigger(audio.ratio_poll);
     audio.beat_detected_poll = false;
   } // beat
