@@ -243,7 +243,7 @@ public:
   bool peakReady(){
     //beat detected if its been a while since the last beat and the current energy is much higher than the average
     unsigned long  delta = millis() - peak_last;
-    if( (peak_armed == true) && (delta > peak_delta_min) && (iir_volume.signal > peak_volume_min)){
+    if( (peak_armed == true) && (delta > peak_delta_min)  ){
       return true;
     }
     else { 
